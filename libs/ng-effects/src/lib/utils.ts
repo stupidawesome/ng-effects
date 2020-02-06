@@ -1,6 +1,6 @@
-import { MonoTypeOperatorFunction } from "rxjs"
-import { filter, takeUntil, tap } from "rxjs/operators"
-import { ɵmarkDirty as markDirty } from "@angular/core"
+import { MonoTypeOperatorFunction, Observable } from "rxjs"
+import { filter, startWith, switchMap, takeUntil, tap } from "rxjs/operators"
+import { QueryList, ɵmarkDirty as markDirty } from "@angular/core"
 import { destroyed } from "./internals/constants"
 
 export function markDirtyOn<T>(inst: any): MonoTypeOperatorFunction<T> {
@@ -13,4 +13,15 @@ export function takeUntilDestroy<T>(obj: any): MonoTypeOperatorFunction<T> {
 
 export function dispose(inst: any) {
     destroyed.next(inst)
+}
+
+export function isNotNullOrUndefined<T>(value: T): value is Exclude<T, null | undefined> {
+    return value !== null && value !== undefined
+}
+
+export function queryList<T>(source: Observable<QueryList<T> | null | undefined>): Observable<QueryList<T>> {
+    return source.pipe(
+        filter(isNotNullOrUndefined),
+        switchMap(value => value.changes.pipe(startWith(value))),
+    )
 }
