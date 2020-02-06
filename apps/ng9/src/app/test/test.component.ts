@@ -1,21 +1,36 @@
 import {
     ChangeDetectionStrategy,
+    ChangeDetectorRef,
     Component,
     ElementRef,
     EventEmitter,
     Injectable,
     Input,
     Output,
-    ViewChild,
+    QueryList,
+    ViewChildren,
 } from "@angular/core"
-import { mapTo, switchMap } from "rxjs/operators"
-import { of, timer } from "rxjs"
-import { HttpClient } from "@angular/common/http"
-import { Effect, Effects, RunEffects, State, UseEffects, withEffects } from "@ng9/ng-effects"
+import { delay, map } from "rxjs/operators"
+import { MonoTypeOperatorFunction, of } from "rxjs"
+import {
+    Effect,
+    Effects,
+    queryList,
+    RunEffects,
+    State,
+    UseEffects,
+    withEffects,
+} from "@ng9/ng-effects"
+
+export function increment(by: number = 1): MonoTypeOperatorFunction<number> {
+    return function(source) {
+        return source.pipe(map(value => (value += by)))
+    }
+}
 
 @Injectable()
 export class TestEffects implements Effect<TestComponent> {
-    constructor(http: HttpClient) {
+    constructor(http: ElementRef) {
         console.log("injector works", http)
     }
 
@@ -27,7 +42,7 @@ export class TestEffects implements Effect<TestComponent> {
 
     @Effect({ markDirty: true })
     public age(state: State<TestComponent>) {
-        return state.age.pipe(switchMap(age => timer(1000).pipe(mapTo(age + 1))))
+        return state.age.pipe(delay(1000), increment(1))
     }
 
     @Effect()
@@ -47,7 +62,7 @@ export class TestEffects implements Effect<TestComponent> {
 
     @Effect()
     public viewChild(state: State<TestComponent>) {
-        return state.viewChild.changes.subscribe(value =>
+        return queryList(state.viewChild).subscribe(value =>
             console.log("view child available:", value),
         )
     }
@@ -59,7 +74,7 @@ export class TestEffects implements Effect<TestComponent> {
         <p>test works!</p>
         <p>Name: {{ name }}</p>
         <p>Age: {{ age }}</p>
-        <div #test></div>
+        <div *ngIf="show" #test>Showing</div>
     `,
     styleUrls: ["./test.component.scss"],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -79,16 +94,24 @@ export class TestComponent {
     @Output()
     public ageChange: EventEmitter<number>
 
-    @ViewChild("test", { static: false })
-    public viewChild: ElementRef | null
+    @ViewChildren("test")
+    public viewChild: QueryList<ElementRef>
 
     public clicked: MouseEvent | null
 
-    constructor(@UseEffects() effects: Effects) {
+    public show: boolean
+
+    constructor(cdr: ChangeDetectorRef, @UseEffects() effects: Effects) {
         this.name = ""
         this.age = 0
         this.ageChange = new EventEmitter()
+        this.show = false
+        this.viewChild = new QueryList()
         this.clicked = null
-        this.viewChild = null
+
+        setInterval(() => {
+            this.show = !this.show
+            cdr.markForCheck()
+        }, 1000)
     }
 }
