@@ -1,7 +1,7 @@
 {
     "compileOnSave": false,
     "compilerOptions": {
-        "baseUrl": "./",
+        "baseUrl": ".",
         "outDir": "./dist/out-tsc",
         "sourceMap": true,
         "declaration": false,
@@ -15,8 +15,9 @@
         "lib": ["es2018", "dom"],
         "strict": true,
         "paths": {
-            "ng-effects": ["dist/ng-effects/ng-effects", "dist/ng-effects"]
-        }
+            "@ng9/ng-effects": ["libs/ng-effects/src/index.ts"]
+        },
+        "rootDir": "."
     },
     "angularCompilerOptions": {
         "fullTemplateTypeCheck": true,

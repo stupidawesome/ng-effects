@@ -1,7 +1,7 @@
 {
     "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
     "version": 1,
-    "newProjectRoot": "projects",
+    "newProjectRoot": "",
     "projects": {
         "ng9": {
             "projectType": "application",
@@ -10,29 +10,29 @@
                     "style": "scss"
                 }
             },
-            "root": "",
-            "sourceRoot": "src",
+            "root": "apps\\ng9",
+            "sourceRoot": "apps\\ng9\\src",
             "prefix": "app",
             "architect": {
                 "build": {
                     "builder": "@angular-devkit/build-angular:browser",
                     "options": {
-                        "outputPath": "dist/ng9",
-                        "index": "src/index.html",
-                        "main": "src/main.ts",
-                        "polyfills": "src/polyfills.ts",
-                        "tsConfig": "tsconfig.app.json",
+                        "outputPath": "dist\\apps\\ng9",
+                        "index": "apps/ng9/src/index.html",
+                        "main": "apps/ng9/src/main.ts",
+                        "polyfills": "apps/ng9/src/polyfills.ts",
+                        "tsConfig": "apps\\ng9\\tsconfig.app.json",
                         "aot": true,
-                        "assets": ["src/favicon.ico", "src/assets"],
-                        "styles": ["src/styles.scss"],
+                        "assets": ["apps/ng9/src/favicon.ico", "apps/ng9/src/assets"],
+                        "styles": ["apps/ng9/src/styles.scss"],
                         "scripts": []
                     },
                     "configurations": {
                         "production": {
                             "fileReplacements": [
                                 {
-                                    "replace": "src/environments/environment.ts",
-                                    "with": "src/environments/environment.prod.ts"
+                                    "replace": "apps/ng9/src/environments/environment.ts",
+                                    "with": "apps/ng9/src/environments/environment.prod.ts"
                                 }
                             ],
                             "optimization": true,
@@ -75,84 +75,58 @@
                         "browserTarget": "ng9:build"
                     }
                 },
-                "test": {
-                    "builder": "@angular-devkit/build-angular:karma",
-                    "options": {
-                        "main": "src/test.ts",
-                        "polyfills": "src/polyfills.ts",
-                        "tsConfig": "tsconfig.spec.json",
-                        "karmaConfig": "karma.conf.js",
-                        "assets": ["src/favicon.ico", "src/assets"],
-                        "styles": ["src/styles.scss"],
-                        "scripts": []
-                    }
-                },
                 "lint": {
                     "builder": "@angular-devkit/build-angular:tslint",
                     "options": {
                         "tsConfig": [
-                            "tsconfig.app.json",
-                            "tsconfig.spec.json",
-                            "e2e/tsconfig.json"
+                            "apps\\ng9\\tsconfig.app.json",
+                            "apps\\ng9\\tsconfig.spec.json",
+                            "apps/ng9/tsconfig.spec.json"
                         ],
                         "exclude": ["**/node_modules/**"]
                     }
                 },
-                "e2e": {
-                    "builder": "@angular-devkit/build-angular:protractor",
+                "test": {
+                    "builder": "@nrwl/jest:jest",
                     "options": {
-                        "protractorConfig": "e2e/protractor.conf.js",
-                        "devServerTarget": "ng9:serve"
-                    },
-                    "configurations": {
-                        "production": {
-                            "devServerTarget": "ng9:serve:production"
-                        }
+                        "jestConfig": "apps/ng9/jest.config.js",
+                        "tsConfig": "apps/ng9/tsconfig.spec.json",
+                        "setupFile": "apps/ng9/src/test-setup.ts"
                     }
                 }
             }
         },
         "ng-effects": {
             "projectType": "library",
-            "root": "projects/ng-effects",
-            "sourceRoot": "projects/ng-effects/src",
-            "prefix": "lib",
+            "root": "libs/ng-effects",
+            "sourceRoot": "libs/ng-effects/src",
+            "prefix": "ng9",
             "architect": {
-                "build": {
-                    "builder": "@angular-devkit/build-ng-packagr:build",
-                    "options": {
-                        "tsConfig": "projects/ng-effects/tsconfig.lib.json",
-                        "project": "projects/ng-effects/ng-package.json"
-                    },
-                    "configurations": {
-                        "production": {
-                            "tsConfig": "projects/ng-effects/tsconfig.lib.prod.json"
-                        }
-                    }
-                },
-                "test": {
-                    "builder": "@angular-devkit/build-angular:karma",
-                    "options": {
-                        "main": "projects/ng-effects/src/test.ts",
-                        "tsConfig": "projects/ng-effects/tsconfig.spec.json",
-                        "karmaConfig": "projects/ng-effects/karma.conf.js"
-                    }
-                },
                 "lint": {
                     "builder": "@angular-devkit/build-angular:tslint",
                     "options": {
                         "tsConfig": [
-                            "projects/ng-effects/tsconfig.lib.json",
-                            "projects/ng-effects/tsconfig.spec.json"
+                            "libs/ng-effects/tsconfig.lib.json",
+                            "libs/ng-effects/tsconfig.spec.json"
                         ],
-                        "exclude": ["**/node_modules/**"]
+                        "exclude": ["**/node_modules/**", "!libs/ng-effects/**"]
+                    }
+                },
+                "test": {
+                    "builder": "@nrwl/jest:jest",
+                    "options": {
+                        "jestConfig": "libs/ng-effects/jest.config.js",
+                        "tsConfig": "libs/ng-effects/tsconfig.spec.json",
+                        "setupFile": "libs/ng-effects/src/test-setup.ts"
                     }
                 }
-            }
+            },
+            "schematics": {}
         }
     },
     "defaultProject": "ng9",
     "cli": {
-        "analytics": false
+        "analytics": false,
+        "defaultCollection": "@nrwl/angular"
     }
 }
