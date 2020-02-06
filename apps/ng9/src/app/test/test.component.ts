@@ -8,10 +8,10 @@ import {
     Output,
     ViewChild,
 } from "@angular/core"
-import { Effect, Effects, withEffects, State } from "../reactive-component"
-import { mapTo, skip, switchMap } from "rxjs/operators"
-import { BehaviorSubject, of, timer } from "rxjs"
+import { mapTo, switchMap } from "rxjs/operators"
+import { of, timer } from "rxjs"
 import { HttpClient } from "@angular/common/http"
+import { Effect, Effects, RunEffects, State, UseEffects, withEffects } from "@ng9/ng-effects"
 
 @Injectable()
 export class TestEffects implements Effect<TestComponent> {
@@ -44,77 +44,13 @@ export class TestEffects implements Effect<TestComponent> {
     public clicked(state: State<TestComponent>) {
         return state.clicked.subscribe(event => console.log(`click:`, event))
     }
-}
 
-function observe(obj: any, props: string[]) {
-    const observer = {}
-    for (const name of props) {
-        const property = new BehaviorSubject(obj[name])
-
-        Object.defineProperty(property, "changes", {
-            value: property.asObservable().pipe(skip(1)),
-        })
-
-        Object.defineProperty(observer, name, {
-            get() {
-                return property
-            },
-            set(source) {
-                source.subscribe((value: any) => {
-                    obj[name] = value
-                })
-            },
-        })
+    @Effect()
+    public viewChild(state: State<TestComponent>) {
+        return state.viewChild.changes.subscribe(value =>
+            console.log("view child available:", value),
+        )
     }
-
-    return observer
-}
-
-function RunEffects(): ClassDecorator {
-    return function<T extends object & { prototype: any }>(klass: T): any {
-        const paramIndex = effectsMap.get(klass)
-
-        return new Proxy(klass, {
-            construct(target: any, argArray: any) {
-                const obj = new target(...argArray)
-                const ownProperties = Object.getOwnPropertyNames(obj)
-                const observer: any = observe(obj, ownProperties)
-
-                for (const name of ownProperties) {
-                    let value: any
-                    const propertyObserver = observer[name]
-                    Object.defineProperty(obj, name, {
-                        get() {
-                            return value
-                        },
-                        set(_value) {
-                            if (value !== _value) {
-                                value = _value
-                                propertyObserver.next(value)
-                            }
-                        },
-                    })
-                }
-                const effects: Effects = argArray[paramIndex]
-
-                effects.run(obj, observer)
-
-                return obj
-            },
-        })
-    }
-}
-
-const effectsMap = new Map()
-
-function UseEffects(): ParameterDecorator {
-    return function(target: any, propertyKey, parameterIndex) {
-        effectsMap.set(target, parameterIndex)
-    }
-}
-
-const host = {
-    "(click)": "clicked = $event",
 }
 
 @Component({
@@ -128,7 +64,9 @@ const host = {
     styleUrls: ["./test.component.scss"],
     changeDetection: ChangeDetectionStrategy.OnPush,
     providers: [withEffects(TestEffects)],
-    host,
+    host: {
+        "(click)": "clicked = $event",
+    },
 })
 @RunEffects()
 export class TestComponent {
@@ -141,16 +79,16 @@ export class TestComponent {
     @Output()
     public ageChange: EventEmitter<number>
 
-    public clicked: MouseEvent | null
-
     @ViewChild("test", { static: false })
-    public test: ElementRef | null
+    public viewChild: ElementRef | null
+
+    public clicked: MouseEvent | null
 
     constructor(@UseEffects() effects: Effects) {
         this.name = ""
         this.age = 0
         this.ageChange = new EventEmitter()
         this.clicked = null
-        this.test = null
+        this.viewChild = null
     }
 }

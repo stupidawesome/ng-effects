@@ -1,1 +1,6 @@
-export * from "./lib/ng-effects.module"
+export * from "./lib/effects"
+export * from "./lib/constants"
+export * from "./lib/decorators"
+export * from "./lib/interfaces"
+export * from "./lib/utils"
+export * from "./lib/providers"
