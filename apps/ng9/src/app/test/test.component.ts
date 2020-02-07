@@ -10,9 +10,10 @@ import {
     QueryList,
     ViewChildren,
 } from "@angular/core"
-import { of } from "rxjs"
-import { Connect, Effect, Effects, effects, State } from "@ng9/ng-effects"
+import { of, timer } from "rxjs"
+import { Connect, createEffect, Effect, Effects, effects, State } from "@ng9/ng-effects"
 import { $event, delayBounce, increment } from "../utils"
+import { mapTo } from "rxjs/operators"
 
 export type Maybe<T> = T | undefined
 
@@ -21,22 +22,21 @@ interface TestState {
     age: number
     viewChild?: ElementRef
     viewChildren?: QueryList<ElementRef>
+    clicked?: Maybe<MouseEvent>
 }
 
 @Injectable()
 export class TestEffects implements Effects<TestComponent> {
+    public name = createEffect((state: State<TestState>, component: TestComponent) => {
+        return timer(1000).pipe(mapTo("stupidawesome"))
+    })
+
     constructor(http: ElementRef) {
         console.log("injector works", http)
     }
 
     @Effect()
-    public name() {
-        /** this.http.get("someUrl") // could do something with http here **/
-        return of("Stupidawesome")
-    }
-
-    @Effect()
-    public age(state: State<TestComponent>) {
+    public age(state: State<TestState>) {
         return state.age.pipe(delayBounce(1000), increment(1))
     }
 
@@ -51,12 +51,12 @@ export class TestEffects implements Effects<TestComponent> {
     }
 
     @Effect()
-    public clicked(state: State<TestComponent>) {
+    public clicked(state: State<TestState>) {
         return state.clicked.changes.subscribe(event => console.log(`click:`, event))
     }
 
     @Effect()
-    public viewChild(state: State<TestComponent>) {
+    public viewChild(state: State<TestState>) {
         return state.viewChild.subscribe(value => console.log("view child available:", value))
     }
 }

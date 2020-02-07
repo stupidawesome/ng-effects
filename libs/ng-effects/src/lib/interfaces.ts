@@ -7,4 +7,4 @@ export type State<T> = {
 export type EffectFn<T, U = any> = (
     state: State<T>,
     context: T,
-) => Observable<U extends infer R ? R : any> | Subscription | void
+) => Observable<U> | Subscription | void
