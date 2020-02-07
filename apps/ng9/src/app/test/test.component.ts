@@ -20,9 +20,9 @@ export type Maybe<T> = T | undefined
 interface TestState {
     name: string
     age: number
-    viewChild?: ElementRef
-    viewChildren?: QueryList<ElementRef>
-    clicked?: Maybe<MouseEvent>
+    viewChild: Maybe<ElementRef>
+    viewChildren: Maybe<QueryList<ElementRef>>
+    clicked: Maybe<MouseEvent>
 }
 
 @Injectable()
