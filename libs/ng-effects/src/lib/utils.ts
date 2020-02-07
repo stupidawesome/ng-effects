@@ -1,7 +1,7 @@
 import { MonoTypeOperatorFunction, Observable } from "rxjs"
 import { filter, startWith, switchMap, takeUntil, tap } from "rxjs/operators"
 import { QueryList, ɵmarkDirty as markDirty } from "@angular/core"
-import { destroyed } from "./internals/constants"
+import { destroyed, effectsMap } from "./internals/constants"
 
 export function markDirtyOn<T>(inst: any): MonoTypeOperatorFunction<T> {
     return source => source.pipe(tap(() => markDirty(inst)))
@@ -24,4 +24,10 @@ export function queryList<T>(source: Observable<QueryList<T> | null | undefined>
         filter(isNotNullOrUndefined),
         switchMap(value => value.changes.pipe(startWith(value))),
     )
+}
+
+
+export function createEffect<T>(fn: T, options: any): T {
+    effectsMap.set(fn, options || {})
+    return fn
 }

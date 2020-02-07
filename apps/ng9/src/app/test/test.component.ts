@@ -10,22 +10,27 @@ import {
     QueryList,
     ViewChildren,
 } from "@angular/core"
-import { delay, map } from "rxjs/operators"
-import { MonoTypeOperatorFunction, of } from "rxjs"
-import {
-    Effect,
-    Effects,
-    queryList,
-    RunEffects,
-    State,
-    UseEffects,
-    withEffects,
-} from "@ng9/ng-effects"
+import { map, mapTo, switchMap } from "rxjs/operators"
+import { MonoTypeOperatorFunction, of, SchedulerLike, timer } from "rxjs"
+import { bindEffects, createEffect, Effect, Effects, queryList, State, withEffects } from "@ng9/ng-effects"
 
 export function increment(by: number = 1): MonoTypeOperatorFunction<number> {
     return function(source) {
-        return source.pipe(map(value => (value += by)))
+        return source.pipe(map(value => value + by))
     }
+}
+
+export function delayBounce<T>(
+    time: number = 0,
+    scheduler?: SchedulerLike,
+): MonoTypeOperatorFunction<T> {
+    return function(source) {
+        return source.pipe(switchMap(age => timer(time, scheduler).pipe(mapTo(age))))
+    }
+}
+
+export function $event(propName: string) {
+    return `${propName} = $event`
 }
 
 @Injectable()
@@ -42,7 +47,7 @@ export class TestEffects implements Effect<TestComponent> {
 
     @Effect({ markDirty: true })
     public age(state: State<TestComponent>) {
-        return state.age.pipe(delay(1000), increment(1))
+        return state.age.pipe(delayBounce(1000), increment(1))
     }
 
     @Effect()
@@ -80,10 +85,9 @@ export class TestEffects implements Effect<TestComponent> {
     changeDetection: ChangeDetectionStrategy.OnPush,
     providers: [withEffects(TestEffects)],
     host: {
-        "(click)": "clicked = $event",
+        "(click)": $event("clicked"),
     },
 })
-@RunEffects()
 export class TestComponent {
     @Input()
     public name: string
@@ -101,7 +105,7 @@ export class TestComponent {
 
     public show: boolean
 
-    constructor(cdr: ChangeDetectorRef, @UseEffects() effects: Effects) {
+    constructor(cdr: ChangeDetectorRef, effects: Effects) {
         this.name = ""
         this.age = 0
         this.ageChange = new EventEmitter()
@@ -113,5 +117,7 @@ export class TestComponent {
             this.show = !this.show
             cdr.markForCheck()
         }, 1000)
+
+        effects.bind(this)
     }
 }
