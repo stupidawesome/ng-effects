@@ -1,12 +1,17 @@
 import { effectsMap } from "./internals/constants"
-import { Observable, Subscription } from "rxjs"
-import { State } from "./interfaces"
+import { EffectFn } from "./interfaces"
 
-export type Effect<T extends object> = {
-    [key in keyof T]?: (state: State<T>, context: T) => Observable<T[key]> | Subscription | void
+export type Effects<T> = {
+    [key in keyof T]?: EffectFn<T, T[key]>
 }
 
-export function Effect(options?: any): MethodDecorator {
+export abstract class EffectOptions {
+    detectChanges?: boolean
+    whenRendered?: boolean
+    markDirty?: boolean
+}
+
+export function Effect(options?: EffectOptions): MethodDecorator {
     return function(target: any, prop) {
         effectsMap.set(target[prop], options || {})
     }

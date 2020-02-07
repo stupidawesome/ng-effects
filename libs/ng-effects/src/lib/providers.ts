@@ -1,15 +1,42 @@
-import { injectAll } from "./internals/utils"
-import { Effects } from "./effects"
-import { EFFECTS } from "./constants"
+import { connectFactory, injectAll } from "./internals/utils"
+import { Effects } from "./internals/effects"
+import { HOST_INITIALIZER, DEV_MODE, EFFECTS } from "./constants"
+import { EffectOptions } from "./decorators"
+import { Injector, isDevMode, Type } from "@angular/core"
 
-export function withEffects(...effects: any[]) {
+export function effects(types: Type<any>[], effectOptions?: EffectOptions) {
     return [
         {
             provide: EFFECTS,
-            deps: effects,
+            deps: types,
             useFactory: injectAll,
         },
+        {
+            provide: EffectOptions,
+            useValue: effectOptions,
+        },
+        {
+            provide: DEV_MODE,
+            useFactory: isDevMode,
+        },
+        {
+            provide: Connect,
+            useFactory: connectFactory,
+            deps: [HOST_INITIALIZER, Injector],
+        },
+        {
+            provide: HOST_INITIALIZER,
+            useValue: Effects,
+            multi: true,
+        },
         Effects,
-        effects,
+        types,
     ]
 }
+
+export interface Connect {
+    // tslint:disable-next-line
+    <T>(context: T): void
+}
+
+export class Connect {}
