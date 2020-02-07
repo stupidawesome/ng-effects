@@ -7,7 +7,7 @@ import {
     Injectable,
     Input,
     Output,
-    QueryList,
+    QueryList, ViewChild,
     ViewChildren,
 } from "@angular/core"
 import { of, timer } from "rxjs"
@@ -67,7 +67,7 @@ export class TestEffects implements Effects<TestComponent> {
         <p>test works!</p>
         <p>Name: {{ name }}</p>
         <p>Age: {{ age }}</p>
-        <div *ngIf="show" #test>Showing</div>
+        <div #test>Showing</div>
     `,
     styleUrls: ["./test.component.scss"],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -86,7 +86,7 @@ export class TestComponent implements TestState {
     @Output()
     public ageChange: EventEmitter<number>
 
-    @ViewChildren("test")
+    @ViewChild("test")
     public viewChild: Maybe<ElementRef>
 
     @ViewChildren("test")
@@ -100,7 +100,7 @@ export class TestComponent implements TestState {
         this.name = "abc"
         this.age = 0
         this.ageChange = new EventEmitter()
-        this.show = false
+        this.show = true
         this.clicked = undefined
         this.viewChild = undefined
         this.viewChildren = undefined
