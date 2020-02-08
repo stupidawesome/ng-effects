@@ -1,6 +1,5 @@
 import {
     ChangeDetectionStrategy,
-    ChangeDetectorRef,
     Component,
     ElementRef,
     EventEmitter,
@@ -102,7 +101,7 @@ export class TestComponent implements TestState, Events<MouseEvent> {
 
     public show: boolean
 
-    constructor(cdr: ChangeDetectorRef, connect: Connect) {
+    constructor(connect: Connect) {
         this.name = "abc"
         this.age = 0
         this.ageChange = new EventEmitter()
