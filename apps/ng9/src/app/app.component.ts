@@ -3,7 +3,9 @@ import { Component } from "@angular/core"
 @Component({
     selector: "app-root",
     template: `
-        <app-test [age]="31"></app-test>
+        <app-test [age]="31">
+            <app-test>Nested!</app-test>
+        </app-test>
     `,
     styleUrls: ["./app.component.scss"],
     providers: [],

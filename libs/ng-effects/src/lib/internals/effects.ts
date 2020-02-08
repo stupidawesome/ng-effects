@@ -1,10 +1,17 @@
-import { ChangeDetectorRef, ElementRef, Inject, Injectable, OnDestroy, Renderer2, RendererFactory2 } from "@angular/core"
+import {
+    ChangeDetectorRef,
+    ElementRef,
+    Inject,
+    Injectable,
+    OnDestroy,
+    Renderer2,
+} from "@angular/core"
 import { AsyncSubject, Observable, Subscription } from "rxjs"
 import { DEV_MODE, EFFECTS, HOST_CONTEXT } from "../constants"
 import { effectsMap } from "./constants"
 import { EffectOptions } from "../decorators"
 import { initEffect, observe } from "./utils"
-import { whenRendered } from "../utils"
+import { RenderFactoryObserver } from "./render-factory-observer"
 
 @Injectable()
 export class Effects implements OnDestroy {
@@ -22,8 +29,8 @@ export class Effects implements OnDestroy {
         @Inject(HOST_CONTEXT) hostContext: any,
         el: ElementRef,
         options: EffectOptions,
+        renderObserver: RenderFactoryObserver,
         renderer: Renderer2,
-        rendererFactory: RendererFactory2
     ) {
         const { proxy, revoke } = observe(hostContext, isDevMode)
 
@@ -36,7 +43,7 @@ export class Effects implements OnDestroy {
             },
             options,
         )
-        this.rendered = whenRendered(el.nativeElement, renderer, rendererFactory)
+        this.rendered = renderObserver.whenRendered(el.nativeElement, renderer)
         this.revoke = revoke
         this.proxy = proxy
         this.hostContext = hostContext

@@ -22,7 +22,7 @@ export function injectAll(...deps: any[]) {
     return deps
 }
 
-function noop() {}
+export function noop() {}
 
 export function observe(obj: any, isDevMode: boolean) {
     const ownProperties = Object.getOwnPropertyNames(obj)

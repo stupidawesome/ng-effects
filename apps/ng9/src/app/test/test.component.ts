@@ -10,7 +10,7 @@ import {
     ViewChild,
     ViewChildren,
 } from "@angular/core"
-import { Subject, timer } from "rxjs"
+import { animationFrameScheduler, Subject, timer } from "rxjs"
 import { Connect, createEffect, Effect, Effects, effects, Events, State } from "@ng9/ng-effects"
 import { delayBounce, increment } from "../utils"
 import { mapTo } from "rxjs/operators"
@@ -37,7 +37,7 @@ export class TestEffects implements Effects<TestComponent> {
 
     @Effect()
     public age(state: State<TestState>) {
-        return state.age.pipe(delayBounce(1000), increment(1))
+        return state.age.pipe(delayBounce(1000, animationFrameScheduler), increment(1))
     }
 
     @Effect()
@@ -73,6 +73,9 @@ export class TestEffects implements Effects<TestComponent> {
         <p>Name: {{ name }}</p>
         <p>Age: {{ age }}</p>
         <div #test>Showing</div>
+        <p>
+            <ng-content></ng-content>
+        </p>
     `,
     styleUrls: ["./test.component.scss"],
     changeDetection: ChangeDetectionStrategy.OnPush,
