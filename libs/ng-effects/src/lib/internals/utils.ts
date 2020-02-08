@@ -1,16 +1,7 @@
-import {
-    concat,
-    defer,
-    isObservable,
-    MonoTypeOperatorFunction,
-    of,
-    Subject,
-    Subscription,
-} from "rxjs"
+import { concat, defer, isObservable, of, Subject, Subscription } from "rxjs"
 import { EffectOptions } from "../decorators"
 import { ChangeDetectorRef, Host, Inject, Injectable, Injector } from "@angular/core"
 import { detectChangesOn, markDirtyOn } from "../utils"
-import { pipeFromArray } from "rxjs/internal/util/pipe"
 import { HOST_CONTEXT, HOST_INITIALIZER } from "../constants"
 import { DestroyObserver } from "./destroy-observer"
 
@@ -106,7 +97,7 @@ export function initEffect(
     }
 
     if (isObservable(returnValue)) {
-        const pipes: MonoTypeOperatorFunction<unknown>[] = []
+        const pipes: any = []
 
         if (!instance.hasOwnProperty(key)) {
             throwMissingPropertyError(key, instance.constructor.name)
@@ -117,7 +108,7 @@ export function initEffect(
             pipes.push(markDirtyOn(cdr))
         }
         subs.add(
-            returnValue.pipe(pipeFromArray(pipes)).subscribe((value: any) => {
+            returnValue.pipe.apply(returnValue, pipes).subscribe((value: any) => {
                 instance[key] = value
             }),
         )

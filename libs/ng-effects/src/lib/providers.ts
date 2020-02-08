@@ -2,7 +2,7 @@ import { ConnectFactory, injectAll } from "./internals/utils"
 import { Effects } from "./internals/effects"
 import { DEV_MODE, EFFECTS, HOST_INITIALIZER } from "./constants"
 import { EffectOptions } from "./decorators"
-import { Injector, isDevMode, Type } from "@angular/core"
+import { isDevMode, Type } from "@angular/core"
 import { DestroyObserver } from "./internals/destroy-observer"
 
 export function effects(types: Type<any>[], effectOptions?: EffectOptions) {
@@ -23,7 +23,6 @@ export function effects(types: Type<any>[], effectOptions?: EffectOptions) {
         {
             provide: Connect,
             useClass: ConnectFactory,
-            deps: [HOST_INITIALIZER, DestroyObserver, Injector],
         },
         {
             provide: HOST_INITIALIZER,
@@ -41,4 +40,4 @@ export interface Connect {
     <T>(context: T): void
 }
 
-export class Connect {}
+export abstract class Connect {}
