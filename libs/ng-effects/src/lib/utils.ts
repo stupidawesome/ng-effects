@@ -1,6 +1,6 @@
 import { MonoTypeOperatorFunction, Observable } from "rxjs"
 import { filter, startWith, switchMap, tap } from "rxjs/operators"
-import { ChangeDetectorRef, QueryList } from "@angular/core"
+import { ChangeDetectorRef, QueryList, ɵwhenRendered as whenRendered } from "@angular/core"
 import { effectsMap } from "./internals/constants"
 import { EffectOptions } from "./decorators"
 
@@ -10,6 +10,17 @@ export function markDirtyOn<T>(cdr: ChangeDetectorRef): MonoTypeOperatorFunction
 
 export function detectChangesOn<T>(cdr: ChangeDetectorRef): MonoTypeOperatorFunction<T> {
     return tap(() => cdr.detectChanges())
+}
+
+export function whenRenderedOn(element: any) {
+    return new Observable(subscriber => {
+        whenRendered(element)
+            .then(() => {
+                subscriber.next()
+                subscriber.complete()
+            })
+            .catch((error) => subscriber.error(error))
+    })
 }
 
 export function isNotNullOrUndefined<T>(value: T): value is Exclude<T, null | undefined> {

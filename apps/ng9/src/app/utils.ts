@@ -15,7 +15,3 @@ export function delayBounce<T>(
         return source.pipe(switchMap(age => timer(time, scheduler).pipe(mapTo(age))))
     }
 }
-
-export function $event(propName: string) {
-    return `${propName} = $event`
-}

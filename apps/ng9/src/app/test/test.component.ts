@@ -7,12 +7,13 @@ import {
     Injectable,
     Input,
     Output,
-    QueryList, ViewChild,
+    QueryList,
+    ViewChild,
     ViewChildren,
 } from "@angular/core"
-import { of, timer } from "rxjs"
-import { Connect, createEffect, Effect, Effects, effects, State } from "@ng9/ng-effects"
-import { $event, delayBounce, increment } from "../utils"
+import { Subject, timer } from "rxjs"
+import { Connect, createEffect, Effect, Effects, effects, Events, State } from "@ng9/ng-effects"
+import { delayBounce, increment } from "../utils"
 import { mapTo } from "rxjs/operators"
 
 export type Maybe<T> = T | undefined
@@ -22,11 +23,11 @@ interface TestState {
     age: number
     viewChild: Maybe<ElementRef>
     viewChildren: Maybe<QueryList<ElementRef>>
-    clicked: Maybe<MouseEvent>
 }
 
 @Injectable()
 export class TestEffects implements Effects<TestComponent> {
+    // noinspection JSUnusedLocalSymbols
     public name = createEffect((state: State<TestState>, component: TestComponent) => {
         return timer(1000).pipe(mapTo("stupidawesome"))
     })
@@ -41,23 +42,28 @@ export class TestEffects implements Effects<TestComponent> {
     }
 
     @Effect()
-    public ageChange(state: State<TestComponent>, component: TestComponent) {
-        return state.age.subscribe(component.ageChange)
+    public ageChange(state: State<TestState>, component: TestComponent) {
+        return state.age.changes.subscribe(component.ageChange)
     }
 
     @Effect()
-    public sideEffect(state: State<TestComponent>) {
-        return state.age.subscribe(age => console.log(`age changed: ${age}`))
+    public sideEffect(state: State<TestState>) {
+        return state.age.changes.subscribe(age => console.log(`age changed: ${age}`))
     }
 
     @Effect()
-    public clicked(state: State<TestState>) {
-        return state.clicked.changes.subscribe(event => console.log(`click:`, event))
+    public clicked(state: State<TestState>, component: TestComponent) {
+        return component.events.subscribe(event => console.log(`click:`, event))
     }
 
-    @Effect()
+    @Effect({ whenRendered: true })
     public viewChild(state: State<TestState>) {
-        return state.viewChild.subscribe(value => console.log("view child available:", value))
+        return state.viewChild.subscribe(value => console.log("viewChild available:", value))
+    }
+
+    @Effect({ whenRendered: true })
+    public viewChildren(state: State<TestState>) {
+        return state.viewChildren.subscribe(value => console.log("viewChildren available:", value))
     }
 }
 
@@ -71,12 +77,12 @@ export class TestEffects implements Effects<TestComponent> {
     `,
     styleUrls: ["./test.component.scss"],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    providers: [effects([TestEffects], { whenRendered: true, markDirty: true })],
+    providers: [effects([TestEffects], { markDirty: true })],
     host: {
-        "(click)": $event("clicked"),
+        "(click)": "events.next($event)",
     },
 })
-export class TestComponent implements TestState {
+export class TestComponent implements TestState, Events<MouseEvent> {
     @Input()
     public name: string
 
@@ -92,7 +98,7 @@ export class TestComponent implements TestState {
     @ViewChildren("test")
     public viewChildren: Maybe<QueryList<ElementRef>>
 
-    public clicked: Maybe<MouseEvent>
+    public events: Subject<MouseEvent>
 
     public show: boolean
 
@@ -101,7 +107,7 @@ export class TestComponent implements TestState {
         this.age = 0
         this.ageChange = new EventEmitter()
         this.show = true
-        this.clicked = undefined
+        this.events = new Subject()
         this.viewChild = undefined
         this.viewChildren = undefined
 

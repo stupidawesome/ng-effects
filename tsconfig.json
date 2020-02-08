@@ -15,7 +15,8 @@
         "lib": ["es2018", "dom"],
         "strict": true,
         "paths": {
-            "@ng9/ng-effects": ["libs/ng-effects/src/index.ts"]
+            "@ng9/ng-effects": ["libs/ng-effects/src/index.ts"],
+            "@ng9/test": ["libs/test/src/index.ts"]
         },
         "rootDir": "."
     },

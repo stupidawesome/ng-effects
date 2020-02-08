@@ -1,16 +1,19 @@
 import { ChangeDetectorRef, ElementRef, Inject, Injectable, OnDestroy } from "@angular/core"
-import { Subscription } from "rxjs"
+import { AsyncSubject, Observable, Subscription } from "rxjs"
 import { DEV_MODE, EFFECTS, HOST_CONTEXT } from "../constants"
 import { effectsMap } from "./constants"
 import { EffectOptions } from "../decorators"
 import { initEffect, observe } from "./utils"
+import { whenRenderedOn } from "../utils"
 
 @Injectable()
 export class Effects implements OnDestroy {
     private readonly subs: Subscription
-    private defaultOptions: EffectOptions
-    private nativeElement: any
-    private revoke?: Function
+    private readonly defaultOptions: EffectOptions
+    private readonly rendered: Observable<any>
+    private readonly revoke: Function
+    private readonly proxy: any
+    private readonly hostContext: any
 
     constructor(
         private cdr: ChangeDetectorRef,
@@ -20,8 +23,9 @@ export class Effects implements OnDestroy {
         el: ElementRef,
         options: EffectOptions,
     ) {
+        const { proxy, revoke } = observe(hostContext, isDevMode)
+
         this.subs = new Subscription()
-        this.nativeElement = el.nativeElement
         this.defaultOptions = Object.assign(
             {
                 whenRendered: false,
@@ -30,48 +34,52 @@ export class Effects implements OnDestroy {
             },
             options,
         )
-        console.log("effects", effects)
-        this.run(hostContext)
+        this.rendered = whenRenderedOn(el.nativeElement)
+        this.revoke = revoke
+        this.proxy = proxy
+        this.hostContext = hostContext
+
+        this.run()
     }
 
-    public run(instance: any) {
-        const { defaultOptions, nativeElement, cdr, subs, isDevMode } = this
-        const { proxy, revoke } = observe(instance, isDevMode)
+    public run() {
+        const { defaultOptions, cdr, subs, rendered, proxy, hostContext, effects } = this
+        let isRendered: AsyncSubject<void> | undefined
 
-        for (const effect of this.effects) {
+        for (const effect of effects) {
             const props = [
                 ...Object.getOwnPropertyNames(Object.getPrototypeOf(effect)),
                 ...Object.getOwnPropertyNames(effect),
             ]
+
             for (const key of props) {
                 const fn = effect[key]
-                let options = effectsMap.get(fn)
+                let options: EffectOptions = effectsMap.get(fn)
 
                 if (fn && options) {
                     options = Object.assign({}, defaultOptions, options)
-                    void initEffect(
-                        fn,
-                        key,
-                        options,
-                        nativeElement,
-                        cdr,
-                        proxy,
-                        instance,
-                        subs,
-                    ).catch(error => console.error(error))
+                    const args: any = [fn, key, options, cdr, proxy, hostContext, subs]
+                    if (options.whenRendered) {
+                        if (isRendered === undefined) {
+                            isRendered = new AsyncSubject()
+                            rendered.subscribe(isRendered)
+                        }
+                        subs.add(
+                            isRendered.subscribe(
+                                () => initEffect.apply(null, args),
+                                error => console.error(error),
+                            ),
+                        )
+                    } else {
+                        initEffect.apply(null, args)
+                    }
                 }
             }
         }
-
-        this.revoke = revoke
-
-        return instance
     }
 
     public ngOnDestroy() {
-        if (this.revoke) {
-            this.revoke()
-        }
+        this.revoke()
         this.subs.unsubscribe()
     }
 }

@@ -102,6 +102,18 @@
             "sourceRoot": "libs/ng-effects/src",
             "prefix": "ng9",
             "architect": {
+                "build": {
+                    "builder": "@nrwl/angular:package",
+                    "options": {
+                        "tsConfig": "libs/ng-effects/tsconfig.lib.json",
+                        "project": "libs/ng-effects/ng-package.json"
+                    },
+                    "configurations": {
+                        "production": {
+                            "tsConfig": "libs/ng-effects/tsconfig.lib.prod.json"
+                        }
+                    }
+                },
                 "lint": {
                     "builder": "@angular-devkit/build-angular:tslint",
                     "options": {

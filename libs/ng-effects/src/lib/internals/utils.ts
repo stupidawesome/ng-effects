@@ -1,18 +1,18 @@
-import { BehaviorSubject, isObservable, MonoTypeOperatorFunction, Subscription } from "rxjs"
-import { skip } from "rxjs/operators"
-import { EffectOptions } from "../decorators"
 import {
-    ChangeDetectorRef,
-    Injector,
-    StaticProvider,
-    Type,
-    ɵwhenRendered as whenRendered,
-} from "@angular/core"
+    concat,
+    defer,
+    isObservable,
+    MonoTypeOperatorFunction,
+    of,
+    Subject,
+    Subscription,
+} from "rxjs"
+import { EffectOptions } from "../decorators"
+import { ChangeDetectorRef, Injector } from "@angular/core"
 import { detectChangesOn, markDirtyOn } from "../utils"
 import { pipeFromArray } from "rxjs/internal/util/pipe"
-import { Effects } from "./effects"
 import { Connect } from "../providers"
-import { HOST_INITIALIZER, HOST_CONTEXT } from "../constants"
+import { HOST_CONTEXT } from "../constants"
 
 export function throwMissingPropertyError(key: string, name: string) {
     throw new Error(`[ng-effects] Property "${key}" is not initialised in "${name}".`)
@@ -29,9 +29,14 @@ export function observe(obj: any, isDevMode: boolean) {
     const observer: any = {}
 
     for (const key of ownProperties) {
-        let value: any
-        const propertyObserver: any = new BehaviorSubject(obj[key])
-        propertyObserver.changes = propertyObserver.pipe(skip(1))
+        let value: any = obj[key]
+        const valueSubject: Subject<any> = new Subject()
+        const propertyObserver: any = concat(
+            defer(() => of(value)),
+            valueSubject,
+        )
+        propertyObserver.changes = valueSubject.asObservable()
+
         observer[key] = propertyObserver
         Object.defineProperty(obj, key, {
             get() {
@@ -40,7 +45,7 @@ export function observe(obj: any, isDevMode: boolean) {
             set(_value) {
                 if (value !== _value) {
                     value = _value
-                    propertyObserver.next(value)
+                    valueSubject.next(value)
                 }
             },
         })
@@ -67,20 +72,15 @@ export function throwBadReturnTypeError() {
     throw new Error("[ng-effects] Effects must return an observable, subscription, or void")
 }
 
-export async function initEffect(
+export function initEffect(
     effect: Function,
     key: string,
     options: EffectOptions,
-    nativeElement: any,
     cdr: ChangeDetectorRef,
     observer: any,
     instance: any,
     subs: Subscription,
 ) {
-    if (options.whenRendered) {
-        await whenRendered(nativeElement)
-    }
-
     const returnValue = effect.call(effect, observer, instance)
 
     if (returnValue === undefined) {
@@ -110,7 +110,7 @@ export async function initEffect(
     }
 }
 
-export function connectFactory<T>(initalizers: any[], parentInjector: Injector): Connect {
+export function connectFactory<T>(initializers: any[], parentInjector: Injector): Connect {
     function connect(context: any) {
         const injector = Injector.create({
             parent: parentInjector,
@@ -119,11 +119,11 @@ export function connectFactory<T>(initalizers: any[], parentInjector: Injector):
                     provide: HOST_CONTEXT,
                     useValue: context,
                 },
-                ...initalizers,
+                ...initializers,
             ],
         })
 
-        initalizers.forEach(injector.get, injector)
+        initializers.forEach(injector.get, injector)
     }
 
     return connect

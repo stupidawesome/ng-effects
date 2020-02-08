@@ -1,6 +1,6 @@
 import { connectFactory, injectAll } from "./internals/utils"
 import { Effects } from "./internals/effects"
-import { HOST_INITIALIZER, DEV_MODE, EFFECTS } from "./constants"
+import { DEV_MODE, EFFECTS, HOST_INITIALIZER } from "./constants"
 import { EffectOptions } from "./decorators"
 import { Injector, isDevMode, Type } from "@angular/core"
 
