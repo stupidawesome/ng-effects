@@ -26,7 +26,7 @@ export class RenderFactoryObserver implements OnDestroy {
         return this.observer.pipe(
             filter(() => renderer.parentNode(element) !== null),
             take(1),
-            share()
+            share(),
         )
     }
 

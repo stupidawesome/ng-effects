@@ -1,12 +1,13 @@
 import {
     ChangeDetectorRef,
     ElementRef,
+    Host,
     Inject,
     Injectable,
     OnDestroy,
     Renderer2,
 } from "@angular/core"
-import { Observable, Subscription } from "rxjs"
+import { Observable, Subject, Subscription } from "rxjs"
 import { DEV_MODE, EFFECTS, HOST_CONTEXT } from "../constants"
 import { effectsMap } from "./constants"
 import { EffectOptions } from "../decorators"
@@ -19,18 +20,18 @@ export class Effects implements OnDestroy {
     private readonly defaultOptions: EffectOptions
     private readonly whenRendered: Observable<any>
     private readonly revoke: Function
-    private readonly proxy: any
+    private readonly proxy: { [key: string]: Subject<any> }
     private readonly hostContext: any
 
     constructor(
-        private cdr: ChangeDetectorRef,
-        @Inject(EFFECTS) private effects: any[],
+        @Host() private cdr: ChangeDetectorRef,
+        @Host() @Inject(EFFECTS) private effects: any[],
+        @Host() @Inject(HOST_CONTEXT) hostContext: any,
         @Inject(DEV_MODE) private isDevMode: boolean,
-        @Inject(HOST_CONTEXT) hostContext: any,
-        el: ElementRef,
-        options: EffectOptions,
+        @Host() el: ElementRef,
+        @Host() renderer: Renderer2,
+        @Host() options: EffectOptions,
         renderObserver: RenderFactoryObserver,
-        renderer: Renderer2,
     ) {
         const { proxy, revoke } = observe(hostContext, isDevMode)
 

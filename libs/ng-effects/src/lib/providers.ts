@@ -1,8 +1,9 @@
-import { connectFactory, injectAll } from "./internals/utils"
+import { ConnectFactory, injectAll } from "./internals/utils"
 import { Effects } from "./internals/effects"
 import { DEV_MODE, EFFECTS, HOST_INITIALIZER } from "./constants"
 import { EffectOptions } from "./decorators"
 import { Injector, isDevMode, Type } from "@angular/core"
+import { DestroyObserver } from "./internals/destroy-observer"
 
 export function effects(types: Type<any>[], effectOptions?: EffectOptions) {
     return [
@@ -21,14 +22,15 @@ export function effects(types: Type<any>[], effectOptions?: EffectOptions) {
         },
         {
             provide: Connect,
-            useFactory: connectFactory,
-            deps: [HOST_INITIALIZER, Injector],
+            useClass: ConnectFactory,
+            deps: [HOST_INITIALIZER, DestroyObserver, Injector],
         },
         {
             provide: HOST_INITIALIZER,
             useValue: Effects,
             multi: true,
         },
+        DestroyObserver,
         Effects,
         types,
     ]
