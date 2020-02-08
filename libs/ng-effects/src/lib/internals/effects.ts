@@ -1,11 +1,11 @@
-import { ChangeDetectorRef, Host, Inject, Injectable, OnDestroy } from "@angular/core"
+import { ChangeDetectorRef, ElementRef, Host, Inject, Injectable, OnDestroy } from "@angular/core"
 import { Observable, Subject, Subscription } from "rxjs"
 import { DEV_MODE, EFFECTS, HOST_CONTEXT } from "../constants"
 import { effectsMap } from "./constants"
 import { EffectOptions } from "../decorators"
 import { initEffect, observe } from "./utils"
 import { RenderFactoryObserver } from "./render-factory-observer"
-import { take } from "rxjs/operators"
+import { filter, share, take } from "rxjs/operators"
 
 @Injectable()
 export class Effects implements OnDestroy {
@@ -23,8 +23,10 @@ export class Effects implements OnDestroy {
         @Inject(DEV_MODE) private isDevMode: boolean,
         @Host() options: EffectOptions,
         renderObserver: RenderFactoryObserver,
+        elementRef: ElementRef<HTMLElement>,
     ) {
         const { proxy, revoke } = observe(hostContext, isDevMode)
+        const { nativeElement } = elementRef
 
         this.subs = new Subscription()
         this.defaultOptions = Object.assign(
@@ -35,7 +37,11 @@ export class Effects implements OnDestroy {
             },
             options,
         )
-        this.whenRendered = renderObserver.whenRendered().pipe(take(1))
+        this.whenRendered = renderObserver.whenRendered().pipe(
+            filter(() => nativeElement.isConnected),
+            take(1),
+            share(),
+        )
         this.revoke = revoke
         this.proxy = proxy
         this.hostContext = hostContext
