@@ -132,8 +132,8 @@ export function initEffect(
 export class ConnectFactory {
     constructor(
         @Host() @Inject(HOST_INITIALIZER) initializers: any[],
-        destroyObserver: DestroyObserver,
-        parentInjector: Injector,
+        @Host() destroyObserver: DestroyObserver,
+        @Host() parentInjector: Injector,
     ) {
         return function connect(context: any) {
             const injector = Injector.create({
