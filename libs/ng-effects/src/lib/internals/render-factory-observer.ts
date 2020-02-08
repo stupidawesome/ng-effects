@@ -10,10 +10,13 @@ export class RenderFactoryObserver implements OnDestroy {
     constructor(rendererFactory: RendererFactory2) {
         const origEndFn = rendererFactory.end || noop
         const subject = new Subject<void>()
+        const observers = subject.observers
 
         rendererFactory.end = () => {
             origEndFn.apply(rendererFactory)
-            subject.next()
+            if (observers.length > 0) {
+                subject.next()
+            }
         }
 
         this.observer = subject
