@@ -1,6 +1,6 @@
 import { Injectable, OnDestroy, Renderer2, RendererFactory2 } from "@angular/core"
 import { Subject } from "rxjs"
-import { filter, take } from "rxjs/operators"
+import { filter, share, take } from "rxjs/operators"
 import { noop } from "./utils"
 
 @Injectable({ providedIn: "root" })
@@ -23,6 +23,7 @@ export class RenderFactoryObserver implements OnDestroy {
         return this.observer.pipe(
             filter(() => renderer.parentNode(element) !== null),
             take(1),
+            share()
         )
     }
 

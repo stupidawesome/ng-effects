@@ -6,7 +6,7 @@ import {
     OnDestroy,
     Renderer2,
 } from "@angular/core"
-import { AsyncSubject, Observable, Subscription } from "rxjs"
+import { Observable, Subscription } from "rxjs"
 import { DEV_MODE, EFFECTS, HOST_CONTEXT } from "../constants"
 import { effectsMap } from "./constants"
 import { EffectOptions } from "../decorators"
@@ -17,7 +17,7 @@ import { RenderFactoryObserver } from "./render-factory-observer"
 export class Effects implements OnDestroy {
     private readonly subs: Subscription
     private readonly defaultOptions: EffectOptions
-    private readonly rendered: Observable<any>
+    private readonly whenRendered: Observable<any>
     private readonly revoke: Function
     private readonly proxy: any
     private readonly hostContext: any
@@ -43,7 +43,7 @@ export class Effects implements OnDestroy {
             },
             options,
         )
-        this.rendered = renderObserver.whenRendered(el.nativeElement, renderer)
+        this.whenRendered = renderObserver.whenRendered(el.nativeElement, renderer)
         this.revoke = revoke
         this.proxy = proxy
         this.hostContext = hostContext
@@ -52,8 +52,7 @@ export class Effects implements OnDestroy {
     }
 
     public run() {
-        const { defaultOptions, cdr, subs, rendered, proxy, hostContext, effects } = this
-        let isRendered: AsyncSubject<void> | undefined
+        const { defaultOptions, cdr, subs, whenRendered, proxy, hostContext, effects } = this
 
         for (const effect of effects) {
             const props = [
@@ -69,12 +68,8 @@ export class Effects implements OnDestroy {
                     options = Object.assign({}, defaultOptions, options)
                     const args: any = [fn, key, options, cdr, proxy, hostContext, subs]
                     if (options.whenRendered) {
-                        if (isRendered === undefined) {
-                            isRendered = new AsyncSubject()
-                            rendered.subscribe(isRendered)
-                        }
                         subs.add(
-                            isRendered.subscribe(
+                            whenRendered.subscribe(
                                 () => initEffect.apply(null, args),
                                 error => console.error(error),
                             ),
