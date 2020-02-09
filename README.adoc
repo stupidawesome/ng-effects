@@ -295,7 +295,7 @@ Effects that do not bind a property, or return a subscription/teardown function,
 export class AppEffects implements Effects<AppComponent> {
     @Effect()
     logCountWithObservable(state: State<AppState>) {
-        return state.pipe(
+        return state.count.pipe(
             tap(count => console.log(count))
         )
     }
