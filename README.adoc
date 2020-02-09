@@ -475,7 +475,7 @@ export class ChildEffects {
 
     @Effect({ whenRendered: true })
     public withViewChildren(state: State<ChildComponent>) {
-        return context.viewChildrenRef.subscribe(
+        return context.viewChildren.subscribe(
             viewChildrenRef => console.log(`viewChildrenRef:`)
         )
     }
@@ -500,13 +500,13 @@ export class ChildComponent {
     viewChild: ChildComponent
 
     @ViewChildren(ChildComponent)
-    viewChildrenRef: QueryList<ChildComponent>
+    viewChildren: QueryList<ChildComponent>
 
     constructor(connect: Connect) {
         this.contentChild = undefined
         this.contentChildren = undefined
         this.viewChild = undefined
-        this.viewChildrenRef = undefined
+        this.viewChildren = undefined
 
         connect(this)
     }
@@ -543,7 +543,7 @@ Observable services can be injected, then composed. For example, compose http se
 export class AppEffects {
     constructor(private http: HttpClient, private store: Store<any>) {}
 
-    @Effect("activeUser")
+    @Effect("activeUser", { markDirty: true })
     public selectActiveUser(state: State<AppComponent>) {
         return this.store.pipe(
             select(store => store.activeUser)
