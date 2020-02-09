@@ -29,7 +29,7 @@ export class AppComponent implements AppState {
     @Effect("count", { markDirty: true })
     incrementCount(state: State<AppState>) {
         return timer(1000).pipe(
-            switchMapTo(state.age),
+            switchMapTo(state.count),
             take(1),
             increment(1),
             repeat()
@@ -154,7 +154,7 @@ export class AppEffects implements Effects<AppComponent> {
     @Effect()
     count(state: State<AppState>) {
         return timer(1000).pipe(
-            switchMapTo(state.age),
+            switchMapTo(state.count),
             take(1),
             increment(1),
             repeat()
@@ -199,7 +199,7 @@ export class AppComponent implements AppState {
     incrementCount = createEffect(
         (state: State<TestState>, ctx: TestComponent) =>
             timer(1000).pipe(
-                switchMapTo(state.age),
+                switchMapTo(state.count),
                 take(1),
                 increment(1),
                 repeat()
@@ -238,7 +238,7 @@ export class AppEffects implements Effects<AppComponent> {
     @Effect({ markDirty: true })
     count(state: State<AppState>) {
         return timer(1000).pipe(
-            switchMapTo(state.age),
+            switchMapTo(state.count),
             increment(1),
             take(1),
             repeat()
