@@ -18,15 +18,14 @@ export abstract class EffectOptions<TKey extends PropertyKey = string> {
     bind?: TKey
 }
 
-interface EffectDecorator<PropertyKey> {
+interface EffectDecorator<TKey> {
     // tslint:disable-next-line:callable-types
     <
         T extends object,
-        U extends string,
-        V extends keyof T = PropertyKey extends keyof T ? PropertyKey : any
+        V extends keyof T = TKey extends keyof T ? TKey : any
     >(
         target: any,
-        prop: U,
+        prop: PropertyKey,
         propertyDescriptor: { value?: EffectFn<T, T[V]> },
     ): void
 }
