@@ -13,8 +13,8 @@ import {
 } from "@angular/core"
 import { of, Subject, timer } from "rxjs"
 import { Connect, createEffect, Effect, Effects, effects, Events, State } from "@ng9/ng-effects"
-import { delayBounce, increment } from "../utils"
-import { mapTo } from "rxjs/operators"
+import { increment } from "../utils"
+import { mapTo, repeat, switchMapTo, take } from "rxjs/operators"
 
 export type Maybe<T> = T | undefined
 
@@ -53,6 +53,15 @@ export class TestEffects implements Effects<TestComponent> {
     }
 
     /**
+     * Suppress binding type check when type cannot be inferred from arguments
+     * Bindings will still be checked at runtime
+     */
+    @Effect<any>("name")
+    public suppressTypeChecking() {
+        // do unsafe side effect
+    }
+
+    /**
      * Void effect example
      */
     @Effect()
@@ -65,7 +74,12 @@ export class TestEffects implements Effects<TestComponent> {
      */
     @Effect()
     public age(state: State<TestState>) {
-        return state.age.pipe(delayBounce(1000), increment(1))
+        return timer(1000).pipe(
+            switchMapTo(state.age),
+            increment(1),
+            take(1),
+            repeat()
+        )
     }
 
     /**
@@ -136,7 +150,7 @@ export class TestEffects implements Effects<TestComponent> {
     `,
     styleUrls: ["./test.component.scss"],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    providers: [effects([TestEffects], { markDirty: true })],
+    providers: [effects(TestEffects, { markDirty: true })],
     host: {
         "(click)": "events.next($event)",
     },

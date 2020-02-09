@@ -1,0 +1,547 @@
+= ng-effects
+
+Reactive local state management for Angular.
+
+[source,typescript]
+----
+interface AppState {
+    count: number
+}
+
+@Component({
+    selector: "app-root",
+    template: `
+        <div>Count: {{count}}</div>
+    `,
+    providers: [HOST_EFFECTS],
+})
+export class AppComponent implements AppState {
+
+    @Input()
+    count: number
+
+    constructor(connect: Connect) {
+        this.count = 0
+
+        connect(this)
+    }
+
+    @Effect("count", { markDirty: true })
+    incrementCount(state: State<AppState>) {
+        return timer(1000).pipe(
+            switchMapTo(state.age),
+            take(1),
+            increment(1),
+            repeat()
+        )
+    }
+}
+----
+
+== Installation
+
+Install ng-effects via NPM
+
+[source,bash]
+----
+npm install ng-effects
+----
+
+== Usage
+
+=== Initialize effects
+
+Effects are initialized through a `Connect` service. Inject `Connect` into your component or directive and *call it only after you have initialized all variables with default values*. `Connect` can only be injected when `HOST_EFFECTS` or `effects()` are provided.
+
+[source,typescript]
+----
+@Component({
+    providers: [HOST_EFFECTS]
+})
+export class AppEffects implements Effects<AppComponent> {
+    count: number
+    name: string
+
+    constructor(connect: Connect) {
+        this.count = 0 // Always provide default values first
+        this.name = undefined // Should be initialized even if value is undefined
+
+        connect(this) // Should always be last statement and called in constructor
+    }
+
+    @Effect()
+    someEffect() {
+        // etc...
+    }
+}
+----
+
+=== Host effects
+
+In simple cases, effects can be provided directly on the host. If no other effects need to be provided, pass you only have to pass in `HOST_EFFECTS` to the host provider.
+
+[source,typescript]
+----
+@Component({
+    providers: [HOST_EFFECTS]
+})
+export class AppEffects implements Effects<AppComponent> {
+
+    count: number
+
+    constructor(connect: Connect) {
+        this.count = 0
+        connect(this)
+    }
+
+    @Effect()
+    logCount(state: State<AppComponent>) {
+        return state.subscribe(count => console.log(count))
+    }
+}
+----
+
+=== Effect services
+
+Effects can be extracted into injectable services. These must be provided in the local `providers` (or `viewProviders`) array. Effects can be reused this way.
+
+[source,typescript]
+----
+interface AppState {
+    count: number
+}
+
+@Injectable()
+export class AppEffects implements Effects<AppComponent> {
+    @Effect()
+    count(state: State<AppState>) {
+        return timer(1000).pipe(
+            switchMapTo(state.age),
+            take(1),
+            increment(1),
+            repeat()
+        )
+    }
+}
+
+@Injectable()
+export class OtherEffects implements Effects<Other> {
+    // etc...
+}
+
+@Component({
+    selector: "app-root",
+    template: `
+        <div>Count: {{count}}</div>
+    `,
+    providers: [effects([AppEffects, OtherEffects])],
+})
+export class AppComponent implements AppState {
+
+    count: number
+
+    constructor(connect: Connect) {
+        this.count = 0
+
+        connect(this)
+    }
+}
+----
+
+== Examples
+
+=== createEffect
+
+Alternative syntax for effect declaration.
+
+[source,typescript]
+----
+@Component()
+export class AppComponent implements AppState {
+    public incrementCount = createEffect(
+        (state: State<TestState>, ctx: TestComponent) => {
+            return timer(1000).pipe(mapTo("stupidawesome"))
+        },
+        { bind: "count", markDirty: true },
+    )
+}
+----
+
+=== Special injection tokens
+
+Injected services share the same injector scope as their host. Special tokens such as `ElementRef` and `Renderer2` can be injected.
+
+[source,typescript]
+----
+@Injectable()
+export class AppEffects implements Effects<AppComponent> {
+    constructor(private elementRef: ElementRef, private renderer: Renderer2) {}
+}
+----
+
+=== Implicit bindings
+
+By default, bindings are created implicitly when the name of an effect matches the name of any own property in the host context. This behavior can be disabled by providing `USE_STRICT_EFFECTS` in the root module of your application.
+
+[source,typescript]
+----
+@Injectable()
+export class AppEffects implements Effects<AppComponent> {
+
+    /**
+     * Functionally equivalent to
+     * @Effect("count", { markDirty: true })
+     */
+
+    @Effect({ markDirty: true })
+    public count(state: State<AppState>) {
+        return timer(1000).pipe(
+            switchMapTo(state.age),
+            increment(1),
+            take(1),
+            repeat()
+        )
+    }
+}
+----
+
+=== Multiple bindings
+
+Multiple effects can be bound to the same property.
+
+[source,typescript]
+----
+@Component()
+export class AppComponent implements AppState {
+    count: number
+
+    @Effect("count", { markDirty: true })
+    incrementCount(state: State<AppState>) {
+        // implementation
+    }
+
+    @Effect("count", { markDirty: true })
+    multiplyCount(state: State<AppState>) {
+        // implementation
+    }
+}
+----
+
+=== Unsafe bindings
+
+Effects with bindings are inferred from function arguments. Omitting these arguments will cause a type error. This error can be suppressed by passing `any` to the effect decorator.
+
+[source,typescript]
+----
+@Injectable()
+export class AppEffects implements Effects<AppComponent> {
+    @Effect<any>("name")
+    public suppressTypeChecking() {
+        // do unsafe binding
+    }
+}
+
+----
+
+=== Side effects
+
+Effects that do not bind a property, or return a subscription/teardown function, are treated as side effects.
+
+[source,typescript]
+----
+@Injectable()
+export class AppEffects implements Effects<AppComponent> {
+    @Effect()
+    public logCountWithObservable(state: State<AppState>) {
+        return state.pipe(
+            tap(count => console.log(count))
+        )
+    }
+
+    @Effect()
+    public logCountWithSubscription(state: State<AppState>) {
+        return state.subscribe(count => console.log(count))
+    }
+
+    @Effect()
+    public logCountWithTeardown(state: State<AppState>) {
+        const sub = state.subscribe(count => console.log(count))
+        return function () {
+            sub.unsubscribe()
+        }
+    }
+}
+----
+
+=== Output bindings
+
+Effects can be easily connected to host context outputs.
+
+[source,typescript]
+----
+@Injectable()
+export class AppEffects implements Effects<AppComponent> {
+    @Effect()
+    public countChange(state: State<TestState>, context: AppComponent) {
+        return state.count.changes.subscribe(context.countChange)
+    }
+}
+----
+
+=== Template event bindings
+
+Component template events can be exposed via `State`.
+
+[source,typescript]
+----
+@Injectable()
+export class AppEffects {
+    @Effect()
+    public handleTemplateClick(state: State<AppComponent>) {
+        return state.clicked.subscribe(event => console.log(`click:`, event))
+    }
+}
+
+@Component({
+    selector: "app-root",
+    template: `<div (click)="clicked = $event">Click me<div>`,
+    providers: [effects(AppEffects)]
+})
+export class AppComponent {
+    clicked: MouseEvent
+
+    constructor(connect: Connect) {
+        this.clicked = undefined
+        connect(this)
+    }
+}
+----
+
+Alternatively, use an event emitter.
+
+[source,typescript]
+----
+@Injectable()
+export class AppEffects {
+    @Effect()
+    public handleTemplateClick(state: State<AppComponent>, context: AppComponent) {
+        return context.clicked.subscribe(event => console.log(`click:`, event))
+    }
+}
+
+@Component({
+    selector: "app-root",
+    template: `<div (click)="clicked.next($event)">Click me<div>`,
+    providers: [effects(AppEffects)]
+})
+export class AppComponent {
+    clicked: Subject<MouseEvent>
+
+    constructor(connect: Connect) {
+        this.clicked = new Subject()
+        connect(this)
+    }
+}
+----
+
+=== Host listener bindings
+
+Host listener events can be exposed via `State`.
+
+[source,typescript]
+----
+@Injectable()
+export class AppEffects {
+    @Effect()
+    public handleHostClick(state: State<AppComponent>) {
+        return state.click.subscribe(event => console.log(`click:`, event))
+    }
+}
+
+@Component({
+    selector: "app-root",
+    template: `<div (click)="clicked = $event">Click me<div>`,
+    providers: [effects(AppEffects)],
+    host: {
+        "(click)": "clicked.next($event)"
+    }
+})
+export class AppComponent {
+    clicked: MouseEvent
+
+    constructor(connect: Connect) {
+        this.clicked = undefined
+        connect(this)
+    }
+}
+----
+
+Alternatively, use an event emitter.
+
+[source,typescript]
+----
+@Injectable()
+export class AppEffects {
+    @Effect()
+    public handleHostClick(state: State<AppComponent>, context: AppComponent) {
+        return context.clicked.subscribe(event => console.log(`click:`, event))
+    }
+}
+
+@Component({
+    selector: "app-root",
+    template: `Click me`,
+    providers: [effects(AppEffects)],
+    host: {
+        "(click)": "clicked.next($event)"
+    }
+})
+export class AppComponent {
+    clicked: Subject<MouseEvent>
+
+    constructor(connect: Connect) {
+        this.clicked = new Subject()
+        connect(this)
+    }
+}
+----
+
+=== Query bindings
+
+All component queries (`ViewChild`, `ViewChildren`, `ContentChild`, `ContentChildren`) can be observed from `State`.
+
+[source,typescript]
+----
+@Injectable()
+export class ChildEffects {
+    @Effect({ whenRendered: true })
+    public withContentChild(state: State<ChildComponent>) {
+        return context.contentChild.subscribe(
+            contentChild => console.log(`contentChild:`, contentChild)
+        )
+    }
+
+    @Effect({ whenRendered: true })
+    public withContentChildren(state: State<ChildComponent>, context: AppComponent) {
+        return context.contentChildren.subscribe(
+            contentChildren => console.log(`contentChildren:`)
+        )
+    }
+
+    @Effect({ whenRendered: true })
+    public withViewChild(state: State<ChildComponent>) {
+        return context.viewChild.subscribe(
+            viewChild => console.log(`viewChild:`, viewChild)
+        )
+    }
+
+    @Effect({ whenRendered: true })
+    public withViewChildren(state: State<ChildComponent>) {
+        return context.viewChildrenRef.subscribe(
+            viewChildrenRef => console.log(`viewChildrenRef:`)
+        )
+    }
+}
+
+@Component({
+    selector: "app-root",
+    template: `
+        <app-child>Projected</app-child>
+        <ng-content>Content</ng-content>
+    `,
+    providers: [effects(ChildEffects)]
+})
+export class ChildComponent {
+    @ContentChild(ChildComponent)
+    contentChild: ChildComponent
+
+    @ContentChildren(ChildComponent)
+    contentChildren: QueryList<ChildComponent>
+
+    @ViewChild(ChildComponent)
+    viewChild: ChildComponent
+
+    @ViewChildren(ChildComponent)
+    viewChildrenRef: QueryList<ChildComponent>
+
+    constructor(connect: Connect) {
+        this.contentChild = undefined
+        this.contentChildren = undefined
+        this.viewChild = undefined
+        this.viewChildrenRef = undefined
+
+        connect(this)
+    }
+}
+----
+
+=== DOM manipulation
+
+Effects can be deferred until after the component has been rendered to the DOM tree. Combine with teardown logic to perform any DOM cleanup when the host is destroyed.
+
+[source,typescript]
+----
+@Injectable()
+export class AppEffects {
+    constructor(private elementRef: ElementRef) {}
+
+    @Effect({ whenRendered: true })
+    public mounted(state: State<AppComponent>, context: AppComponent) {
+        const instance = thirdPartyLib.mount(this.elementRef.nativeElement)
+        return function () {
+            // cleanup logic
+        }
+    }
+}
+----
+
+=== Compose multiple observable sources
+
+Observable services can be injected, then composed. For example, compose http services when inputs change, or map global state to local state.
+
+[source,typescript]
+----
+@Injectable()
+export class AppEffects {
+    constructor(private http: HttpClient, private store: Store<any>) {}
+
+    @Effect("activeUser")
+    public selectActiveUser(state: State<AppComponent>) {
+        return this.store.pipe(
+            select(store => store.activeUser)
+        )
+    }
+
+    @Effect()
+    public dispatchForm(state: State<AppComponent>, context: AppComponent) {
+        return context.formData.valueChanges.subscribe(payload => {
+            this.store.dispatch({
+                type: "FORM_UPDATED",
+                payload
+            })
+        })
+    }
+
+    @Effect()
+    public fetchUsers(state: State<AppComponent>, context: AppComponent) {
+        return state.userId.changes.pipe(
+            switchMap(userId => this.http.get<Users>(`https://example.com/users/${userId}`).pipe(
+                catchError(error => {
+                    console.log(error)
+                    return NEVER
+                })
+            ))
+        ).subscribe(context.usersFetched)
+    }
+}
+
+@Component()
+export class AppComponent {
+    @Input() userId: string
+    @Output() usersFetched: EventEmitter<Users>
+    activeUser: User
+    formData: FormGroup
+
+    // etc...
+}
+----

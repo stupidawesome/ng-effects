@@ -5,11 +5,11 @@ import { DefaultEffectOptions, EffectOptions } from "./decorators"
 import { Type } from "@angular/core"
 import { DestroyObserver } from "./internals/destroy-observer"
 
-export function effects(types: Type<any>[] = [], effectOptions?: DefaultEffectOptions) {
+export function effects(types: Type<any> | Type<any>[] = [], effectOptions?: DefaultEffectOptions) {
     return [
         {
             provide: EFFECTS,
-            deps: types,
+            deps: [].concat(types as any),
             useFactory: injectAll,
         },
         {
@@ -26,7 +26,7 @@ export function effects(types: Type<any>[] = [], effectOptions?: DefaultEffectOp
             multi: true,
         },
         DestroyObserver,
-        Effects,
+        [Effects],
         types,
     ]
 }
