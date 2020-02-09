@@ -401,7 +401,7 @@ export class AppEffects {
     template: `<div (click)="clicked = $event">Click me<div>`,
     providers: [effects(AppEffects)],
     host: {
-        "(click)": "clicked.next($event)"
+        "(click)": "clicked = $event"
     }
 })
 export class AppComponent {
