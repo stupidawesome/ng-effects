@@ -134,7 +134,7 @@ export class AppEffects implements Effects<AppComponent> {
 
     @Effect()
     logCount(state: State<AppComponent>) {
-        return state.subscribe(count => console.log(count))
+        return state.count.subscribe(count => console.log(count))
     }
 }
 ----
@@ -302,12 +302,12 @@ export class AppEffects implements Effects<AppComponent> {
 
     @Effect()
     logCountWithSubscription(state: State<AppState>) {
-        return state.subscribe(count => console.log(count))
+        return state.count.subscribe(count => console.log(count))
     }
 
     @Effect()
     logCountWithTeardown(state: State<AppState>) {
-        const sub = state.subscribe(count => console.log(count))
+        const sub = state.count.subscribe(count => console.log(count))
         return function () {
             sub.unsubscribe()
         }
