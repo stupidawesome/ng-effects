@@ -196,7 +196,7 @@ Alternative syntax for effect declaration.
 ----
 @Component()
 export class AppComponent implements AppState {
-    public incrementCount = createEffect(
+    incrementCount = createEffect(
         (state: State<TestState>, ctx: TestComponent) =>
             timer(1000).pipe(
                 switchMapTo(state.age),
@@ -236,7 +236,7 @@ export class AppEffects implements Effects<AppComponent> {
      */
 
     @Effect({ markDirty: true })
-    public count(state: State<AppState>) {
+    count(state: State<AppState>) {
         return timer(1000).pipe(
             switchMapTo(state.age),
             increment(1),
@@ -278,7 +278,7 @@ Effects with bindings are inferred from function arguments. Omitting these argum
 @Injectable()
 export class AppEffects implements Effects<AppComponent> {
     @Effect<any>("name")
-    public suppressTypeChecking() {
+    suppressTypeChecking() {
         // do unsafe binding
     }
 }
@@ -294,19 +294,19 @@ Effects that do not bind a property, or return a subscription/teardown function,
 @Injectable()
 export class AppEffects implements Effects<AppComponent> {
     @Effect()
-    public logCountWithObservable(state: State<AppState>) {
+    logCountWithObservable(state: State<AppState>) {
         return state.pipe(
             tap(count => console.log(count))
         )
     }
 
     @Effect()
-    public logCountWithSubscription(state: State<AppState>) {
+    logCountWithSubscription(state: State<AppState>) {
         return state.subscribe(count => console.log(count))
     }
 
     @Effect()
-    public logCountWithTeardown(state: State<AppState>) {
+    logCountWithTeardown(state: State<AppState>) {
         const sub = state.subscribe(count => console.log(count))
         return function () {
             sub.unsubscribe()
@@ -324,7 +324,7 @@ Effects can be easily connected to host context outputs.
 @Injectable()
 export class AppEffects implements Effects<AppComponent> {
     @Effect()
-    public countChange(state: State<TestState>, context: AppComponent) {
+    countChange(state: State<TestState>, context: AppComponent) {
         return state.count.changes.subscribe(context.countChange)
     }
 }
@@ -339,7 +339,7 @@ Component template events can be exposed via `State`.
 @Injectable()
 export class AppEffects {
     @Effect()
-    public handleTemplateClick(state: State<AppComponent>) {
+    handleTemplateClick(state: State<AppComponent>) {
         return state.clicked.subscribe(event => console.log(`click:`, event))
     }
 }
@@ -366,7 +366,7 @@ Alternatively, use an event emitter.
 @Injectable()
 export class AppEffects {
     @Effect()
-    public handleTemplateClick(state: State<AppComponent>, context: AppComponent) {
+    handleTemplateClick(state: State<AppComponent>, context: AppComponent) {
         return context.clicked.subscribe(event => console.log(`click:`, event))
     }
 }
@@ -395,7 +395,7 @@ Host listener events can be exposed via `State`.
 @Injectable()
 export class AppEffects {
     @Effect()
-    public handleHostClick(state: State<AppComponent>) {
+    handleHostClick(state: State<AppComponent>) {
         return state.click.subscribe(event => console.log(`click:`, event))
     }
 }
@@ -425,7 +425,7 @@ Alternatively, use an event emitter.
 @Injectable()
 export class AppEffects {
     @Effect()
-    public handleHostClick(state: State<AppComponent>, context: AppComponent) {
+    handleHostClick(state: State<AppComponent>, context: AppComponent) {
         return context.clicked.subscribe(event => console.log(`click:`, event))
     }
 }
@@ -457,28 +457,28 @@ All component queries (`ViewChild`, `ViewChildren`, `ContentChild`, `ContentChil
 @Injectable()
 export class ChildEffects {
     @Effect({ whenRendered: true })
-    public withContentChild(state: State<ChildComponent>) {
+    withContentChild(state: State<ChildComponent>) {
         return context.contentChild.subscribe(
             contentChild => console.log(`contentChild:`, contentChild)
         )
     }
 
     @Effect({ whenRendered: true })
-    public withContentChildren(state: State<ChildComponent>, context: AppComponent) {
+    withContentChildren(state: State<ChildComponent>, context: AppComponent) {
         return context.contentChildren.subscribe(
             contentChildren => console.log(`contentChildren:`)
         )
     }
 
     @Effect({ whenRendered: true })
-    public withViewChild(state: State<ChildComponent>) {
+    withViewChild(state: State<ChildComponent>) {
         return context.viewChild.subscribe(
             viewChild => console.log(`viewChild:`, viewChild)
         )
     }
 
     @Effect({ whenRendered: true })
-    public withViewChildren(state: State<ChildComponent>) {
+    withViewChildren(state: State<ChildComponent>) {
         return context.viewChildren.subscribe(
             viewChildrenRef => console.log(`viewChildrenRef:`)
         )
@@ -528,7 +528,7 @@ export class AppEffects {
     constructor(private elementRef: ElementRef) {}
 
     @Effect({ whenRendered: true })
-    public mounted(state: State<AppComponent>, context: AppComponent) {
+    mounted(state: State<AppComponent>, context: AppComponent) {
         const instance = thirdPartyLib.mount(this.elementRef.nativeElement)
         return function () {
             // cleanup logic
@@ -548,14 +548,14 @@ export class AppEffects {
     constructor(private http: HttpClient, private store: Store<any>) {}
 
     @Effect("activeUser", { markDirty: true })
-    public selectActiveUser(state: State<AppComponent>) {
+    selectActiveUser(state: State<AppComponent>) {
         return this.store.pipe(
             select(store => store.activeUser)
         )
     }
 
     @Effect()
-    public dispatchForm(state: State<AppComponent>, context: AppComponent) {
+    dispatchForm(state: State<AppComponent>, context: AppComponent) {
         return context.formData.valueChanges.subscribe(payload => {
             this.store.dispatch({
                 type: "FORM_UPDATED",
@@ -565,7 +565,7 @@ export class AppEffects {
     }
 
     @Effect()
-    public fetchUsers(state: State<AppComponent>, context: AppComponent) {
+    fetchUsers(state: State<AppComponent>, context: AppComponent) {
         return state.userId.changes.pipe(
             switchMap(userId => this.http.get<Users>(`https://example.com/users/${userId}`).pipe(
                 catchError(error => {
