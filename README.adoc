@@ -69,11 +69,47 @@ export class AppEffects implements Effects<AppComponent> {
         connect(this) // Should always be last statement and called in constructor
     }
 
-    @Effect()
+    @Effect(options)
     someEffect() {
         // etc...
     }
 }
+----
+
+=== Effect options
+
+Effects can be configured through the decorator or factory function.
+
+|===
+|Option |Type |Description
+
+|bind
+|string
+|When configured, maps values emitted by the effect to a property of the same name on the host context. This option is ignored if the effect does not return an observable.
+
+|markDirty
+|boolean
+|When set to true, schedule change detection to run whenever a bound effect emits a value.
+
+|detectChanges
+|boolean
+|When set to true, detect changes immediately whenever a bound effect emits a value.
+
+|whenRendered
+|boolean
+|When set to true, the effect is not initialised until the host element has been mounted to the DOM.
+|===
+
+==== Default options
+
+Default behaviour can be configured in the `effect()` provider
+
+[source,typescript]
+----
+@Component({
+    providers: [effect(AppEffects, { markDirty: true })]
+})
+export class AppComponent {}
 ----
 
 === Host effects
