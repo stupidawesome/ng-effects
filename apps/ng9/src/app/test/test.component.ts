@@ -11,7 +11,7 @@ import {
     ViewChild,
     ViewChildren,
 } from "@angular/core"
-import { Subject, timer } from "rxjs"
+import { of, Subject, timer } from "rxjs"
 import { Connect, createEffect, Effect, Effects, effects, Events, State } from "@ng9/ng-effects"
 import { delayBounce, increment } from "../utils"
 import { mapTo } from "rxjs/operators"
@@ -29,7 +29,7 @@ interface TestState {
 export class TestEffects implements Effects<TestComponent> {
     // noinspection JSUnusedLocalSymbols
     /**
-     * Effect factory example
+     * Effect factory with explicit binding example
      */
     public name = createEffect(
         (state: State<TestState>, ctx: TestComponent) => {
@@ -42,6 +42,23 @@ export class TestEffects implements Effects<TestComponent> {
      * Injector example with special tokens
      */
     constructor(@Host() elementRef: ElementRef) {}
+
+    /**
+     * Effect decorator with explicit binding example
+     */
+    @Effect("name") // or
+    @Effect({ bind: "name" })
+    public bindName(_: State<TestState>) {
+        return of("abc")
+    }
+
+    /**
+     * Void effect example
+     */
+    @Effect()
+    public withNoArgs() {
+        // do side effect
+    }
 
     /**
      * Property binding example
