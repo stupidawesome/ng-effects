@@ -33,7 +33,7 @@ export class Effects implements OnDestroy {
         @Host() options: EffectOptions,
         @Host() cdr: ChangeDetectorRef,
         @Inject(DEV_MODE) isDevMode: boolean,
-        @Optional() @Inject(STRICT_MODE) strictMode: true | null,
+        @Optional() @Inject(STRICT_MODE) strictMode: boolean | null,
         renderObserver: RenderFactoryObserver,
         elementRef: ElementRef<HTMLElement>,
     ) {

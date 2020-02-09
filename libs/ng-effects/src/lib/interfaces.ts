@@ -1,4 +1,4 @@
-import { Observable, Subscription } from "rxjs"
+import { Observable, TeardownLogic } from "rxjs"
 
 export type PropertyObservable<T> = Observable<T> & { changes: Observable<T> }
 
@@ -11,7 +11,4 @@ export interface Events<T> {
     events: Observable<T>
 }
 
-export type EffectFn<T, U = any> = (
-    state: State<T>,
-    context: T,
-) => Observable<U> | Subscription | void
+export type EffectFn<T, U = any> = (state: State<T>, context: T) => Observable<U> | TeardownLogic

@@ -32,7 +32,7 @@ export class TestEffects implements Effects<TestComponent> {
      * Effect factory example
      */
     public name = createEffect(
-        (state: State<TestState>, component: TestComponent) => {
+        (state: State<TestState>, ctx: TestComponent) => {
             return timer(1000).pipe(mapTo("stupidawesome"))
         },
         { bind: "name", markDirty: true },
@@ -55,8 +55,8 @@ export class TestEffects implements Effects<TestComponent> {
      * Output binding example
      */
     @Effect()
-    public ageChange(state: State<TestState>, component: TestComponent) {
-        return state.age.changes.subscribe(component.ageChange)
+    public ageChange(state: State<TestState>, ctx: TestComponent) {
+        return state.age.changes.subscribe(ctx.ageChange)
     }
 
     /**
@@ -73,8 +73,8 @@ export class TestEffects implements Effects<TestComponent> {
      * Template event binding example
      */
     @Effect()
-    public clicked(state: State<TestState>, component: TestComponent) {
-        return component.events.subscribe(event => console.log(`click:`, event))
+    public clicked(state: State<TestState>, ctx: TestComponent) {
+        return ctx.events.subscribe(event => console.log(`click:`, event))
     }
 
     /**
