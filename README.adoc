@@ -480,7 +480,7 @@ export class ChildEffects {
     @Effect({ whenRendered: true })
     withViewChildren(state: State<ChildComponent>) {
         return context.viewChildren.subscribe(
-            viewChildrenRef => console.log(`viewChildrenRef:`)
+            viewChildren => console.log(`viewChildren:`)
         )
     }
 }

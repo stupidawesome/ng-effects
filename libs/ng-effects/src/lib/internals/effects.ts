@@ -9,7 +9,7 @@ import {
 } from "@angular/core"
 import { Observable, Subject, Subscription } from "rxjs"
 import { DEV_MODE, EFFECTS, HOST_CONTEXT, STRICT_MODE } from "../constants"
-import { effectsMap } from "./constants"
+import { effectsMap, isFactoryOrigin } from "./constants"
 import { EffectOptions } from "../decorators"
 import { initEffect, observe, throwMissingPropertyError } from "./utils"
 import { RenderFactoryObserver } from "./render-factory-observer"
@@ -86,10 +86,14 @@ export class Effects implements OnDestroy {
 
             for (const key of props) {
                 const fn = effect[key]
-                let options: EffectOptions<any> = effectsMap.get(fn)
+                const maybeOptions = effectsMap.get(fn)
 
-                if (fn && options) {
-                    options = Object.assign({}, defaultOptions, options)
+                if (fn && maybeOptions) {
+                    // factory effects area created every time, need to clean up to prevent memory leaks
+                    if (maybeOptions[isFactoryOrigin]) {
+                        effectsMap.delete(fn)
+                    }
+                    const options: EffectOptions<any> = Object.assign({}, defaultOptions, maybeOptions)
                     const binding = strictMode ? options.bind : options.bind || key
                     const checkBinding = options.bind
                     const args: any = [effect, fn, binding, options, cdr, proxy, hostContext, subs]
