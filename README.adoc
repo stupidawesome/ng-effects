@@ -197,9 +197,13 @@ Alternative syntax for effect declaration.
 @Component()
 export class AppComponent implements AppState {
     public incrementCount = createEffect(
-        (state: State<TestState>, ctx: TestComponent) => {
-            return timer(1000).pipe(mapTo("stupidawesome"))
-        },
+        (state: State<TestState>, ctx: TestComponent) =>
+            timer(1000).pipe(
+                switchMapTo(state.age),
+                take(1),
+                increment(1),
+                repeat()
+            ),
         { bind: "count", markDirty: true },
     )
 }
@@ -565,7 +569,7 @@ export class AppEffects {
         return state.userId.changes.pipe(
             switchMap(userId => this.http.get<Users>(`https://example.com/users/${userId}`).pipe(
                 catchError(error => {
-                    console.log(error)
+                    console.error(error)
                     return NEVER
                 })
             ))
