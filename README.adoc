@@ -58,7 +58,7 @@ Effects are initialized through a `Connect` service. Inject `Connect` into your 
 @Component({
     providers: [HOST_EFFECTS]
 })
-export class AppEffects implements Effects<AppComponent> {
+export class AppComponent {
     count: number
     name: string
 
