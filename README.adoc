@@ -116,7 +116,7 @@ export class AppComponent {}
 
 === Host effects
 
-In simple cases, effects can be provided directly on the host. If no other effects need to be provided, pass you only have to pass in `HOST_EFFECTS` to the host provider.
+In simple cases, effects can be provided directly on the host. If no other effects need to be provided, you only have to pass in `HOST_EFFECTS` to the host provider.
 
 [source,typescript]
 ----
