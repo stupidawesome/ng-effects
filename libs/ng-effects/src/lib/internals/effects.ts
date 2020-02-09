@@ -30,6 +30,8 @@ export class Effects implements OnDestroy {
         const { proxy, revoke } = observe(hostContext, isDevMode)
         const { nativeElement } = elementRef
 
+        effects.push(hostContext)
+
         this.subs = new Subscription()
         this.effects = effects
         this.cdr = cdr
@@ -68,7 +70,16 @@ export class Effects implements OnDestroy {
 
                 if (fn && options) {
                     options = Object.assign({}, defaultOptions, options)
-                    const args: any = [fn, key, options, cdr, proxy, hostContext, subs]
+                    const args: any = [
+                        effect,
+                        fn,
+                        options.target || key,
+                        options,
+                        cdr,
+                        proxy,
+                        hostContext,
+                        subs,
+                    ]
                     if (options.whenRendered) {
                         subs.add(
                             whenRendered.subscribe(

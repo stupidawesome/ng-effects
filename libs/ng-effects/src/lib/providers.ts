@@ -1,11 +1,11 @@
 import { ConnectFactory, injectAll } from "./internals/utils"
 import { Effects } from "./internals/effects"
 import { EFFECTS, HOST_INITIALIZER } from "./constants"
-import { EffectOptions } from "./decorators"
+import { DefaultEffectOptions, EffectOptions } from "./decorators"
 import { Type } from "@angular/core"
 import { DestroyObserver } from "./internals/destroy-observer"
 
-export function effects(types: Type<any>[], effectOptions?: EffectOptions) {
+export function effects(types: Type<any>[] = [], effectOptions?: DefaultEffectOptions) {
     return [
         {
             provide: EFFECTS,
@@ -37,3 +37,5 @@ export interface Connect {
 }
 
 export abstract class Connect {}
+
+export const HOST_EFFECTS = effects()

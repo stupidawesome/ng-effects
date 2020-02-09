@@ -1,5 +1,5 @@
-import { Component, Injectable } from "@angular/core"
-import { Connect, Effect, effects, State } from "@ng9/ng-effects"
+import { Component } from "@angular/core"
+import { Connect, Effect, HOST_EFFECTS, State } from "@ng9/ng-effects"
 import { interval, Observable, SchedulerLike } from "rxjs"
 import { map, switchMap, take } from "rxjs/operators"
 
@@ -18,14 +18,6 @@ export function toggleInterval(
     )
 }
 
-@Injectable()
-export class AppEffects {
-    @Effect({ markDirty: true })
-    public show({ show }: State<AppComponent>) {
-        return toggleInterval(show, 2000)
-    }
-}
-
 @Component({
     selector: "app-root",
     template: `
@@ -34,7 +26,7 @@ export class AppEffects {
         </app-test>
     `,
     styleUrls: ["./app.component.scss"],
-    providers: [effects([AppEffects])],
+    providers: [HOST_EFFECTS],
 })
 export class AppComponent {
     title = "ng9"
@@ -43,5 +35,10 @@ export class AppComponent {
     constructor(connect: Connect) {
         this.show = false
         connect(this)
+    }
+
+    @Effect({ target: "show", markDirty: true })
+    public toggleShow({ show }: State<AppComponent>) {
+        return toggleInterval(show, 2000)
     }
 }

@@ -3,6 +3,7 @@ import {
     Component,
     ElementRef,
     EventEmitter,
+    Host,
     Injectable,
     Input,
     Output,
@@ -10,7 +11,7 @@ import {
     ViewChild,
     ViewChildren,
 } from "@angular/core"
-import { animationFrameScheduler, Subject, timer } from "rxjs"
+import { Subject, timer } from "rxjs"
 import { Connect, createEffect, Effect, Effects, effects, Events, State } from "@ng9/ng-effects"
 import { delayBounce, increment } from "../utils"
 import { mapTo } from "rxjs/operators"
@@ -27,44 +28,71 @@ interface TestState {
 @Injectable()
 export class TestEffects implements Effects<TestComponent> {
     // noinspection JSUnusedLocalSymbols
+    /**
+     * Effect factory example
+     */
     public name = createEffect((state: State<TestState>, component: TestComponent) => {
         return timer(1000).pipe(mapTo("stupidawesome"))
     })
 
-    constructor(http: ElementRef) {
-        console.log("injector works", http)
-    }
+    /**
+     * Injector example with special tokens
+     */
+    constructor(@Host() elementRef: ElementRef) {}
 
+    /**
+     * Property binding example
+     */
     @Effect()
     public age(state: State<TestState>) {
-        return state.age.pipe(delayBounce(1000, animationFrameScheduler), increment(1))
+        return state.age.pipe(delayBounce(1000), increment(1))
     }
 
+    /**
+     * Output binding example
+     */
     @Effect()
     public ageChange(state: State<TestState>, component: TestComponent) {
         return state.age.changes.subscribe(component.ageChange)
     }
 
+    /**
+     * Pure side effect example
+     */
     @Effect()
     public sideEffect(state: State<TestState>) {
-        return state.age.changes.subscribe(age => console.log(`age changed: ${age}`))
+        return state.age.changes.subscribe(() => {
+            // do something here
+        })
     }
 
+    /**
+     * Template event binding example
+     */
     @Effect()
     public clicked(state: State<TestState>, component: TestComponent) {
         return component.events.subscribe(event => console.log(`click:`, event))
     }
 
+    /**
+     * ViewChild example
+     */
     @Effect({ whenRendered: true })
     public viewChild(state: State<TestState>) {
-        return state.viewChild.subscribe(value => console.log("viewChild available:", value))
+        return state.viewChild.subscribe()
     }
 
+    /**
+     * ViewChildren example
+     */
     @Effect({ whenRendered: true })
     public viewChildren(state: State<TestState>) {
-        return state.viewChildren.subscribe(value => console.log("viewChildren available:", value))
+        return state.viewChildren.subscribe()
     }
 
+    /**
+     * TeardownLogic example
+     */
     @Effect()
     public imperative(state: State<TestState>) {
         const sub = state.age.subscribe()

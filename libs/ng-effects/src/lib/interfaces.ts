@@ -1,7 +1,9 @@
 import { Observable, Subscription } from "rxjs"
 
+export type PropertyObservable<T> = Observable<T> & { changes: Observable<T> }
+
 export type State<T> = {
-    readonly [key in keyof T]: Observable<T[key]> & { changes: Observable<T[key]> }
+    readonly [key in keyof T]: PropertyObservable<T[key]>
 }
 
 export interface Events<T> {

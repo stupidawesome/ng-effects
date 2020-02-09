@@ -89,7 +89,8 @@ export function isTeardownLogic(value: any): value is TeardownLogic {
 }
 
 export function initEffect(
-    effect: Function,
+    effect: any,
+    effectFn: Function,
     key: string,
     options: EffectOptions,
     cdr: ChangeDetectorRef,
@@ -97,7 +98,7 @@ export function initEffect(
     instance: any,
     subs: Subscription,
 ) {
-    const returnValue = effect.call(effect, observer, instance)
+    const returnValue = effectFn.call(effect, observer, instance)
 
     if (returnValue === undefined) {
         return
