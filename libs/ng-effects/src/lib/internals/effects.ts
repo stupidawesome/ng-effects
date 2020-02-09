@@ -86,7 +86,7 @@ export class Effects implements OnDestroy {
 
             for (const key of props) {
                 const fn = effect[key]
-                let options: EffectOptions = effectsMap.get(fn)
+                let options: EffectOptions<any> = effectsMap.get(fn)
 
                 if (fn && options) {
                     options = Object.assign({}, defaultOptions, options)
