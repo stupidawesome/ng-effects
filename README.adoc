@@ -107,7 +107,9 @@ Default behaviour can be configured in the `effect()` provider
 [source,typescript]
 ----
 @Component({
-    providers: [effect(AppEffects, { markDirty: true })]
+    providers: [
+        effects([AppEffects], { markDirty: true })
+    ]
 })
 export class AppComponent {}
 ----
