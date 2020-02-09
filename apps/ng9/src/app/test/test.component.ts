@@ -64,6 +64,15 @@ export class TestEffects implements Effects<TestComponent> {
     public viewChildren(state: State<TestState>) {
         return state.viewChildren.subscribe(value => console.log("viewChildren available:", value))
     }
+
+    @Effect()
+    public imperative(state: State<TestState>) {
+        const sub = state.age.subscribe()
+        return function() {
+            // teardown logic
+            sub.unsubscribe()
+        }
+    }
 }
 
 @Component({

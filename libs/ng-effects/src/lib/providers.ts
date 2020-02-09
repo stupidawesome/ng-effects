@@ -1,8 +1,8 @@
 import { ConnectFactory, injectAll } from "./internals/utils"
 import { Effects } from "./internals/effects"
-import { DEV_MODE, EFFECTS, HOST_INITIALIZER } from "./constants"
+import { EFFECTS, HOST_INITIALIZER } from "./constants"
 import { EffectOptions } from "./decorators"
-import { isDevMode, Type } from "@angular/core"
+import { Type } from "@angular/core"
 import { DestroyObserver } from "./internals/destroy-observer"
 
 export function effects(types: Type<any>[], effectOptions?: EffectOptions) {
@@ -15,10 +15,6 @@ export function effects(types: Type<any>[], effectOptions?: EffectOptions) {
         {
             provide: EffectOptions,
             useValue: effectOptions,
-        },
-        {
-            provide: DEV_MODE,
-            useFactory: isDevMode,
         },
         {
             provide: Connect,

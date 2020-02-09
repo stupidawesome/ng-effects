@@ -1,4 +1,4 @@
-import { concat, defer, isObservable, of, Subject, Subscription } from "rxjs"
+import { concat, defer, isObservable, of, Subject, Subscription, TeardownLogic } from "rxjs"
 import { EffectOptions } from "../decorators"
 import { ChangeDetectorRef, Host, Inject, Injectable, Injector } from "@angular/core"
 import { detectChangesOn, markDirtyOn } from "../utils"
@@ -78,7 +78,14 @@ export function observe(obj: any, isDevMode: boolean) {
 }
 
 export function throwBadReturnTypeError() {
-    throw new Error("[ng-effects] Effects must return an observable, subscription, or void")
+    throw new Error("[ng-effects] Effects must either return an observable, subscription, or void")
+}
+
+export function isTeardownLogic(value: any): value is TeardownLogic {
+    return (
+        typeof value === "function" ||
+        (typeof value === "object" && typeof value.unsubscribe === "function")
+    )
 }
 
 export function initEffect(
@@ -98,10 +105,6 @@ export function initEffect(
 
     if (isObservable(returnValue)) {
         const pipes: any = []
-
-        if (!instance.hasOwnProperty(key)) {
-            throwMissingPropertyError(key, instance.constructor.name)
-        }
         if (options.detectChanges) {
             pipes.push(detectChangesOn(cdr))
         } else if (options.markDirty) {
@@ -109,10 +112,12 @@ export function initEffect(
         }
         subs.add(
             returnValue.pipe.apply(returnValue, pipes).subscribe((value: any) => {
-                instance[key] = value
+                if (instance.hasOwnProperty(key)) {
+                    instance[key] = value
+                }
             }),
         )
-    } else if (returnValue instanceof Subscription) {
+    } else if (isTeardownLogic(returnValue)) {
         subs.add(returnValue)
     } else {
         throwBadReturnTypeError()

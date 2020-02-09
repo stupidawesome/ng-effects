@@ -15,13 +15,15 @@ export class Effects implements OnDestroy {
     private readonly revoke: Function
     private readonly proxy: { [key: string]: Subject<any> }
     private readonly hostContext: any
+    private readonly effects: any[]
+    private readonly cdr: ChangeDetectorRef
 
     constructor(
-        @Host() private cdr: ChangeDetectorRef,
-        @Host() @Inject(EFFECTS) private effects: any[],
         @Host() @Inject(HOST_CONTEXT) hostContext: any,
-        @Inject(DEV_MODE) private isDevMode: boolean,
+        @Host() @Inject(EFFECTS) effects: any[],
         @Host() options: EffectOptions,
+        @Host() cdr: ChangeDetectorRef,
+        @Inject(DEV_MODE) isDevMode: boolean,
         renderObserver: RenderFactoryObserver,
         elementRef: ElementRef<HTMLElement>,
     ) {
@@ -29,6 +31,8 @@ export class Effects implements OnDestroy {
         const { nativeElement } = elementRef
 
         this.subs = new Subscription()
+        this.effects = effects
+        this.cdr = cdr
         this.defaultOptions = Object.assign(
             {
                 whenRendered: false,
