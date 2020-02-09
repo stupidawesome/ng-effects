@@ -1,6 +1,6 @@
 import { ConnectFactory, injectAll } from "./internals/utils"
 import { Effects } from "./internals/effects"
-import { EFFECTS, HOST_INITIALIZER } from "./constants"
+import { EFFECTS, HOST_INITIALIZER, STRICT_MODE } from "./constants"
 import { DefaultEffectOptions, EffectOptions } from "./decorators"
 import { Type } from "@angular/core"
 import { DestroyObserver } from "./internals/destroy-observer"
@@ -39,3 +39,8 @@ export interface Connect {
 export abstract class Connect {}
 
 export const HOST_EFFECTS = effects()
+
+export const USE_STRICT_EFFECTS = {
+    provide: STRICT_MODE,
+    useValue: true,
+}

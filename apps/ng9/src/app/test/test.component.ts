@@ -31,9 +31,12 @@ export class TestEffects implements Effects<TestComponent> {
     /**
      * Effect factory example
      */
-    public name = createEffect((state: State<TestState>, component: TestComponent) => {
-        return timer(1000).pipe(mapTo("stupidawesome"))
-    })
+    public name = createEffect(
+        (state: State<TestState>, component: TestComponent) => {
+            return timer(1000).pipe(mapTo("stupidawesome"))
+        },
+        { bind: "name", markDirty: true },
+    )
 
     /**
      * Injector example with special tokens

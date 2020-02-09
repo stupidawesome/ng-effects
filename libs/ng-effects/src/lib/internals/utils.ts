@@ -41,6 +41,8 @@ export function observe(obj: any, isDevMode: boolean) {
 
         observer[key] = propertyObserver
         Object.defineProperty(obj, key, {
+            configurable: false,
+            enumerable: true,
             get() {
                 return value
             },
@@ -111,13 +113,12 @@ export function initEffect(
         } else if (options.markDirty) {
             pipes.push(markDirtyOn(cdr))
         }
-        subs.add(
-            returnValue.pipe.apply(returnValue, pipes).subscribe((value: any) => {
-                if (instance.hasOwnProperty(key)) {
-                    instance[key] = value
-                }
-            }),
-        )
+        const stream = returnValue.pipe.apply(returnValue, pipes)
+        if (instance.hasOwnProperty(key)) {
+            subs.add(stream.subscribe((value: any) => (instance[key] = value)))
+        } else {
+            subs.add(stream.subscribe())
+        }
     } else if (isTeardownLogic(returnValue)) {
         subs.add(returnValue)
     } else {

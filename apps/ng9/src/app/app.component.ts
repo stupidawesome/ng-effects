@@ -37,7 +37,7 @@ export class AppComponent {
         connect(this)
     }
 
-    @Effect({ target: "show", markDirty: true })
+    @Effect({ bind: "show", markDirty: true })
     public toggleShow({ show }: State<AppComponent>) {
         return toggleInterval(show, 2000)
     }

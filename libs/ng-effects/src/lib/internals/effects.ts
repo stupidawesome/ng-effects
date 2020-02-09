@@ -1,9 +1,17 @@
-import { ChangeDetectorRef, ElementRef, Host, Inject, Injectable, OnDestroy } from "@angular/core"
+import {
+    ChangeDetectorRef,
+    ElementRef,
+    Host,
+    Inject,
+    Injectable,
+    OnDestroy,
+    Optional,
+} from "@angular/core"
 import { Observable, Subject, Subscription } from "rxjs"
-import { DEV_MODE, EFFECTS, HOST_CONTEXT } from "../constants"
+import { DEV_MODE, EFFECTS, HOST_CONTEXT, STRICT_MODE } from "../constants"
 import { effectsMap } from "./constants"
 import { EffectOptions } from "../decorators"
-import { initEffect, observe } from "./utils"
+import { initEffect, observe, throwMissingPropertyError } from "./utils"
 import { RenderFactoryObserver } from "./render-factory-observer"
 import { filter, share, take } from "rxjs/operators"
 
@@ -17,6 +25,7 @@ export class Effects implements OnDestroy {
     private readonly hostContext: any
     private readonly effects: any[]
     private readonly cdr: ChangeDetectorRef
+    private readonly strictMode: boolean
 
     constructor(
         @Host() @Inject(HOST_CONTEXT) hostContext: any,
@@ -24,6 +33,7 @@ export class Effects implements OnDestroy {
         @Host() options: EffectOptions,
         @Host() cdr: ChangeDetectorRef,
         @Inject(DEV_MODE) isDevMode: boolean,
+        @Optional() @Inject(STRICT_MODE) strictMode: true | null,
         renderObserver: RenderFactoryObserver,
         elementRef: ElementRef<HTMLElement>,
     ) {
@@ -35,6 +45,7 @@ export class Effects implements OnDestroy {
         this.subs = new Subscription()
         this.effects = effects
         this.cdr = cdr
+        this.strictMode = strictMode === true
         this.defaultOptions = Object.assign(
             {
                 whenRendered: false,
@@ -56,7 +67,16 @@ export class Effects implements OnDestroy {
     }
 
     public run() {
-        const { defaultOptions, cdr, subs, whenRendered, proxy, hostContext, effects } = this
+        const {
+            defaultOptions,
+            cdr,
+            subs,
+            whenRendered,
+            proxy,
+            hostContext,
+            effects,
+            strictMode,
+        } = this
 
         for (const effect of effects) {
             const props = [
@@ -70,16 +90,15 @@ export class Effects implements OnDestroy {
 
                 if (fn && options) {
                     options = Object.assign({}, defaultOptions, options)
-                    const args: any = [
-                        effect,
-                        fn,
-                        options.target || key,
-                        options,
-                        cdr,
-                        proxy,
-                        hostContext,
-                        subs,
-                    ]
+                    const binding = strictMode ? options.bind : options.bind || key
+                    const checkBinding = options.bind
+                    const args: any = [effect, fn, binding, options, cdr, proxy, hostContext, subs]
+                    if (
+                        checkBinding &&
+                        Object.getOwnPropertyDescriptor(hostContext, checkBinding) === undefined
+                    ) {
+                        throwMissingPropertyError(checkBinding, hostContext.constructor.name)
+                    }
                     if (options.whenRendered) {
                         subs.add(
                             whenRendered.subscribe(
