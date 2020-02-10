@@ -1,4 +1,6 @@
 = ng-effects
+:toc:
+:toc-placement!:
 
 Reactive local state management for Angular.
 
@@ -35,9 +37,6 @@ export class AppComponent implements AppState {
     }
 }
 ----
-
-:toc:
-:toc-placement!:
 
 toc::[]
 
