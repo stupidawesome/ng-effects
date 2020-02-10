@@ -37,6 +37,9 @@ export class AppComponent implements AppState {
 ----
 
 :toc:
+:toc-placement!:
+
+toc::[]
 
 == Installation
 
