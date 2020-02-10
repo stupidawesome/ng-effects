@@ -123,7 +123,7 @@ In simple cases, effects can be provided directly on the host. If no other effec
 @Component({
     providers: [HOST_EFFECTS]
 })
-export class AppEffects implements Effects<AppComponent> {
+export class AppComponent implements AppState {
 
     count: number
 
@@ -133,7 +133,7 @@ export class AppEffects implements Effects<AppComponent> {
     }
 
     @Effect()
-    logCount(state: State<AppComponent>) {
+    logCount(state: State<AppState>) {
         return state.count.subscribe(count => console.log(count))
     }
 }
@@ -486,7 +486,7 @@ export class ChildEffects {
 }
 
 @Component({
-    selector: "app-root",
+    selector: "app-child",
     template: `
         <app-child>Projected</app-child>
         <ng-content>Content</ng-content>
