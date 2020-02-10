@@ -36,6 +36,8 @@ export class AppComponent implements AppState {
 }
 ----
 
+:toc:
+
 == Installation
 
 Install ng-effects via NPM
@@ -216,6 +218,21 @@ Injected services share the same injector scope as their host. Special tokens su
 @Injectable()
 export class AppEffects implements Effects<AppComponent> {
     constructor(private elementRef: ElementRef, private renderer: Renderer2) {}
+}
+----
+
+==== HostRef
+
+A reference to the host context can be injected using `HostRef<T>`
+
+[source,typescript]
+----
+@Injectable()
+export class AppEffects implements Effects<AppComponent> {
+    host: AppComponent
+    constructor(hostRef: HostRef<AppComponent>) {
+        this.host = hostRef.instance
+    }
 }
 ----
 

@@ -4,14 +4,16 @@ import {
     Host,
     Inject,
     Injectable,
+    Injector,
     OnDestroy,
     Optional,
+    Type,
 } from "@angular/core"
 import { Observable, Subject, Subscription } from "rxjs"
-import { DEV_MODE, EFFECTS, HOST_CONTEXT, STRICT_MODE } from "../constants"
+import { DEV_MODE, EFFECTS, HostRef, STRICT_MODE } from "../constants"
 import { effectsMap } from "./constants"
 import { EffectOptions } from "../decorators"
-import { initEffect, observe, throwMissingPropertyError } from "./utils"
+import { flat, initEffect, observe, throwMissingPropertyError } from "./utils"
 import { RenderFactoryObserver } from "./render-factory-observer"
 import { filter, share, take } from "rxjs/operators"
 
@@ -28,17 +30,20 @@ export class Effects implements OnDestroy {
     private readonly strictMode: boolean
 
     constructor(
-        @Host() @Inject(HOST_CONTEXT) hostContext: any,
-        @Host() @Inject(EFFECTS) effects: any[],
+        @Host() hostRef: HostRef,
+        @Host() @Inject(EFFECTS) effectTypes: Type<any>[],
         @Host() options: EffectOptions,
         @Host() cdr: ChangeDetectorRef,
         @Inject(DEV_MODE) isDevMode: boolean,
         @Optional() @Inject(STRICT_MODE) strictMode: boolean | null,
         renderObserver: RenderFactoryObserver,
         elementRef: ElementRef<HTMLElement>,
+        injector: Injector,
     ) {
+        const hostContext = hostRef.instance
         const { proxy, revoke } = observe(hostContext, isDevMode)
         const { nativeElement } = elementRef
+        const effects = flat(effectTypes).map(injector.get, injector)
 
         effects.push(hostContext)
 

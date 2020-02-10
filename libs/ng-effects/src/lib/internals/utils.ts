@@ -2,15 +2,11 @@ import { concat, defer, isObservable, of, Subject, Subscription, TeardownLogic }
 import { EffectOptions } from "../decorators"
 import { ChangeDetectorRef, Host, Inject, Injectable, Injector } from "@angular/core"
 import { detectChangesOn, markDirtyOn } from "../utils"
-import { HOST_CONTEXT, HOST_INITIALIZER } from "../constants"
+import { HOST_INITIALIZER, HostRef } from "../constants"
 import { DestroyObserver } from "./destroy-observer"
 
 export function throwMissingPropertyError(key: string, name: string) {
     throw new Error(`[ng-effects] Property "${key}" is not initialised in "${name}".`)
-}
-
-export function injectAll(...deps: any[]) {
-    return deps
 }
 
 export function noop() {}
@@ -19,6 +15,21 @@ export function complete(subjects: Subject<any>[]) {
     for (const subject of subjects) {
         subject.complete()
         subject.unsubscribe()
+    }
+}
+
+export function flat<T>(array: T[], depth?: number): T[] {
+    return Array.from(flatten(array, depth))
+}
+
+export function* flatten<T>(array: T[], depth?: number): IterableIterator<T> {
+    if (depth === undefined) depth = 1
+    for (const item of array) {
+        if (Array.isArray(item) && depth > 0) {
+            yield* flatten(item as any, depth - 1)
+        } else {
+            yield item
+        }
     }
 }
 
@@ -133,15 +144,18 @@ export class ConnectFactory {
         @Host() destroyObserver: DestroyObserver,
         @Host() parentInjector: Injector,
     ) {
+        initializers = flat(initializers, Infinity)
         return function connect(context: any) {
             const injector = Injector.create({
                 parent: parentInjector,
                 providers: [
                     {
-                        provide: HOST_CONTEXT,
-                        useValue: context,
+                        provide: HostRef,
+                        useValue: {
+                            instance: context,
+                        },
                     },
-                    ...initializers,
+                    initializers,
                 ],
             })
 

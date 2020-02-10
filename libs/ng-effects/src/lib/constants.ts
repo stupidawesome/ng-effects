@@ -6,5 +6,9 @@ export const DEV_MODE = new InjectionToken("DEV_MODE", {
     factory: () => isDevMode(),
 })
 export const HOST_INITIALIZER = new InjectionToken<any[]>("HOST_INITIALIZER")
-export const HOST_CONTEXT = new InjectionToken("HOST_CONTEXT")
 export const STRICT_MODE = new InjectionToken("STRICT_MODE")
+
+export interface HostRef<T = any> {
+    instance: T
+}
+export abstract class HostRef<T = any> {}

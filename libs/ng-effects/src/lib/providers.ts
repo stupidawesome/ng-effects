@@ -1,4 +1,4 @@
-import { ConnectFactory, injectAll } from "./internals/utils"
+import { ConnectFactory } from "./internals/utils"
 import { Effects } from "./internals/effects"
 import { EFFECTS, HOST_INITIALIZER, STRICT_MODE } from "./constants"
 import { DefaultEffectOptions, EffectOptions } from "./decorators"
@@ -9,8 +9,7 @@ export function effects(types: Type<any> | Type<any>[] = [], effectOptions?: Def
     return [
         {
             provide: EFFECTS,
-            deps: [].concat(types as any),
-            useFactory: injectAll,
+            useValue: [types],
         },
         {
             provide: EffectOptions,
@@ -25,9 +24,13 @@ export function effects(types: Type<any> | Type<any>[] = [], effectOptions?: Def
             useValue: Effects,
             multi: true,
         },
+        {
+            provide: HOST_INITIALIZER,
+            useValue: types,
+            multi: true,
+        },
         DestroyObserver,
         Effects,
-        types,
     ]
 }
 

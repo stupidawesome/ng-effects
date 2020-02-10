@@ -3,7 +3,6 @@ import {
     Component,
     ElementRef,
     EventEmitter,
-    Host,
     Injectable,
     Input,
     Output,
@@ -12,7 +11,16 @@ import {
     ViewChildren,
 } from "@angular/core"
 import { of, Subject, timer } from "rxjs"
-import { Connect, createEffect, Effect, Effects, effects, Events, State } from "@ng9/ng-effects"
+import {
+    Connect,
+    createEffect,
+    Effect,
+    Effects,
+    effects,
+    Events,
+    HostRef,
+    State,
+} from "@ng9/ng-effects"
 import { increment } from "../utils"
 import { mapTo, repeat, switchMapTo, take } from "rxjs/operators"
 
@@ -38,10 +46,12 @@ export class TestEffects implements Effects<TestComponent> {
         { bind: "name", markDirty: true },
     )
 
+    // noinspection JSUnusedLocalSymbols
     /**
      * Injector example with special tokens
+     * HostRef can be injected to get host context
      */
-    constructor(@Host() elementRef: ElementRef) {}
+    constructor(private elementRef: ElementRef, hostRef: HostRef<TestComponent>) {}
 
     /**
      * Effect decorator with explicit binding example
