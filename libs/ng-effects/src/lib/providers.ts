@@ -26,7 +26,7 @@ export function effects(types: Type<any> | Type<any>[] = [], effectOptions?: Def
             multi: true,
         },
         DestroyObserver,
-        [Effects],
+        Effects,
         types,
     ]
 }

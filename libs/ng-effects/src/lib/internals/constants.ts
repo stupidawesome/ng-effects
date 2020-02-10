@@ -1,2 +1,3 @@
-export const effectsMap = new Map()
-export const isFactoryOrigin = Symbol()
+import { EffectFn } from "../interfaces"
+
+export const effectsMap = new WeakMap<EffectFn<any>>()

@@ -74,12 +74,7 @@ export class TestEffects implements Effects<TestComponent> {
      */
     @Effect()
     public age(state: State<TestState>) {
-        return timer(1000).pipe(
-            switchMapTo(state.age),
-            increment(1),
-            take(1),
-            repeat()
-        )
+        return timer(1000).pipe(switchMapTo(state.age), increment(1), take(1), repeat())
     }
 
     /**

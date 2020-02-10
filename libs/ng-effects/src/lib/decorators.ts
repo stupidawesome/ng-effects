@@ -37,6 +37,8 @@ export function Effect(options?: any): EffectDecorator<unknown> {
     const opts: EffectOptions =
         typeof arguments[0] === "string" ? { bind: arguments[0], ...arguments[1] } : arguments[0]
     return function(target, prop, propertyDescriptor) {
-        effectsMap.set(propertyDescriptor.value, opts || {})
+        if (propertyDescriptor.value) {
+            effectsMap.set(propertyDescriptor.value, opts || {})
+        }
     }
 }

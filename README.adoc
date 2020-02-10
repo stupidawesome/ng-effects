@@ -18,11 +18,9 @@ interface AppState {
 export class AppComponent implements AppState {
 
     @Input()
-    count: number
+    count: number = 0
 
     constructor(connect: Connect) {
-        this.count = 0
-
         connect(this)
     }
 
@@ -459,28 +457,28 @@ export class ChildEffects {
     @Effect({ whenRendered: true })
     withContentChild(state: State<ChildComponent>) {
         return context.contentChild.subscribe(
-            contentChild => console.log(`contentChild:`, contentChild)
+            contentChild => console.log(contentChild)
         )
     }
 
     @Effect({ whenRendered: true })
     withContentChildren(state: State<ChildComponent>, context: AppComponent) {
         return context.contentChildren.subscribe(
-            contentChildren => console.log(`contentChildren:`)
+            contentChildren => console.log(contentChildren)
         )
     }
 
     @Effect({ whenRendered: true })
     withViewChild(state: State<ChildComponent>) {
         return context.viewChild.subscribe(
-            viewChild => console.log(`viewChild:`, viewChild)
+            viewChild => console.log(viewChild)
         )
     }
 
     @Effect({ whenRendered: true })
     withViewChildren(state: State<ChildComponent>) {
         return context.viewChildren.subscribe(
-            viewChildren => console.log(`viewChildren:`)
+            viewChildren => console.log(viewChildren)
         )
     }
 }
@@ -491,19 +489,18 @@ export class ChildEffects {
         <app-child>Projected</app-child>
         <ng-content>Content</ng-content>
     `,
-    providers: [effects(ChildEffects)]
+    providers: [effects(ChildEffects)],
+    queries: {
+        contentChild: new ContentChild(ChildComponent),
+        contentChildren: new ContentChildren(ChildComponent),
+        viewChild: new ViewChild(ChildComponent),
+        viewChildren: new ViewChildren(ChildComponent),
+    }
 })
 export class ChildComponent {
-    @ContentChild(ChildComponent)
     contentChild: ChildComponent
-
-    @ContentChildren(ChildComponent)
     contentChildren: QueryList<ChildComponent>
-
-    @ViewChild(ChildComponent)
     viewChild: ChildComponent
-
-    @ViewChildren(ChildComponent)
     viewChildren: QueryList<ChildComponent>
 
     constructor(connect: Connect) {
