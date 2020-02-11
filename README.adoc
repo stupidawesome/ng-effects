@@ -659,7 +659,7 @@ An effect handler can be passed in to do additional processing after the observa
 export class Dispatch implements EffectHandler<Action, Options> {
     constructor(private store: Store<any>) {}
 
-    next(value: Action) {
+    next(value: Action, options: Options) {
         this.store.dispatch(value)
     }
 }
