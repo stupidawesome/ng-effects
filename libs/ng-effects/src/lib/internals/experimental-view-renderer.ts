@@ -13,7 +13,7 @@ import { APPLICATION_BOOTSTRAP } from "./constants"
 @Injectable()
 export class ExperimentalIvyViewRenderer implements RenderApi {
     private whenBootstrap: ReplaySubject<boolean>
-    constructor(@Inject(APPLICATION_BOOTSTRAP) whenBootstrap: Promise<any>) {
+    constructor(@Inject(APPLICATION_BOOTSTRAP) whenBootstrap: any) {
         this.whenBootstrap = new ReplaySubject()
         whenBootstrap.then(() => this.whenBootstrap.next(true))
     }
