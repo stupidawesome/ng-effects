@@ -9,3 +9,4 @@ export const effectsMap = new WeakMap<EffectFn<any>>()
 export const APPLICATION_BOOTSTRAP = new InjectionToken("APPLICATION_BOOTSTRAP", {
     factory: () => resolveBoostrap,
 })
+export const currentContext = new Set()

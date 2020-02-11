@@ -1,9 +1,14 @@
 import { concat, defer, isObservable, of, Subject, TeardownLogic } from "rxjs"
 import { InitEffectArgs } from "./interfaces"
-import { distinctUntilChanged, skipUntil, tap } from "rxjs/operators"
+import { skipUntil, tap } from "rxjs/operators"
+import { currentContext } from "./constants"
 
 export function throwMissingPropertyError(key: string, name: string) {
     throw new Error(`[ng-effects] Property "${key}" is not initialised in "${name}".`)
+}
+
+export function injectAll(...deps: any[]) {
+    return deps
 }
 
 export function noop() {}
@@ -12,21 +17,6 @@ export function complete(subjects: Subject<any>[]) {
     for (const subject of subjects) {
         subject.complete()
         subject.unsubscribe()
-    }
-}
-
-export function flat<T>(array: T[], depth?: number): T[] {
-    return Array.from(flatten(array, depth))
-}
-
-export function* flatten<T>(array: T[], depth?: number): IterableIterator<T> {
-    if (depth === undefined) depth = 1
-    for (const item of array) {
-        if (Array.isArray(item) && depth > 0) {
-            yield* flatten(item as any, depth - 1)
-        } else {
-            yield item
-        }
     }
 }
 
@@ -55,10 +45,8 @@ export function observe(obj: any, isDevMode: boolean) {
                 return value
             },
             set(_value) {
-                if (value !== _value) {
-                    value = _value
-                    valueSubject.next(value)
-                }
+                value = _value
+                valueSubject.next(value)
             },
         })
     }
@@ -117,7 +105,7 @@ export function initEffect({
     }
 
     if (isObservable(returnValue)) {
-        const pipes: any = [distinctUntilChanged()]
+        const pipes: any = []
         // first set the value
         if (options.apply) {
             pipes.push(
@@ -146,5 +134,12 @@ export function initEffect({
         subs.add(returnValue)
     } else {
         throwBadReturnTypeError()
+    }
+}
+
+export function injectHostRef() {
+    const instance = currentContext.values().next().value
+    return {
+        instance,
     }
 }

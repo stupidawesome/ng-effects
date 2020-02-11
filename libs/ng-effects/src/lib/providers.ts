@@ -1,5 +1,5 @@
 import { Effects } from "./internals/effects"
-import { EFFECTS, HOST_INITIALIZER, STRICT_MODE } from "./constants"
+import { EFFECTS, HOST_INITIALIZER, HostRef, STRICT_MODE } from "./constants"
 import { DefaultEffectOptions, EffectOptions } from "./decorators"
 import { APP_BOOTSTRAP_LISTENER, Type } from "@angular/core"
 import { DestroyObserver } from "./internals/destroy-observer"
@@ -7,12 +7,14 @@ import { ViewRenderer } from "./internals/view-renderer"
 import { ConnectFactory } from "./internals/connect-factory"
 import { ExperimentalIvyViewRenderer } from "./internals/experimental-view-renderer"
 import { bootstrapCallback } from "./internals/constants"
+import { injectAll, injectHostRef } from "./internals/utils"
 
 export function effects(types: Type<any> | Type<any>[] = [], effectOptions?: DefaultEffectOptions) {
     return [
         {
             provide: EFFECTS,
-            useValue: [types],
+            useFactory: injectAll,
+            deps: [].concat(types as any),
         },
         {
             provide: EffectOptions,
@@ -23,17 +25,17 @@ export function effects(types: Type<any> | Type<any>[] = [], effectOptions?: Def
             useClass: ConnectFactory,
         },
         {
+            provide: HostRef,
+            useFactory: injectHostRef,
+        },
+        {
             provide: HOST_INITIALIZER,
             useValue: Effects,
             multi: true,
         },
-        {
-            provide: HOST_INITIALIZER,
-            useValue: types,
-            multi: true,
-        },
         DestroyObserver,
         Effects,
+        types,
     ]
 }
 
