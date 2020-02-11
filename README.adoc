@@ -89,6 +89,10 @@ Effects can be configured through the decorator or factory function.
 |string
 |When configured, maps values emitted by the effect to a property of the same name on the host context. This option is ignored if the effect does not return an observable.
 
+|apply
+|boolean
+|When configured, maps the properties of partial objects emitted by the effect to matching properties on the host context. This option is ignored if the effect does not return an observable.
+
 |markDirty
 |boolean
 |When set to true, schedule change detection to run whenever a bound effect emits a value.
@@ -238,6 +242,28 @@ export class AppEffects implements Effects<AppComponent> {
 }
 ----
 
+=== Property bindings
+
+Effects can be bound a named property on the host context by setting the `bind` property. This property is updated whever the effect emits a new value. Throws an error if the property does not exist.
+
+[source,typescript]
+----
+@Injectable()
+export class AppEffects implements Effects<AppComponent> {
+//  Alternatively:
+//  @Effect({ bind: count, markDirty: true }
+    @Effect("count", { markDirty: true })
+    count(state: State<AppState>) {
+        return timer(1000).pipe(
+            switchMapTo(state.count),
+            increment(1),
+            take(1),
+            repeat()
+        )
+    }
+}
+----
+
 === Implicit bindings
 
 By default, bindings are created implicitly when the name of an effect matches the name of any own property in the host context. This behavior can be disabled by providing `USE_STRICT_EFFECTS` in the root module of your application.
@@ -246,12 +272,8 @@ By default, bindings are created implicitly when the name of an effect matches t
 ----
 @Injectable()
 export class AppEffects implements Effects<AppComponent> {
-
-    /**
-     * Functionally equivalent to
-     * @Effect("count", { markDirty: true })
-     */
-
+//  Functionally equivalent to
+//  @Effect("count", { markDirty: true })
     @Effect({ markDirty: true })
     count(state: State<AppState>) {
         return timer(1000).pipe(
@@ -285,6 +307,25 @@ export class AppComponent implements AppState {
     }
 }
 ----
+
+=== Partial bindings
+
+If the effect should update multiple properties on the host context at the same time, use the `apply` option.
+
+[source,typescript]
+----
+@Component()
+export class AppComponent implements AppState {
+    @Effect({ apply: true })
+    assignMany(state: State<AppState>) {
+        return of({
+            prop1: "value1",
+            prop2: "value2"
+        })
+    }
+}
+----
+
 
 === Unsafe bindings
 

@@ -10,9 +10,7 @@ import { USE_EXPERIMENTAL_RENDER_API } from "@ng9/ng-effects"
 @NgModule({
     declarations: [AppComponent, TestComponent],
     imports: [BrowserModule, HttpClientModule],
-    providers: [
-        // USE_EXPERIMENTAL_RENDER_API
-    ],
+    // providers: [USE_EXPERIMENTAL_RENDER_API],
     bootstrap: [AppComponent],
 })
 export class AppModule {}

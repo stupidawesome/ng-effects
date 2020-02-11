@@ -22,7 +22,7 @@ import {
     State,
 } from "@ng9/ng-effects"
 import { increment } from "../utils"
-import { mapTo, repeat, switchMapTo, take } from "rxjs/operators"
+import { delay, mapTo, repeat, switchMapTo, take } from "rxjs/operators"
 
 export type Maybe<T> = T | undefined
 
@@ -60,6 +60,16 @@ export class TestEffects implements Effects<TestComponent> {
     @Effect({ bind: "name" })
     public bindName(_: State<TestState>) {
         return of("abc")
+    }
+
+    /**
+     * Apply example
+     */
+    @Effect({ apply: true })
+    public bindAll(_: State<TestState>) {
+        return of({
+            name: "111",
+        }).pipe(delay(500))
     }
 
     /**

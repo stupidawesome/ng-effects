@@ -115,7 +115,7 @@ export class Effects implements OnDestroy {
                         whenRendered,
                     }
                     if (
-                        checkBinding &&
+                        typeof checkBinding === "string" &&
                         Object.getOwnPropertyDescriptor(hostContext, checkBinding) === undefined
                     ) {
                         throwMissingPropertyError(checkBinding, hostContext.constructor.name)

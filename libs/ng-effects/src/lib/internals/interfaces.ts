@@ -15,3 +15,9 @@ export interface InitEffectArgs {
     viewRenderer: ViewRenderer
     whenRendered: Observable<any>
 }
+
+export interface RenderApi {
+    detectChanges(componentOrView: any, changeDetector?: ChangeDetectorRef): void
+    markDirty(componentOrView: any, changeDetector?: ChangeDetectorRef): void
+    whenRendered(componentOrView: any, changeDetector?: ChangeDetectorRef): Observable<null>
+}

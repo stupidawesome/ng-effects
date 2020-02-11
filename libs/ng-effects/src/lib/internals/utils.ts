@@ -1,7 +1,4 @@
 import { concat, defer, isObservable, of, Subject, TeardownLogic } from "rxjs"
-import { Host, Inject, Injectable, Injector } from "@angular/core"
-import { HOST_INITIALIZER, HostRef } from "../constants"
-import { DestroyObserver } from "./destroy-observer"
 import { InitEffectArgs } from "./interfaces"
 import { distinctUntilChanged, skipUntil, tap } from "rxjs/operators"
 
@@ -122,7 +119,18 @@ export function initEffect({
     if (isObservable(returnValue)) {
         const pipes: any = [distinctUntilChanged()]
         // first set the value
-        if (hostContext.hasOwnProperty(binding)) {
+        if (options.apply) {
+            pipes.push(
+                tap((values: any) => {
+                    for (const key of Object.keys(values)) {
+                        if (!hostContext.hasOwnProperty(key)) {
+                            throwMissingPropertyError(key, hostContext.constructor.name)
+                        }
+                        hostContext[key] = values[key]
+                    }
+                }),
+            )
+        } else if (hostContext.hasOwnProperty(binding)) {
             pipes.push(tap((value: any) => (hostContext[binding] = value)))
         }
         // wait until first change detection
@@ -138,38 +146,5 @@ export function initEffect({
         subs.add(returnValue)
     } else {
         throwBadReturnTypeError()
-    }
-}
-
-@Injectable()
-export class ConnectFactory {
-    constructor(
-        @Host() @Inject(HOST_INITIALIZER) initializers: any[],
-        @Host() destroyObserver: DestroyObserver,
-        @Host() parentInjector: Injector,
-    ) {
-        initializers = flat(initializers, Infinity)
-        return function connect(context: any) {
-            const injector = Injector.create({
-                parent: parentInjector,
-                providers: [
-                    {
-                        provide: HostRef,
-                        useValue: {
-                            instance: context,
-                        },
-                    },
-                    initializers,
-                ],
-            })
-
-            initializers.map(injector.get, injector).forEach(instance =>
-                destroyObserver.destroyed.subscribe(() => {
-                    if (instance.ngOnDestroy) {
-                        instance.ngOnDestroy()
-                    }
-                }),
-            )
-        }
     }
 }
