@@ -9,25 +9,26 @@ import {
     Optional,
     Type,
 } from "@angular/core"
-import { Observable, Subject, Subscription } from "rxjs"
+import { Subject, Subscription } from "rxjs"
 import { DEV_MODE, EFFECTS, HostRef, STRICT_MODE } from "../constants"
 import { effectsMap } from "./constants"
 import { EffectOptions } from "../decorators"
 import { flat, initEffect, observe, throwMissingPropertyError } from "./utils"
-import { RenderFactoryObserver } from "./render-factory-observer"
-import { filter, share, take } from "rxjs/operators"
+import { ViewRenderer } from "./view-renderer"
+import { InitEffectArgs } from "./interfaces"
 
 @Injectable()
 export class Effects implements OnDestroy {
     private readonly subs: Subscription
     private readonly defaultOptions: EffectOptions
-    private readonly whenRendered: Observable<any>
     private readonly revoke: Function
     private readonly proxy: { [key: string]: Subject<any> }
     private readonly hostContext: any
     private readonly effects: any[]
     private readonly cdr: ChangeDetectorRef
     private readonly strictMode: boolean
+    private readonly viewRenderer: ViewRenderer
+    private readonly nativeElement: any
 
     constructor(
         @Host() hostRef: HostRef,
@@ -36,7 +37,7 @@ export class Effects implements OnDestroy {
         @Host() cdr: ChangeDetectorRef,
         @Inject(DEV_MODE) isDevMode: boolean,
         @Optional() @Inject(STRICT_MODE) strictMode: boolean | null,
-        renderObserver: RenderFactoryObserver,
+        viewRenderer: ViewRenderer,
         elementRef: ElementRef<HTMLElement>,
         injector: Injector,
     ) {
@@ -50,7 +51,9 @@ export class Effects implements OnDestroy {
         this.subs = new Subscription()
         this.effects = effects
         this.cdr = cdr
+        this.viewRenderer = viewRenderer
         this.strictMode = strictMode === true
+        this.nativeElement = nativeElement
         this.defaultOptions = Object.assign(
             {
                 whenRendered: false,
@@ -58,11 +61,6 @@ export class Effects implements OnDestroy {
                 markDirty: false,
             },
             options,
-        )
-        this.whenRendered = renderObserver.whenRendered().pipe(
-            filter(() => nativeElement.isConnected),
-            take(1),
-            share(),
         )
         this.revoke = revoke
         this.proxy = proxy
@@ -76,12 +74,15 @@ export class Effects implements OnDestroy {
             defaultOptions,
             cdr,
             subs,
-            whenRendered,
             proxy,
             hostContext,
             effects,
             strictMode,
+            viewRenderer,
+            nativeElement,
         } = this
+
+        const whenRendered = viewRenderer.whenRendered(nativeElement)
 
         for (const effect of effects) {
             const props = [
@@ -90,10 +91,10 @@ export class Effects implements OnDestroy {
             ]
 
             for (const key of props) {
-                const fn = effect[key]
-                const maybeOptions = effectsMap.get(fn)
+                const effectFn = effect[key]
+                const maybeOptions = effectsMap.get(effectFn)
 
-                if (fn && maybeOptions) {
+                if (effectFn && maybeOptions) {
                     const options: EffectOptions<any> = Object.assign(
                         {},
                         defaultOptions,
@@ -101,7 +102,18 @@ export class Effects implements OnDestroy {
                     )
                     const binding = strictMode ? options.bind : options.bind || key
                     const checkBinding = options.bind
-                    const args: any = [effect, fn, binding, options, cdr, proxy, hostContext, subs]
+                    const args: InitEffectArgs = {
+                        effect,
+                        effectFn,
+                        binding,
+                        options,
+                        cdr,
+                        proxy,
+                        hostContext,
+                        subs,
+                        viewRenderer,
+                        whenRendered,
+                    }
                     if (
                         checkBinding &&
                         Object.getOwnPropertyDescriptor(hostContext, checkBinding) === undefined
@@ -111,12 +123,12 @@ export class Effects implements OnDestroy {
                     if (options.whenRendered) {
                         subs.add(
                             whenRendered.subscribe(
-                                () => initEffect.apply(null, args),
+                                () => initEffect(args),
                                 error => console.error(error),
                             ),
                         )
                     } else {
-                        initEffect.apply(null, args)
+                        initEffect(args)
                     }
                 }
             }

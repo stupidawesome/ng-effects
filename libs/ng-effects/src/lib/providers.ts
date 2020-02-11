@@ -4,6 +4,7 @@ import { EFFECTS, HOST_INITIALIZER, STRICT_MODE } from "./constants"
 import { DefaultEffectOptions, EffectOptions } from "./decorators"
 import { Type } from "@angular/core"
 import { DestroyObserver } from "./internals/destroy-observer"
+import { ExperimentalIvyViewRenderer, ViewRenderer } from "./internals/view-renderer"
 
 export function effects(types: Type<any> | Type<any>[] = [], effectOptions?: DefaultEffectOptions) {
     return [
@@ -47,3 +48,10 @@ export const USE_STRICT_EFFECTS = {
     provide: STRICT_MODE,
     useValue: true,
 }
+
+export const USE_EXPERIMENTAL_RENDER_API = [
+    {
+        provide: ViewRenderer,
+        useClass: ExperimentalIvyViewRenderer,
+    },
+]

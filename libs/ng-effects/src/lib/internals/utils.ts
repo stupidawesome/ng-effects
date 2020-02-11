@@ -1,9 +1,9 @@
-import { concat, defer, isObservable, of, Subject, Subscription, TeardownLogic } from "rxjs"
-import { EffectOptions } from "../decorators"
-import { ChangeDetectorRef, Host, Inject, Injectable, Injector } from "@angular/core"
-import { detectChangesOn, markDirtyOn } from "../utils"
+import { concat, defer, isObservable, of, Subject, TeardownLogic } from "rxjs"
+import { Host, Inject, Injectable, Injector } from "@angular/core"
 import { HOST_INITIALIZER, HostRef } from "../constants"
 import { DestroyObserver } from "./destroy-observer"
+import { InitEffectArgs } from "./interfaces"
+import { distinctUntilChanged, skipUntil, tap } from "rxjs/operators"
 
 export function throwMissingPropertyError(key: string, name: string) {
     throw new Error(`[ng-effects] Property "${key}" is not initialised in "${name}".`)
@@ -101,35 +101,39 @@ export function isTeardownLogic(value: any): value is TeardownLogic {
     )
 }
 
-export function initEffect(
-    effect: any,
-    effectFn: Function,
-    key: string,
-    options: EffectOptions,
-    cdr: ChangeDetectorRef,
-    observer: any,
-    instance: any,
-    subs: Subscription,
-) {
-    const returnValue = effectFn.call(effect, observer, instance)
+export function initEffect({
+    effect,
+    effectFn,
+    binding,
+    options,
+    cdr,
+    proxy,
+    hostContext,
+    subs,
+    viewRenderer,
+    whenRendered,
+}: InitEffectArgs) {
+    const returnValue = effectFn.call(effect, proxy, hostContext)
 
     if (returnValue === undefined) {
         return
     }
 
     if (isObservable(returnValue)) {
-        const pipes: any = []
+        const pipes: any = [distinctUntilChanged()]
+        // first set the value
+        if (hostContext.hasOwnProperty(binding)) {
+            pipes.push(tap((value: any) => (hostContext[binding] = value)))
+        }
+        // wait until first change detection
+        pipes.push(skipUntil(whenRendered))
+        // markDirty or detect changes
         if (options.detectChanges) {
-            pipes.push(detectChangesOn(cdr))
+            pipes.push(tap(() => viewRenderer.detectChanges(hostContext, cdr)))
         } else if (options.markDirty) {
-            pipes.push(markDirtyOn(cdr))
+            pipes.push(tap(() => viewRenderer.markDirty(hostContext, cdr)))
         }
-        const stream = returnValue.pipe.apply(returnValue, pipes)
-        if (instance.hasOwnProperty(key)) {
-            subs.add(stream.subscribe((value: any) => (instance[key] = value)))
-        } else {
-            subs.add(stream.subscribe())
-        }
+        subs.add(returnValue.pipe.apply(returnValue, pipes).subscribe())
     } else if (isTeardownLogic(returnValue)) {
         subs.add(returnValue)
     } else {

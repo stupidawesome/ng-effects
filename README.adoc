@@ -603,3 +603,25 @@ export class AppComponent {
     // etc...
 }
 ----
+
+== Experimental features
+
+These features rely on unstable APIs that could break at any time.
+
+=== Zoneless change detection
+
+Zoneless change detection depends on experimental Ivy renderer features. To enable this feature, add the `USE_EXPERIMENTAL_RENDER_API` provider to your root module.
+
+Zones can be disabled by commenting out or removing the following line in your app's `polyfills.ts`:
+
+```
+import "zone.js/dist/zone" // Remove this to disable zones
+```
+
+In your `main.ts` file, set ngZone to "noop".
+
+```ts
+platformBrowserDynamic()
+    .bootstrapModule(AppModule, { ngZone: "noop" }) // set this option
+    .catch(err => console.error(err))
+```
