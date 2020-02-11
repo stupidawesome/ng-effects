@@ -1,7 +1,12 @@
-import { concat, defer, isObservable, of, Subject, TeardownLogic } from "rxjs"
+import { asapScheduler, concat, defer, isObservable, of, Subject, TeardownLogic } from "rxjs"
 import { InitEffectArgs } from "./interfaces"
-import { skipUntil, tap } from "rxjs/operators"
-import { currentContext } from "./constants"
+import { subscribeOn, tap } from "rxjs/operators"
+import { currentContext, effectsMap } from "./constants"
+import { HostRef } from "../constants"
+import { EffectHandler, EffectMetadata } from "../interfaces"
+import { EffectOptions } from "../decorators"
+import { DestroyObserver } from "./destroy-observer"
+import { Injector } from "@angular/core"
 
 export function throwMissingPropertyError(key: string, name: string) {
     throw new Error(`[ng-effects] Property "${key}" is not initialised in "${name}".`)
@@ -88,48 +93,56 @@ export function isTeardownLogic(value: any): value is TeardownLogic {
 
 export function initEffect({
     effect,
-    effectFn,
     binding,
     options,
     cdr,
-    proxy,
     hostContext,
     subs,
     viewRenderer,
-    whenRendered,
+    adapter,
 }: InitEffectArgs) {
-    const returnValue = effectFn.call(effect, proxy, hostContext)
+    const returnValue = effect()
 
     if (returnValue === undefined) {
         return
     }
 
     if (isObservable(returnValue)) {
-        const pipes: any = []
-        // first set the value
-        if (options.apply) {
-            pipes.push(
-                tap((values: any) => {
-                    for (const key of Object.keys(values)) {
-                        if (!hostContext.hasOwnProperty(key)) {
-                            throwMissingPropertyError(key, hostContext.constructor.name)
+        // wait until first change detection
+        subs.add(
+            returnValue
+                .pipe(
+                    tap((value: any) => {
+                        if (adapter) {
+                            adapter.next(value, options)
+                            return
                         }
-                        hostContext[key] = values[key]
+                        // first set the value
+                        if (options.apply) {
+                            for (const prop of Object.keys(value)) {
+                                if (!hostContext.hasOwnProperty(prop)) {
+                                    throwMissingPropertyError(prop, hostContext.constructor.name)
+                                }
+                                hostContext[prop] = value[prop]
+                            }
+                        } else if (hostContext.hasOwnProperty(binding)) {
+                            hostContext[binding] = value
+                        }
+                    }),
+                    subscribeOn(asapScheduler),
+                )
+                .subscribe(() => {
+                    if (options.adapter) {
+                        return
+                    }
+                    // markDirty or detect changes
+                    if (options.detectChanges) {
+                        viewRenderer.detectChanges(hostContext, cdr)
+                    } else if (options.markDirty) {
+                        viewRenderer.markDirty(hostContext, cdr)
                     }
                 }),
-            )
-        } else if (hostContext.hasOwnProperty(binding)) {
-            pipes.push(tap((value: any) => (hostContext[binding] = value)))
-        }
-        // wait until first change detection
-        pipes.push(skipUntil(whenRendered))
-        // markDirty or detect changes
-        if (options.detectChanges) {
-            pipes.push(tap(() => viewRenderer.detectChanges(hostContext, cdr)))
-        } else if (options.markDirty) {
-            pipes.push(tap(() => viewRenderer.markDirty(hostContext, cdr)))
-        }
-        subs.add(returnValue.pipe.apply(returnValue, pipes).subscribe())
+        )
     } else if (isTeardownLogic(returnValue)) {
         subs.add(returnValue)
     } else {
@@ -141,5 +154,80 @@ export function injectHostRef() {
     const instance = currentContext.values().next().value
     return {
         instance,
+    }
+}
+
+export function injectEffects(
+    options: EffectOptions,
+    hostRef: HostRef,
+    isDevMode: boolean,
+    strictMode: boolean,
+    destroyObserver: DestroyObserver,
+    injector: Injector,
+    ...effects: any[]
+): EffectMetadata[] {
+    const hostContext = hostRef.instance
+    const { proxy, revoke } = observe(hostContext, isDevMode)
+    const defaultOptions = Object.assign(
+        {
+            whenRendered: false,
+            detectChanges: false,
+            markDirty: false,
+        },
+        options,
+    )
+    destroyObserver.destroyed.subscribe(revoke)
+
+    return Array.from(
+        exploreEffects(defaultOptions, proxy, hostContext, strictMode, injector, [
+            hostRef.instance,
+            ...effects,
+        ]),
+    )
+}
+
+export function* exploreEffects(
+    defaultOptions: EffectOptions,
+    proxy: any,
+    hostContext: any,
+    strictMode: boolean,
+    injector: Injector,
+    effects: any[],
+) {
+    for (const effect of effects) {
+        const props = [
+            ...Object.getOwnPropertyNames(Object.getPrototypeOf(effect)),
+            ...Object.getOwnPropertyNames(effect),
+        ]
+        for (const key of props) {
+            const effectFn = effect[key]
+            const maybeOptions = effectsMap.get(effectFn)
+            if (effectFn && maybeOptions) {
+                let adapter: EffectHandler<any, any> | undefined
+                const options: EffectOptions<any> = Object.assign({}, defaultOptions, maybeOptions)
+                const binding = strictMode ? options.bind : options.bind || key
+                const checkBinding = options.bind
+
+                if (options.adapter) {
+                    adapter = injector.get(options.adapter)
+                }
+
+                if (
+                    typeof checkBinding === "string" &&
+                    Object.getOwnPropertyDescriptor(hostContext, checkBinding) === undefined
+                ) {
+                    throwMissingPropertyError(checkBinding, hostContext.constructor.name)
+                }
+
+                yield {
+                    name: effect.constructor.name,
+                    key,
+                    binding,
+                    effect: effectFn.bind(effect, proxy, hostContext),
+                    options,
+                    adapter,
+                }
+            }
+        }
     }
 }

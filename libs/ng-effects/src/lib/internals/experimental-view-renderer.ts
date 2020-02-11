@@ -1,22 +1,15 @@
 import {
-    Inject,
     Injectable,
     ɵdetectChanges as detectChanges,
     ɵmarkDirty as markDirty,
     ɵwhenRendered as whenRendered,
 } from "@angular/core"
 import { RenderApi } from "./interfaces"
-import { Observable, ReplaySubject } from "rxjs"
-import { share, switchMap } from "rxjs/operators"
-import { APPLICATION_BOOTSTRAP } from "./constants"
+import { defer, Observable } from "rxjs"
 
 @Injectable()
 export class ExperimentalIvyViewRenderer implements RenderApi {
-    private whenBootstrap: ReplaySubject<boolean>
-    constructor(@Inject(APPLICATION_BOOTSTRAP) whenBootstrap: any) {
-        this.whenBootstrap = new ReplaySubject()
-        whenBootstrap.then(() => this.whenBootstrap.next(true))
-    }
+    constructor() {}
 
     public detectChanges(componentOrView: any): void {
         detectChanges(componentOrView)
@@ -27,9 +20,6 @@ export class ExperimentalIvyViewRenderer implements RenderApi {
     }
 
     public whenRendered(componentOrView: any): Observable<null> {
-        return this.whenBootstrap.pipe(
-            switchMap(() => whenRendered(componentOrView)),
-            share(),
-        )
+        return defer(() => whenRendered(componentOrView))
     }
 }

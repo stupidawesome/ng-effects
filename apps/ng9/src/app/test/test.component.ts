@@ -23,6 +23,7 @@ import {
 } from "@ng9/ng-effects"
 import { increment } from "../utils"
 import { delay, mapTo, repeat, switchMapTo, take } from "rxjs/operators"
+import { Dispatch } from "../dispatch-adapter"
 
 export type Maybe<T> = T | undefined
 
@@ -149,6 +150,19 @@ export class TestEffects implements Effects<TestComponent> {
             // teardown logic
             sub.unsubscribe()
         }
+    }
+
+    /**
+     * Dispatch adapter example
+     */
+    @Effect(Dispatch, { test: true })
+    public dispatch() {
+        return of({
+            type: "MY_ACTION",
+            payload: {
+                value: "any",
+            },
+        })
     }
 }
 

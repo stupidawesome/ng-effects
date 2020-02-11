@@ -104,6 +104,10 @@ Effects can be configured through the decorator or factory function.
 |whenRendered
 |boolean
 |When set to true, the effect is not initialised until the host element has been mounted to the DOM.
+
+|adapter
+|Type<any>
+|Hook into effects with a custom effect handler. For example, to dispatch all values emitted by the effect as actions to a global store.
 |===
 
 ==== Default options
@@ -642,6 +646,38 @@ export class AppComponent {
     formData: FormGroup
 
     // etc...
+}
+----
+
+== Custom Effect Handlers
+
+An effect handler can be passed in to do additional processing after the observable has emitted a value. This can be useful for adding a dispatcher to automatically dispatch actions to a global state store.
+
+[source,typescript]
+----
+@Injectable({ providedIn: "root" })
+export class Dispatch implements EffectHandler<Action, Options> {
+    constructor(private store: Store<any>) {}
+
+    next(value: Action) {
+        this.store.dispatch(value)
+    }
+}
+----
+
+[source,typescript]
+----
+@Injectable()
+export class AppEffects {
+    @Effect(Dispatch)
+    dispatchAction(state: State<AppComponent>, context: AppComponent) {
+        return context.formData.valueChanges.pipe(
+            map(payload => ({
+                type: "FORM_UPDATED",
+                payload
+            }))
+        )
+    }
 }
 ----
 
