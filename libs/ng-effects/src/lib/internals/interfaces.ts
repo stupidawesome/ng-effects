@@ -1,8 +1,7 @@
-import { EffectOptions } from "../decorators"
 import { ChangeDetectorRef } from "@angular/core"
 import { Observable, Subscription } from "rxjs"
 import { ViewRenderer } from "./view-renderer"
-import { EffectHandler } from "../interfaces"
+import { EffectHandler, EffectOptions } from "../interfaces"
 
 export interface InitEffectArgs {
     effect: Function

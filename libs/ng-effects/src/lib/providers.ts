@@ -1,12 +1,12 @@
 import { InitEffects } from "./internals/init-effects"
 import { DEV_MODE, EFFECTS, HOST_INITIALIZER, HostRef, STRICT_MODE } from "./constants"
-import { DefaultEffectOptions, EffectOptions } from "./decorators"
 import { Injector, Type } from "@angular/core"
 import { DestroyObserver } from "./internals/destroy-observer"
 import { ViewRenderer } from "./internals/view-renderer"
 import { ConnectFactory } from "./internals/connect-factory"
 import { ExperimentalIvyViewRenderer } from "./internals/experimental-view-renderer"
 import { injectEffects, injectHostRef } from "./internals/utils"
+import { DefaultEffectOptions, EffectOptions } from "./interfaces"
 
 export function effects(types: Type<any> | Type<any>[] = [], effectOptions?: DefaultEffectOptions) {
     return [

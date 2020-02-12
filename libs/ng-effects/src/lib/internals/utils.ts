@@ -1,19 +1,14 @@
 import { asapScheduler, concat, defer, isObservable, of, Subject, TeardownLogic } from "rxjs"
 import { InitEffectArgs } from "./interfaces"
 import { subscribeOn, tap } from "rxjs/operators"
-import { currentContext, effectsMap } from "./constants"
+import { currentContext, defaultOptions, effectsMap } from "./constants"
 import { HostRef } from "../constants"
-import { EffectHandler, EffectMetadata } from "../interfaces"
-import { EffectOptions } from "../decorators"
+import { EffectHandler, EffectMetadata, EffectOptions } from "../interfaces"
 import { DestroyObserver } from "./destroy-observer"
 import { Injector } from "@angular/core"
 
 export function throwMissingPropertyError(key: string, name: string) {
     throw new Error(`[ng-effects] Property "${key}" is not initialised in "${name}".`)
-}
-
-export function injectAll(...deps: any[]) {
-    return deps
 }
 
 export function noop() {}
@@ -168,18 +163,11 @@ export function injectEffects(
 ): EffectMetadata[] {
     const hostContext = hostRef.instance
     const { proxy, revoke } = observe(hostContext, isDevMode)
-    const defaultOptions = Object.assign(
-        {
-            whenRendered: false,
-            detectChanges: false,
-            markDirty: false,
-        },
-        options,
-    )
+    const defaults = Object.assign({}, defaultOptions, options)
     destroyObserver.destroyed.subscribe(revoke)
 
     return Array.from(
-        exploreEffects(defaultOptions, proxy, hostContext, strictMode, injector, [
+        exploreEffects(defaults, proxy, hostContext, strictMode, injector, [
             hostRef.instance,
             ...effects,
         ]),
@@ -187,7 +175,7 @@ export function injectEffects(
 }
 
 export function* exploreEffects(
-    defaultOptions: EffectOptions,
+    defaults: EffectOptions,
     proxy: any,
     hostContext: any,
     strictMode: boolean,
@@ -204,7 +192,7 @@ export function* exploreEffects(
             const maybeOptions = effectsMap.get(effectFn)
             if (effectFn && maybeOptions) {
                 let adapter: EffectHandler<any, any> | undefined
-                const options: EffectOptions<any> = Object.assign({}, defaultOptions, maybeOptions)
+                const options: EffectOptions<any> = Object.assign({}, defaults, maybeOptions)
                 const binding = strictMode ? options.bind : options.bind || key
                 const checkBinding = options.bind
 

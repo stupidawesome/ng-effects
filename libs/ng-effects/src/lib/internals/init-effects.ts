@@ -20,7 +20,7 @@ export class InitEffects implements OnDestroy {
         @Host() @Inject(EFFECTS) effects: EffectMetadata[],
         @Host() cdr: ChangeDetectorRef,
         @Host() elementRef: ElementRef<HTMLElement>,
-        viewRenderer: ViewRenderer,
+        @Host() viewRenderer: ViewRenderer,
     ) {
         const { nativeElement } = elementRef
 

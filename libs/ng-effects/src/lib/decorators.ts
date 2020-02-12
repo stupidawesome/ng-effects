@@ -1,37 +1,13 @@
 import { effectsMap } from "./internals/constants"
-import { EffectFn, EffectHandler } from "./interfaces"
+import {
+    ApplyEffectOptions,
+    BindEffectOptions,
+    DefaultEffectOptions,
+    EffectFn,
+    EffectHandler,
+    EffectOptions,
+} from "./interfaces"
 import { Type } from "@angular/core"
-
-export type Effects<T> = {
-    [key in keyof T]?: EffectFn<T, T[key]>
-}
-
-export interface DefaultEffectOptions {
-    detectChanges?: boolean
-    whenRendered?: boolean
-    markDirty?: boolean
-}
-
-export interface BindEffectOptions<TKey extends PropertyKey | unknown = unknown>
-    extends DefaultEffectOptions {
-    bind?: TKey
-}
-
-export interface ApplyEffectOptions extends DefaultEffectOptions {
-    apply?: boolean
-}
-
-export interface AdapterEffectOptions {
-    adapter?: Type<EffectHandler<any, any>>
-}
-
-export interface EffectOptions<TKey extends PropertyKey | unknown = unknown>
-    extends DefaultEffectOptions,
-        BindEffectOptions<TKey>,
-        AdapterEffectOptions,
-        ApplyEffectOptions {}
-
-export abstract class EffectOptions<TKey extends PropertyKey | unknown = unknown> {}
 
 interface EffectDecorator<TKey> {
     // tslint:disable-next-line:callable-types
