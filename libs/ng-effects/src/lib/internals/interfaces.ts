@@ -2,6 +2,7 @@ import { ChangeDetectorRef } from "@angular/core"
 import { Observable, Subject, Subscription } from "rxjs"
 import { ViewRenderer } from "./view-renderer"
 import { EffectHandler, EffectOptions } from "../interfaces"
+import { proxyTarget } from "./constants"
 
 export interface InitEffectArgs {
     effect: Function
@@ -24,4 +25,6 @@ export interface RenderApi {
 
 export type MapSelect<T> = {
     [key in keyof T]: Observable<T[key]>
+} & {
+    [proxyTarget]: T
 }

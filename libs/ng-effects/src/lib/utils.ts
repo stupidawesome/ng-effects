@@ -1,4 +1,4 @@
-import { effectsMap } from "./internals/constants"
+import { effectsMap, proxyTarget } from "./internals/constants"
 import { ApplyEffectOptions, BindEffectOptions, EffectFn, EffectHandler } from "./interfaces"
 import { combineLatest, MonoTypeOperatorFunction, Observable } from "rxjs"
 import { Type } from "@angular/core"
@@ -44,9 +44,13 @@ export function latest<T>(source: MapSelect<T>): Observable<T> {
     return combineLatest(keys.map(key => source[key])).pipe(
         map(values =>
             values.reduce((acc, value, index) => {
-                acc[keys[index]] = value
+                acc[keys[index]] = value as any
                 return acc
             }, {} as T),
         ),
     )
+}
+
+export function context<T>(state: MapSelect<T>): T {
+    return state[proxyTarget]
 }

@@ -4,7 +4,7 @@ import { MapSelect } from "./internals/interfaces"
 
 export type State<T> = MapSelect<T>
 
-export type EffectFn<T, U = any> = (state: State<T>, context: T) => Observable<U> | TeardownLogic
+export type EffectFn<T, U = any> = (state: State<T>) => Observable<U> | TeardownLogic
 export type BoundEffectFn = () => Observable<unknown> | TeardownLogic
 
 export interface EffectMetadata {

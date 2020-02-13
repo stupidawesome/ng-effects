@@ -1,7 +1,7 @@
 import { asapScheduler, isObservable, merge, Observable, Subject, TeardownLogic } from "rxjs"
 import { InitEffectArgs } from "./interfaces"
 import { distinctUntilChanged, map, mapTo, observeOn, tap } from "rxjs/operators"
-import { currentContext, defaultOptions, effectsMap } from "./constants"
+import { currentContext, defaultOptions, effectsMap, proxyTarget } from "./constants"
 import { HostRef } from "../constants"
 import { EffectHandler, EffectMetadata, EffectOptions } from "../interfaces"
 import { DestroyObserver } from "./destroy-observer"
@@ -21,7 +21,10 @@ function selectKey(source: Observable<any>, key: PropertyKey) {
 
 export function select<T>(source: Observable<T>, target: any) {
     return Proxy.revocable(target as any, {
-        get(_, key: PropertyKey) {
+        get(target, key: PropertyKey) {
+            if (key === proxyTarget) {
+                return target
+            }
             return selectKey(source, key)
         },
         set() {
