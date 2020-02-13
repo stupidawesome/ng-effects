@@ -10,7 +10,7 @@ import {
     ViewChild,
     ViewChildren,
 } from "@angular/core"
-import { Observable, of, OperatorFunction, timer } from "rxjs"
+import { Observable, of, OperatorFunction, Subject, timer } from "rxjs"
 import { Connect, createEffect, Effect, Effects, effects, HostRef, State } from "@ng9/ng-effects"
 import { Events, increment } from "../utils"
 import { delay, map, mapTo, repeat, switchMapTo, take } from "rxjs/operators"
@@ -175,7 +175,7 @@ export class TestEffects implements Effects<TestComponent> {
 @Component({
     selector: "app-test",
     template: `
-        <p>test works!</p>
+        <p (click)="next($event)">test works!</p>
         <p>Name: {{ name }}</p>
         <p>Age: {{ age }}</p>
         <div #test *ngIf="show">Showing</div>
@@ -187,10 +187,10 @@ export class TestEffects implements Effects<TestComponent> {
     changeDetection: ChangeDetectionStrategy.OnPush,
     providers: [effects(TestEffects, { markDirty: true })],
     host: {
-        "(click)": "next($event)",
+        "(click)": "next($event) //noinspection UnresolvedVariable",
     },
 })
-export class TestComponent extends Events<MouseEvent> implements TestState {
+export class TestComponent extends Events<Subject<any>> implements TestState {
     @Input()
     public name: string
 

@@ -7,8 +7,4 @@ export function increment(by: number = 1): MonoTypeOperatorFunction<number> {
     }
 }
 
-export interface Events<T> {
-    $event?: T
-}
-
 export class Events<T> extends Subject<T> {}
