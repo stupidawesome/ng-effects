@@ -641,7 +641,7 @@ export class AppComponent {
 }
 ----
 
-== Custom Effect Handlers
+=== Custom Effect Handlers
 
 An effect handler can be passed in to do additional processing after the observable has emitted a value. This can be useful for adding a dispatcher to automatically dispatch actions to a global state store.
 
