@@ -105,7 +105,7 @@ Effects can be configured through the decorator or factory function.
 
 |adapter
 |Type<any>
-|Hook into effects with a custom effect handler. For example, to dispatch all values emitted by the effect as actions to a global store.
+|Hook into effects with a link:#custom-effect-handlers[custom effect handler]. For example, to dispatch all values emitted by the effect as actions to a global store.
 |===
 
 ==== Default options
@@ -516,28 +516,28 @@ All component queries (`ViewChild`, `ViewChildren`, `ContentChild`, `ContentChil
 export class ChildEffects {
     @Effect({ whenRendered: true })
     withContentChild(state: State<ChildComponent>) {
-        return context.contentChild.subscribe(
+        return state.contentChild.subscribe(
             contentChild => console.log(contentChild)
         )
     }
 
     @Effect({ whenRendered: true })
-    withContentChildren(state: State<ChildComponent>, context: AppComponent) {
-        return context.contentChildren.subscribe(
+    withContentChildren(state: State<ChildComponent>) {
+        return state.contentChildren.subscribe(
             contentChildren => console.log(contentChildren)
         )
     }
 
     @Effect({ whenRendered: true })
     withViewChild(state: State<ChildComponent>) {
-        return context.viewChild.subscribe(
+        return state.viewChild.subscribe(
             viewChild => console.log(viewChild)
         )
     }
 
     @Effect({ whenRendered: true })
     withViewChildren(state: State<ChildComponent>) {
-        return context.viewChildren.subscribe(
+        return state.viewChildren.subscribe(
             viewChildren => console.log(viewChildren)
         )
     }
