@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, ElementRef, Host, Inject, Injectable, OnDestroy } from "@angular/core"
+import { ChangeDetectorRef, Host, Inject, Injectable, OnDestroy } from "@angular/core"
 import { Subscription } from "rxjs"
 import { EFFECTS, HostRef } from "../constants"
 import { initEffect } from "./utils"
@@ -45,7 +45,7 @@ export class InitEffects implements OnDestroy {
                 subs,
                 viewRenderer,
                 adapter,
-                notifier
+                notifier,
             }
             if (options.whenRendered) {
                 subs.add(

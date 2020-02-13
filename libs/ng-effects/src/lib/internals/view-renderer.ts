@@ -1,7 +1,6 @@
 import { ChangeDetectorRef, Injectable, OnDestroy, RendererFactory2 } from "@angular/core"
 import { Subject } from "rxjs"
 import { noop } from "./utils"
-import { share, take } from "rxjs/operators"
 import { RenderApi } from "./interfaces"
 
 @Injectable({ providedIn: "root" })
@@ -16,8 +15,7 @@ export class ViewRenderer implements RenderApi, OnDestroy {
         const end = new Subject<null>()
         const observers = end.observers
 
-        rendererFactory.begin = function () {
-            console.log('begin')
+        rendererFactory.begin = function() {
             origBeginFn.apply(rendererFactory)
             begin.next(null)
         }

@@ -1,32 +1,20 @@
 import {
     asapScheduler,
-    BehaviorSubject,
-    concat,
     defer,
     isObservable,
     merge,
-    Observable,
+    MonoTypeOperatorFunction,
     of,
-    pipe,
     Subject,
     TeardownLogic,
 } from "rxjs"
 import { InitEffectArgs } from "./interfaces"
-import {
-    distinctUntilChanged,
-    filter,
-    map,
-    share,
-    startWith,
-    subscribeOn,
-    tap,
-} from "rxjs/operators"
+import { distinctUntilChanged, map, observeOn, share, takeUntil, tap } from "rxjs/operators"
 import { currentContext, defaultOptions, effectsMap } from "./constants"
 import { HostRef } from "../constants"
 import { EffectHandler, EffectMetadata, EffectOptions } from "../interfaces"
 import { DestroyObserver } from "./destroy-observer"
 import { Injector } from "@angular/core"
-import { doCheck } from "../patch-hooks"
 import { ViewRenderer } from "./view-renderer"
 
 export function throwMissingPropertyError(key: string, name: string) {
@@ -35,27 +23,28 @@ export function throwMissingPropertyError(key: string, name: string) {
 
 export function noop() {}
 
-export function select(obj: any, key: string) {
-    return pipe(
-        map(() => obj[key]),
-        distinctUntilChanged(),
-    )
+export function select(obj: any, key: string): MonoTypeOperatorFunction<any> {
+    return source =>
+        source.pipe(
+            map(() => obj[key]),
+            distinctUntilChanged(),
+            share(),
+        )
 }
 
-export function observe(obj: any, isDevMode: boolean) {
+export function observe(obj: any, destroyObserver: DestroyObserver, isDevMode: boolean) {
     const ownProperties = Object.getOwnPropertyNames(obj)
     const notifier = new Subject<any>()
     let revoke = noop
     let state: any = {}
 
     for (const key of ownProperties) {
-        const changes = notifier.pipe(select(obj, key), share())
-        const propertyObserver: any = merge(
-            defer(() => of(obj[key])),
-            changes,
-        )
+        const initialValue = defer(() => of(obj)).pipe(select(obj, key))
+        const changes = notifier.pipe(select(obj, key), takeUntil(destroyObserver.destroyed))
+        const propertyObserver: any = merge(initialValue, changes)
         propertyObserver.changes = changes
         state[key] = propertyObserver
+        changes.subscribe()
     }
 
     if (isDevMode && typeof Proxy !== "undefined") {
@@ -70,10 +59,12 @@ export function observe(obj: any, isDevMode: boolean) {
         state = revocable.proxy
         revoke = revocable.revoke
     }
+
+    destroyObserver.destroyed.subscribe(revoke)
+
     return {
         notifier,
         state,
-        revoke,
     }
 }
 
@@ -127,7 +118,7 @@ export function initEffect({
                         }
                         notifier.next()
                     }),
-                    subscribeOn(asapScheduler),
+                    observeOn(asapScheduler),
                 )
                 .subscribe(() => {
                     if (options.adapter) {
@@ -166,11 +157,10 @@ export function injectEffects(
     ...effects: any[]
 ): EffectMetadata[] {
     const hostContext = hostRef.instance
-    const { state, revoke, notifier } = observe(hostContext, isDevMode)
+    const { state, notifier } = observe(hostContext, destroyObserver, isDevMode)
     const defaults = Object.assign({}, defaultOptions, options)
     const sub = merge(viewRenderer.whenScheduled(), viewRenderer.whenRendered()).subscribe(notifier)
 
-    destroyObserver.destroyed.subscribe(revoke)
     destroyObserver.destroyed.subscribe(() => sub.unsubscribe())
 
     return Array.from(

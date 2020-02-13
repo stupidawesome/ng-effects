@@ -1,32 +1,18 @@
-import { Component, ɵmarkDirty as markDirty } from "@angular/core"
+import { ChangeDetectionStrategy, Component } from "@angular/core"
 import { Connect, Effect, HOST_EFFECTS, State } from "@ng9/ng-effects"
-import { interval, Observable, SchedulerLike, timer } from "rxjs"
-import { distinctUntilChanged, map, mapTo, switchMap, take, tap } from "rxjs/operators"
-
-export function toggleInterval(
-    source: Observable<boolean>,
-    time: number = 0,
-    scheduler?: SchedulerLike,
-) {
-    return interval(time, scheduler).pipe(
-        switchMap(() =>
-            source.pipe(
-                map(value => !value),
-                take(1),
-            ),
-        ),
-    )
-}
+import { interval } from "rxjs"
+import { distinctUntilChanged, map, mapTo } from "rxjs/operators"
 
 @Component({
     selector: "app-root",
     template: `
-        <app-test [age]="age" (ageChange)="setState(age = $event)">
+        <app-test [age]="age" (ageChange)="age = $event">
             <app-test *ngIf="show">Nested!</app-test>
         </app-test>
     `,
     styleUrls: ["./app.component.scss"],
     providers: [HOST_EFFECTS],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent {
     title = "ng9"
@@ -43,21 +29,15 @@ export class AppComponent {
      * Inline effect example
      */
     @Effect("age", { markDirty: true })
-    public resetAge(state: State<AppComponent>) {
-        return interval(4000).pipe(
-            mapTo(30)
-        )
+    public resetAge(_: State<AppComponent>) {
+        return interval(10000).pipe(mapTo(30))
     }
 
     @Effect("show", { markDirty: true })
     public toggleShow(state: State<AppComponent>) {
         return state.age.pipe(
-            tap(() => console.log('age changed!')),
-            map((age) => age > 33),
+            map(age => age > 35),
+            distinctUntilChanged(),
         )
-    }
-
-    public setState(args: any) {
-        markDirty(this)
     }
 }

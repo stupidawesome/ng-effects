@@ -13,9 +13,15 @@ export function effects(types: Type<any> | Type<any>[] = [], effectOptions?: Def
         {
             provide: EFFECTS,
             useFactory: injectEffects,
-            deps: [EffectOptions, HostRef, DEV_MODE, STRICT_MODE, DestroyObserver, ViewRenderer, Injector].concat(
-                types as any,
-            ),
+            deps: [
+                EffectOptions,
+                HostRef,
+                DEV_MODE,
+                STRICT_MODE,
+                DestroyObserver,
+                ViewRenderer,
+                Injector,
+            ].concat(types as any),
         },
         {
             provide: EffectOptions,

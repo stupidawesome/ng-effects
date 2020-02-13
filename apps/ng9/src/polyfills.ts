@@ -54,9 +54,7 @@
 /***************************************************************************************************
  * Zone JS is required by default for Angular itself.
  */
-// import "@ng9/ng-effects/patch-hooks"
-// import "zone.js/dist/zone" // Included with Angular CLI.
-
+import "zone.js/dist/zone" // Included with Angular CLI.
 
 /***************************************************************************************************
  * APPLICATION IMPORTS

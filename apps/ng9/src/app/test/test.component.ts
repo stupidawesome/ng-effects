@@ -11,7 +11,16 @@ import {
     ViewChildren,
 } from "@angular/core"
 import { Observable, of, OperatorFunction, Subject, timer } from "rxjs"
-import { Connect, createEffect, Effect, Effects, effects, Events, HostRef, State } from "@ng9/ng-effects"
+import {
+    Connect,
+    createEffect,
+    Effect,
+    Effects,
+    effects,
+    Events,
+    HostRef,
+    State,
+} from "@ng9/ng-effects"
 import { increment } from "../utils"
 import { delay, map, mapTo, repeat, switchMapTo, take } from "rxjs/operators"
 import { Dispatch } from "../dispatch-adapter"
@@ -26,12 +35,13 @@ interface TestState {
 }
 
 function toggleSwitch(source: Observable<boolean>): OperatorFunction<any, boolean> {
-    return (stream) => stream.pipe(
-        switchMapTo(source),
-        take(1),
-        map(value => !value),
-        repeat()
-    )
+    return stream =>
+        stream.pipe(
+            switchMapTo(source),
+            take(1),
+            map(value => !value),
+            repeat(),
+        )
 }
 
 @Injectable()
@@ -101,7 +111,7 @@ export class TestEffects implements Effects<TestComponent> {
     /**
      * Output binding example
      */
-    @Effect()
+    @Effect({ whenRendered: true })
     public ageChange(state: State<TestState>, ctx: TestComponent) {
         return state.age.changes.subscribe(ctx.ageChange)
     }
@@ -135,9 +145,9 @@ export class TestEffects implements Effects<TestComponent> {
     /**
      * ViewChildren example
      */
-    @Effect({ whenRendered: true })
+    @Effect()
     public viewChildren(state: State<TestState>) {
-        return state.viewChildren.subscribe()
+        return state.viewChildren.changes.subscribe()
     }
 
     /**
@@ -167,9 +177,7 @@ export class TestEffects implements Effects<TestComponent> {
 
     @Effect("show")
     public toggleShow(state: State<TestComponent>, ctx: TestComponent) {
-        return ctx.events.pipe(
-            toggleSwitch(state.show)
-        )
+        return ctx.events.pipe(toggleSwitch(state.show))
     }
 }
 

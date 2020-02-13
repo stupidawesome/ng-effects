@@ -12,8 +12,8 @@ import { dispatchAdapter } from "./dispatch-adapter"
 @NgModule({
     declarations: [AppComponent, TestComponent],
     imports: [BrowserModule, HttpClientModule],
-    providers: [USE_EXPERIMENTAL_RENDER_API, dispatchAdapter(Store)],
-    // providers: [dispatchAdapter(Store)],
+    // providers: [USE_EXPERIMENTAL_RENDER_API, dispatchAdapter(Store)],
+    providers: [dispatchAdapter(Store)],
     bootstrap: [AppComponent],
 })
 export class AppModule {}
