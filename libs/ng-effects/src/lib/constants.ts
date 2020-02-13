@@ -1,7 +1,6 @@
 import { InjectionToken, isDevMode } from "@angular/core"
 
 export const EFFECTS = new InjectionToken("EFFECTS")
-export const EFFECT_OBSERVERS = new InjectionToken("EFFECT_OBSERVERS")
 export const DEV_MODE = new InjectionToken("DEV_MODE", {
     providedIn: "root",
     factory: () => isDevMode(),

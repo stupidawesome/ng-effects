@@ -10,18 +10,9 @@ import {
     ViewChild,
     ViewChildren,
 } from "@angular/core"
-import { Observable, of, OperatorFunction, Subject, timer } from "rxjs"
-import {
-    Connect,
-    createEffect,
-    Effect,
-    Effects,
-    effects,
-    Events,
-    HostRef,
-    State,
-} from "@ng9/ng-effects"
-import { increment } from "../utils"
+import { Observable, of, OperatorFunction, timer } from "rxjs"
+import { Connect, createEffect, Effect, Effects, effects, HostRef, State } from "@ng9/ng-effects"
+import { Events, increment } from "../utils"
 import { delay, map, mapTo, repeat, switchMapTo, take } from "rxjs/operators"
 import { Dispatch } from "../dispatch-adapter"
 
@@ -131,7 +122,7 @@ export class TestEffects implements Effects<TestComponent> {
      */
     @Effect()
     public clicked(state: State<TestState>, ctx: TestComponent) {
-        return ctx.events.subscribe(event => console.log(`click:`, event))
+        return ctx.subscribe(event => console.log(`click:`, event))
     }
 
     /**
@@ -177,7 +168,7 @@ export class TestEffects implements Effects<TestComponent> {
 
     @Effect("show")
     public toggleShow(state: State<TestComponent>, ctx: TestComponent) {
-        return ctx.events.pipe(toggleSwitch(state.show))
+        return ctx.pipe(toggleSwitch(state.show))
     }
 }
 
@@ -185,7 +176,7 @@ export class TestEffects implements Effects<TestComponent> {
     selector: "app-test",
     template: `
         <p>test works!</p>
-        <p>Name: <span [textContent]="name"></span></p>
+        <p>Name: {{ name }}</p>
         <p>Age: {{ age }}</p>
         <div #test *ngIf="show">Showing</div>
         <p>
@@ -196,10 +187,10 @@ export class TestEffects implements Effects<TestComponent> {
     changeDetection: ChangeDetectionStrategy.OnPush,
     providers: [effects(TestEffects, { markDirty: true })],
     host: {
-        "(click)": "events.next($event)",
+        "(click)": "next($event)",
     },
 })
-export class TestComponent implements TestState, Events<MouseEvent> {
+export class TestComponent extends Events<MouseEvent> implements TestState {
     @Input()
     public name: string
 
@@ -215,16 +206,15 @@ export class TestComponent implements TestState, Events<MouseEvent> {
     @ViewChildren("test")
     public viewChildren: Maybe<QueryList<ElementRef>>
 
-    public events: Subject<MouseEvent>
-
     public show: boolean
 
     constructor(connect: Connect) {
+        super()
+
         this.name = "abc"
         this.age = 0
         this.ageChange = new EventEmitter()
         this.show = true
-        this.events = new Subject()
         this.viewChild = undefined
         this.viewChildren = undefined
 
