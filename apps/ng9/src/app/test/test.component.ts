@@ -10,19 +10,10 @@ import {
     ViewChild,
     ViewChildren,
 } from "@angular/core"
-import { of, Subject, timer } from "rxjs"
-import {
-    Connect,
-    createEffect,
-    Effect,
-    Effects,
-    effects,
-    Events,
-    HostRef,
-    State,
-} from "@ng9/ng-effects"
+import { Observable, of, OperatorFunction, Subject, timer } from "rxjs"
+import { Connect, createEffect, Effect, Effects, effects, Events, HostRef, State } from "@ng9/ng-effects"
 import { increment } from "../utils"
-import { delay, mapTo, repeat, switchMapTo, take } from "rxjs/operators"
+import { delay, map, mapTo, repeat, switchMapTo, take } from "rxjs/operators"
 import { Dispatch } from "../dispatch-adapter"
 
 export type Maybe<T> = T | undefined
@@ -32,6 +23,15 @@ interface TestState {
     age: number
     viewChild: Maybe<ElementRef>
     viewChildren: Maybe<QueryList<ElementRef>>
+}
+
+function toggleSwitch(source: Observable<boolean>): OperatorFunction<any, boolean> {
+    return (stream) => stream.pipe(
+        switchMapTo(source),
+        take(1),
+        map(value => !value),
+        repeat()
+    )
 }
 
 @Injectable()
@@ -164,15 +164,22 @@ export class TestEffects implements Effects<TestComponent> {
             },
         })
     }
+
+    @Effect("show")
+    public toggleShow(state: State<TestComponent>, ctx: TestComponent) {
+        return ctx.events.pipe(
+            toggleSwitch(state.show)
+        )
+    }
 }
 
 @Component({
     selector: "app-test",
     template: `
         <p>test works!</p>
-        <p>Name: {{ name }}</p>
+        <p>Name: <span [textContent]="name"></span></p>
         <p>Age: {{ age }}</p>
-        <div #test>Showing</div>
+        <div #test *ngIf="show">Showing</div>
         <p>
             <ng-content></ng-content>
         </p>

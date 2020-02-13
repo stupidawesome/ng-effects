@@ -115,4 +115,29 @@ describe("How to init effects", () => {
 
         expect(spy).toHaveBeenCalledWith(result)
     })
+
+    it("should apply options, in ascending order of precedence: global defaults < local defaults < effect options", () => {
+        const effectOptions = { apply: true, whenRendered: false }
+        const localDefaults = { markDirty: !defaultOptions.markDirty, whenRendered: true }
+        const result = Object.assign({}, defaultOptions, localDefaults, effectOptions)
+        const effectsClass = createEffectsClass(effectOptions)
+        const spy = fn()
+
+        @Injectable()
+        class MockInitEffects {
+            constructor(@Inject(EFFECTS) effectMetadata: EffectMetadata[]) {
+                effectMetadata.forEach(meta => spy(meta.options))
+            }
+        }
+
+        createSimpleDirective([
+            effects(effectsClass, localDefaults),
+            {
+                provide: InitEffects,
+                useClass: MockInitEffects,
+            },
+        ])
+
+        expect(spy).toHaveBeenCalledWith(result)
+    })
 })

@@ -1,11 +1,33 @@
-import { asapScheduler, concat, defer, isObservable, of, Subject, TeardownLogic } from "rxjs"
+import {
+    asapScheduler,
+    BehaviorSubject,
+    concat,
+    defer,
+    isObservable,
+    merge,
+    Observable,
+    of,
+    pipe,
+    Subject,
+    TeardownLogic,
+} from "rxjs"
 import { InitEffectArgs } from "./interfaces"
-import { subscribeOn, tap } from "rxjs/operators"
+import {
+    distinctUntilChanged,
+    filter,
+    map,
+    share,
+    startWith,
+    subscribeOn,
+    tap,
+} from "rxjs/operators"
 import { currentContext, defaultOptions, effectsMap } from "./constants"
 import { HostRef } from "../constants"
 import { EffectHandler, EffectMetadata, EffectOptions } from "../interfaces"
 import { DestroyObserver } from "./destroy-observer"
 import { Injector } from "@angular/core"
+import { doCheck } from "../patch-hooks"
+import { ViewRenderer } from "./view-renderer"
 
 export function throwMissingPropertyError(key: string, name: string) {
     throw new Error(`[ng-effects] Property "${key}" is not initialised in "${name}".`)
@@ -13,46 +35,31 @@ export function throwMissingPropertyError(key: string, name: string) {
 
 export function noop() {}
 
-export function complete(subjects: Subject<any>[]) {
-    for (const subject of subjects) {
-        subject.complete()
-        subject.unsubscribe()
-    }
+export function select(obj: any, key: string) {
+    return pipe(
+        map(() => obj[key]),
+        distinctUntilChanged(),
+    )
 }
 
 export function observe(obj: any, isDevMode: boolean) {
     const ownProperties = Object.getOwnPropertyNames(obj)
-    const observer: any = {}
-    const subjects: Subject<any>[] = []
-    const dispose = () => complete(subjects)
+    const notifier = new Subject<any>()
+    let revoke = noop
+    let state: any = {}
 
     for (const key of ownProperties) {
-        let value: any = obj[key]
-        const valueSubject: Subject<any> = new Subject()
-        const propertyObserver: any = concat(
-            defer(() => of(value)),
-            valueSubject,
+        const changes = notifier.pipe(select(obj, key), share())
+        const propertyObserver: any = merge(
+            defer(() => of(obj[key])),
+            changes,
         )
-
-        subjects.push(valueSubject)
-        propertyObserver.changes = valueSubject.asObservable()
-
-        observer[key] = propertyObserver
-        Object.defineProperty(obj, key, {
-            configurable: false,
-            enumerable: true,
-            get() {
-                return value
-            },
-            set(_value) {
-                value = _value
-                valueSubject.next(value)
-            },
-        })
+        propertyObserver.changes = changes
+        state[key] = propertyObserver
     }
 
     if (isDevMode && typeof Proxy !== "undefined") {
-        const { proxy, revoke } = Proxy.revocable(observer, {
+        const revocable = Proxy.revocable(state, {
             get(target: any, p: string) {
                 if (!target[p]) {
                     throwMissingPropertyError(p, obj.constructor.name)
@@ -60,18 +67,13 @@ export function observe(obj: any, isDevMode: boolean) {
                 return target[p]
             },
         })
-        return {
-            proxy,
-            revoke: () => {
-                revoke()
-                dispose()
-            },
-        }
-    } else {
-        return {
-            proxy: observer,
-            revoke: dispose,
-        }
+        state = revocable.proxy
+        revoke = revocable.revoke
+    }
+    return {
+        notifier,
+        state,
+        revoke,
     }
 }
 
@@ -95,6 +97,7 @@ export function initEffect({
     subs,
     viewRenderer,
     adapter,
+    notifier,
 }: InitEffectArgs) {
     const returnValue = effect()
 
@@ -110,10 +113,9 @@ export function initEffect({
                     tap((value: any) => {
                         if (adapter) {
                             adapter.next(value, options)
-                            return
                         }
                         // first set the value
-                        if (options.apply) {
+                        else if (options.apply) {
                             for (const prop of Object.keys(value)) {
                                 if (!hostContext.hasOwnProperty(prop)) {
                                     throwMissingPropertyError(prop, hostContext.constructor.name)
@@ -123,6 +125,7 @@ export function initEffect({
                         } else if (hostContext.hasOwnProperty(binding)) {
                             hostContext[binding] = value
                         }
+                        notifier.next()
                     }),
                     subscribeOn(asapScheduler),
                 )
@@ -158,21 +161,27 @@ export function injectEffects(
     isDevMode: boolean,
     strictMode: boolean,
     destroyObserver: DestroyObserver,
+    viewRenderer: ViewRenderer,
     injector: Injector,
     ...effects: any[]
 ): EffectMetadata[] {
     const hostContext = hostRef.instance
-    const { proxy, revoke } = observe(hostContext, isDevMode)
+    const { state, revoke, notifier } = observe(hostContext, isDevMode)
     const defaults = Object.assign({}, defaultOptions, options)
+    const sub = merge(viewRenderer.whenScheduled(), viewRenderer.whenRendered()).subscribe(notifier)
+
     destroyObserver.destroyed.subscribe(revoke)
+    destroyObserver.destroyed.subscribe(() => sub.unsubscribe())
 
     return Array.from(
-        exploreEffects(defaults, proxy, hostContext, strictMode, injector, [
+        exploreEffects(defaults, state, hostContext, strictMode, injector, notifier, [
             hostRef.instance,
             ...effects,
         ]),
     )
 }
+
+export const effectsMetadata = new Map()
 
 export function* exploreEffects(
     defaults: EffectOptions,
@@ -180,9 +189,14 @@ export function* exploreEffects(
     hostContext: any,
     strictMode: boolean,
     injector: Injector,
+    notifier: Subject<void>,
     effects: any[],
 ) {
     for (const effect of effects) {
+        const type = effect.constructor
+        if (effectsMetadata.has(type)) {
+            yield effectsMetadata.get(type)
+        }
         const props = [
             ...Object.getOwnPropertyNames(Object.getPrototypeOf(effect)),
             ...Object.getOwnPropertyNames(effect),
@@ -204,17 +218,22 @@ export function* exploreEffects(
                     typeof checkBinding === "string" &&
                     Object.getOwnPropertyDescriptor(hostContext, checkBinding) === undefined
                 ) {
-                    throwMissingPropertyError(checkBinding, hostContext.constructor.name)
+                    throwMissingPropertyError(checkBinding, type.name)
                 }
 
-                yield {
-                    name: effect.constructor.name,
+                const metadata = {
+                    name: type.name,
                     key,
                     binding,
                     effect: effectFn.bind(effect, proxy, hostContext),
                     options,
                     adapter,
+                    notifier,
                 }
+
+                effectsMetadata.set(type, metadata)
+
+                yield metadata
             }
         }
     }

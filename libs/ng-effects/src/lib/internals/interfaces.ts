@@ -1,5 +1,5 @@
 import { ChangeDetectorRef } from "@angular/core"
-import { Observable, Subscription } from "rxjs"
+import { Observable, Subject, Subscription } from "rxjs"
 import { ViewRenderer } from "./view-renderer"
 import { EffectHandler, EffectOptions } from "../interfaces"
 
@@ -12,10 +12,12 @@ export interface InitEffectArgs {
     subs: Subscription
     viewRenderer: ViewRenderer
     adapter?: EffectHandler<any, any>
+    notifier: Subject<void>
 }
 
 export interface RenderApi {
     detectChanges(componentOrView: any, changeDetector?: ChangeDetectorRef): void
     markDirty(componentOrView: any, changeDetector?: ChangeDetectorRef): void
-    whenRendered(componentOrView: any, changeDetector?: ChangeDetectorRef): Observable<null>
+    whenScheduled(): Observable<null>
+    whenRendered(): Observable<null>
 }

@@ -7,7 +7,6 @@ import { currentContext } from "./constants"
 export class ConnectFactory {
     constructor(
         @Host() @Inject(HOST_INITIALIZER) initializers: any[],
-        @Host() destroyObserver: DestroyObserver,
         @Host() injector: Injector,
     ) {
         return function connect(context: any) {

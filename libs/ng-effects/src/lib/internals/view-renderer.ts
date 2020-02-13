@@ -6,21 +6,31 @@ import { RenderApi } from "./interfaces"
 
 @Injectable({ providedIn: "root" })
 export class ViewRenderer implements RenderApi, OnDestroy {
-    private readonly observer: Subject<null>
+    private readonly begin: Subject<null>
+    private readonly end: Subject<null>
 
     constructor(rendererFactory: RendererFactory2) {
+        const origBeginFn = rendererFactory.end || noop
         const origEndFn = rendererFactory.end || noop
-        const subject = new Subject<null>()
-        const observers = subject.observers
+        const begin = new Subject<null>()
+        const end = new Subject<null>()
+        const observers = end.observers
 
-        rendererFactory.end = () => {
+        rendererFactory.begin = function () {
+            console.log('begin')
+            origBeginFn.apply(rendererFactory)
+            begin.next(null)
+        }
+
+        rendererFactory.end = function() {
             origEndFn.apply(rendererFactory)
             if (observers.length > 0) {
-                subject.next(null)
+                end.next(null)
             }
         }
 
-        this.observer = subject
+        this.end = end
+        this.begin = begin
     }
 
     public detectChanges(componentOrView: any, changeDetector: ChangeDetectorRef) {
@@ -31,11 +41,15 @@ export class ViewRenderer implements RenderApi, OnDestroy {
         changeDetector.markForCheck()
     }
 
-    public whenRendered(componentOrView: any) {
-        return this.observer.pipe(take(1), share())
+    public whenScheduled() {
+        return this.begin.asObservable()
+    }
+
+    public whenRendered() {
+        return this.end.asObservable()
     }
 
     public ngOnDestroy() {
-        this.observer.complete()
+        this.end.complete()
     }
 }

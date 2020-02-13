@@ -5,6 +5,7 @@ import { initEffect } from "./utils"
 import { ViewRenderer } from "./view-renderer"
 import { InitEffectArgs } from "./interfaces"
 import { EffectMetadata } from "../interfaces"
+import { take } from "rxjs/operators"
 
 @Injectable()
 export class InitEffects implements OnDestroy {
@@ -12,34 +13,29 @@ export class InitEffects implements OnDestroy {
     private readonly effects: any[]
     private readonly cdr: ChangeDetectorRef
     private readonly viewRenderer: ViewRenderer
-    private readonly nativeElement: any
     private readonly hostContext: any
 
     constructor(
         @Host() hostRef: HostRef,
         @Host() @Inject(EFFECTS) effects: EffectMetadata[],
         @Host() cdr: ChangeDetectorRef,
-        @Host() elementRef: ElementRef<HTMLElement>,
-        @Host() viewRenderer: ViewRenderer,
+        viewRenderer: ViewRenderer,
     ) {
-        const { nativeElement } = elementRef
-
         this.subs = new Subscription()
         this.effects = effects
         this.cdr = cdr
         this.viewRenderer = viewRenderer
-        this.nativeElement = nativeElement
         this.hostContext = hostRef.instance
 
         this.run()
     }
 
     public run() {
-        const { cdr, subs, effects, viewRenderer, nativeElement, hostContext } = this
+        const { cdr, subs, effects, viewRenderer, hostContext } = this
 
-        const whenRendered = viewRenderer.whenRendered(nativeElement)
+        const whenRendered = viewRenderer.whenRendered().pipe(take(1))
 
-        for (const { effect, binding, options, adapter } of effects) {
+        for (const { effect, binding, options, adapter, notifier } of effects) {
             const args: InitEffectArgs = {
                 effect,
                 hostContext,
@@ -49,6 +45,7 @@ export class InitEffects implements OnDestroy {
                 subs,
                 viewRenderer,
                 adapter,
+                notifier
             }
             if (options.whenRendered) {
                 subs.add(

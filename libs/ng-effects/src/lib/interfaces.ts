@@ -1,4 +1,4 @@
-import { Observable, TeardownLogic } from "rxjs"
+import { Observable, Subject, TeardownLogic } from "rxjs"
 import { Type } from "@angular/core"
 
 export type PropertyObservable<T> = Observable<T> & { changes: Observable<T> }
@@ -21,6 +21,7 @@ export interface EffectMetadata {
     effect: BoundEffectFn
     options: EffectOptions
     adapter?: EffectHandler<any, any>
+    notifier: Subject<void>
 }
 
 export interface NextEffect<TValue, TOptions> {
