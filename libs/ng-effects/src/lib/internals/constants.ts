@@ -8,3 +8,5 @@ export const defaultOptions: DefaultEffectOptions = {
     detectChanges: false,
     markDirty: false,
 }
+
+export const proxyTarget = Symbol()

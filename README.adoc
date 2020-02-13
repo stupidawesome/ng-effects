@@ -53,7 +53,7 @@ npm install ng-effects
 
 === Initialize effects
 
-Effects are initialized through a `Connect` service. Inject `Connect` into your component or directive and *call it only after you have initialized all variables with default values*. `Connect` can only be injected when `HOST_EFFECTS` or `effects()` are provided.
+Effects are initialized through a `Connect` service. Inject `Connect` into your component or directive and call it from the constructor. `Connect` can only be injected when `HOST_EFFECTS` or `effects()` are provided.
 
 [source,typescript]
 ----
@@ -65,10 +65,8 @@ export class AppComponent {
     name: string
 
     constructor(connect: Connect) {
-        this.count = 0 // Always provide default values first
-        this.name = undefined // Should be initialized even if value is undefined
-
-        connect(this) // Should always be last statement and called in constructor
+        this.count = 0
+        connect(this) // Should always be called in the constructor
     }
 
     @Effect(options)
@@ -387,7 +385,7 @@ Effects can be easily connected to host context outputs.
 export class AppEffects implements Effects<AppComponent> {
     @Effect()
     countChange(state: State<TestState>, context: AppComponent) {
-        return state.count.changes.subscribe(context.countChange)
+        return changes(state.count).subscribe(context.countChange)
     }
 }
 ----
@@ -415,7 +413,6 @@ export class AppComponent {
     clicked: MouseEvent
 
     constructor(connect: Connect) {
-        this.clicked = undefined
         connect(this)
     }
 }
@@ -474,7 +471,6 @@ export class AppComponent {
     clicked: MouseEvent
 
     constructor(connect: Connect) {
-        this.clicked = undefined
         connect(this)
     }
 }
@@ -554,25 +550,21 @@ export class ChildEffects {
         <ng-content>Content</ng-content>
     `,
     providers: [effects(ChildEffects)],
-    queries: {
-        contentChild: new ContentChild(ChildComponent),
-        contentChildren: new ContentChildren(ChildComponent),
-        viewChild: new ViewChild(ChildComponent),
-        viewChildren: new ViewChildren(ChildComponent),
-    }
 })
 export class ChildComponent {
+    @ContentChild(ChildComponent)
     contentChild: ChildComponent
+
+    @ContentChildren(ChildComponent)
     contentChildren: QueryList<ChildComponent>
+
+    @ViewChild(ChildComponent)
     viewChild: ChildComponent
+
+    @ViewChildren(ChildComponent)
     viewChildren: QueryList<ChildComponent>
 
     constructor(connect: Connect) {
-        this.contentChild = undefined
-        this.contentChildren = undefined
-        this.viewChild = undefined
-        this.viewChildren = undefined
-
         connect(this)
     }
 }
@@ -627,7 +619,7 @@ export class AppEffects {
 
     @Effect()
     fetchUsers(state: State<AppComponent>, context: AppComponent) {
-        return state.userId.changes.pipe(
+        return changes(state.userId).pipe(
             switchMap(userId => this.http.get<Users>(`https://example.com/users/${userId}`).pipe(
                 catchError(error => {
                     console.error(error)

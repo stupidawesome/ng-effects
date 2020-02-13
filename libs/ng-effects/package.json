@@ -1,9 +1,18 @@
 {
     "name": "ng-effects",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "peerDependencies": {
         "@angular/common": "^9.0.0",
         "@angular/core": "^9.0.0",
         "tslib": "^1.10.0"
-    }
+    },
+    "keywords": [
+        "angular",
+        "state management",
+        "reactive",
+        "rxjs",
+        "effects",
+        "components"
+    ],
+    "homepage": "https://github.com/stupidawesome/ng-effects"
 }

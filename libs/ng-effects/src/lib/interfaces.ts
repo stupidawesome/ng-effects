@@ -1,27 +1,18 @@
 import { Observable, Subject, TeardownLogic } from "rxjs"
 import { Type } from "@angular/core"
+import { MapSelect } from "./internals/interfaces"
 
-export type PropertyObservable<T> = Observable<T> & { changes: Observable<T> }
-
-export type State<T> = {
-    readonly [key in keyof T]: PropertyObservable<T[key]>
-}
+export type State<T> = MapSelect<T>
 
 export type EffectFn<T, U = any> = (state: State<T>, context: T) => Observable<U> | TeardownLogic
 export type BoundEffectFn = () => Observable<unknown> | TeardownLogic
 
 export interface EffectMetadata {
-    name: string
     key: string
     effect: BoundEffectFn
     options: EffectOptions
     adapter?: EffectHandler<any, any>
     notifier: Subject<void>
-}
-
-export interface NextEffect<TValue, TOptions> {
-    value: TValue
-    options: TOptions
 }
 
 export interface EffectHandler<TValue, TOptions = never> {

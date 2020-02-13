@@ -21,3 +21,7 @@ export interface RenderApi {
     whenScheduled(): Observable<null>
     whenRendered(): Observable<null>
 }
+
+export type MapSelect<T> = {
+    [key in keyof T]: Observable<T[key]>
+}

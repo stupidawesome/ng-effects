@@ -2,7 +2,6 @@ import {
     ChangeDetectionStrategy,
     Component,
     ElementRef,
-    EventEmitter,
     Injectable,
     Input,
     Output,
@@ -10,10 +9,20 @@ import {
     ViewChild,
     ViewChildren,
 } from "@angular/core"
-import { Observable, of, OperatorFunction, Subject, timer } from "rxjs"
-import { Connect, createEffect, Effect, Effects, effects, HostRef, State } from "@ng9/ng-effects"
+import { Observable, of, OperatorFunction, timer } from "rxjs"
+import {
+    changes,
+    Connect,
+    createEffect,
+    Effect,
+    effects,
+    Effects,
+    HostRef,
+    latest,
+    State,
+} from "@ng9/ng-effects"
 import { Events, increment } from "../utils"
-import { delay, map, mapTo, repeat, switchMapTo, take } from "rxjs/operators"
+import { map, mapTo, repeat, switchMapTo, take } from "rxjs/operators"
 import { Dispatch } from "../dispatch-adapter"
 
 export type Maybe<T> = T | undefined
@@ -68,10 +77,8 @@ export class TestEffects implements Effects<TestComponent> {
      * Apply example
      */
     @Effect({ apply: true })
-    public bindAll(_: State<TestState>) {
-        return of({
-            name: "111",
-        }).pipe(delay(500))
+    public bindAll(state: State<TestState>) {
+        return latest(state).pipe(mapTo({}))
     }
 
     /**
@@ -104,7 +111,7 @@ export class TestEffects implements Effects<TestComponent> {
      */
     @Effect({ whenRendered: true })
     public ageChange(state: State<TestState>, ctx: TestComponent) {
-        return state.age.changes.subscribe(ctx.ageChange)
+        return changes(state.age).subscribe(ctx.ageChange)
     }
 
     /**
@@ -112,7 +119,7 @@ export class TestEffects implements Effects<TestComponent> {
      */
     @Effect()
     public sideEffect(state: State<TestState>) {
-        return state.age.changes.subscribe(() => {
+        return changes(state.age).subscribe(() => {
             // do something here
         })
     }
@@ -122,7 +129,7 @@ export class TestEffects implements Effects<TestComponent> {
      */
     @Effect()
     public clicked(state: State<TestState>, ctx: TestComponent) {
-        return ctx.subscribe(event => console.log(`click:`, event))
+        return ctx.events.subscribe(event => console.log(`click:`, event))
     }
 
     /**
@@ -138,7 +145,7 @@ export class TestEffects implements Effects<TestComponent> {
      */
     @Effect()
     public viewChildren(state: State<TestState>) {
-        return state.viewChildren.changes.subscribe()
+        return changes(state.viewChildren).subscribe()
     }
 
     /**
@@ -168,14 +175,15 @@ export class TestEffects implements Effects<TestComponent> {
 
     @Effect("show")
     public toggleShow(state: State<TestComponent>, ctx: TestComponent) {
-        return ctx.pipe(toggleSwitch(state.show))
+        const { show } = state
+        return ctx.events.pipe(toggleSwitch(show))
     }
 }
 
 @Component({
     selector: "app-test",
     template: `
-        <p (click)="next($event)">test works!</p>
+        <p>test works!</p>
         <p>Name: {{ name }}</p>
         <p>Age: {{ age }}</p>
         <div #test *ngIf="show">Showing</div>
@@ -187,10 +195,10 @@ export class TestEffects implements Effects<TestComponent> {
     changeDetection: ChangeDetectionStrategy.OnPush,
     providers: [effects(TestEffects, { markDirty: true })],
     host: {
-        "(click)": "next($event) //noinspection UnresolvedVariable",
+        "(click)": "events.next($event) //noinspection UnresolvedVariable",
     },
 })
-export class TestComponent extends Events<Subject<any>> implements TestState {
+export class TestComponent implements TestState {
     @Input()
     public name: string
 
@@ -198,7 +206,7 @@ export class TestComponent extends Events<Subject<any>> implements TestState {
     public age: number
 
     @Output()
-    public ageChange: EventEmitter<number>
+    public ageChange: Events<number>
 
     @ViewChild("test")
     public viewChild: Maybe<ElementRef>
@@ -208,15 +216,14 @@ export class TestComponent extends Events<Subject<any>> implements TestState {
 
     public show: boolean
 
-    constructor(connect: Connect) {
-        super()
+    public events: Events<MouseEvent>
 
+    constructor(connect: Connect) {
         this.name = "abc"
         this.age = 0
-        this.ageChange = new EventEmitter()
+        this.ageChange = new Events()
+        this.events = new Events()
         this.show = true
-        this.viewChild = undefined
-        this.viewChildren = undefined
 
         connect(this)
     }

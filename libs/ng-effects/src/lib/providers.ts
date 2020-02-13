@@ -1,5 +1,5 @@
 import { InitEffects } from "./internals/init-effects"
-import { DEV_MODE, EFFECTS, HOST_INITIALIZER, HostRef, STRICT_MODE } from "./constants"
+import { EFFECTS, HOST_INITIALIZER, HostRef, STRICT_MODE } from "./constants"
 import { Injector, Type } from "@angular/core"
 import { DestroyObserver } from "./internals/destroy-observer"
 import { ViewRenderer } from "./internals/view-renderer"
@@ -16,7 +16,6 @@ export function effects(types: Type<any> | Type<any>[] = [], effectOptions?: Def
             deps: [
                 EffectOptions,
                 HostRef,
-                DEV_MODE,
                 STRICT_MODE,
                 DestroyObserver,
                 ViewRenderer,
