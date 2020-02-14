@@ -1,4 +1,4 @@
-import { effectsMap, proxyTarget } from "./internals/constants"
+import { effectsMap } from "./internals/constants"
 import { ApplyEffectOptions, BindEffectOptions, EffectFn, EffectHandler } from "./interfaces"
 import { combineLatest, MonoTypeOperatorFunction, Observable } from "rxjs"
 import { Type } from "@angular/core"
@@ -49,8 +49,4 @@ export function latest<T>(source: MapSelect<T>): Observable<T> {
             }, {} as T),
         ),
     )
-}
-
-export function context<T>(state: MapSelect<T>): T {
-    return state[proxyTarget]
 }
