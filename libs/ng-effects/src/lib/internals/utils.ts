@@ -1,14 +1,6 @@
-import {
-    asapScheduler,
-    BehaviorSubject,
-    isObservable,
-    merge,
-    Observable,
-    Subject,
-    TeardownLogic,
-} from "rxjs"
+import { BehaviorSubject, isObservable, merge, Observable, Subject, TeardownLogic } from "rxjs"
 import { InitEffectArgs } from "./interfaces"
-import { distinctUntilChanged, map, mapTo, subscribeOn, tap } from "rxjs/operators"
+import { distinctUntilChanged, map, mapTo, skipUntil, tap } from "rxjs/operators"
 import { currentContext, defaultOptions, effectsMap } from "./constants"
 import { HostRef } from "../constants"
 import { EffectHandler, EffectMetadata, EffectOptions } from "../interfaces"
@@ -78,6 +70,7 @@ export function initEffect({
     viewRenderer,
     adapter,
     notifier,
+    whenRendered,
 }: InitEffectArgs) {
     const returnValue = effect()
 
@@ -86,16 +79,13 @@ export function initEffect({
     }
 
     if (isObservable(returnValue)) {
-        // wait until first change detection
         subs.add(
             returnValue
                 .pipe(
                     tap((value: any) => {
                         if (adapter) {
                             adapter.next(value, options)
-                        }
-                        // first set the value
-                        else if (options.apply) {
+                        } else if (options.apply) {
                             for (const prop of Object.keys(value)) {
                                 if (!hostContext.hasOwnProperty(prop)) {
                                     throwMissingPropertyError(prop, hostContext.constructor.name)
@@ -114,7 +104,8 @@ export function initEffect({
                             notifier.next()
                         }
                     }),
-                    subscribeOn(asapScheduler),
+                    // don't mark views dirty on first change detection run
+                    skipUntil(whenRendered),
                 )
                 .subscribe(() => {
                     if (options.markDirty) {
@@ -139,7 +130,6 @@ export function injectHostRef() {
 export function injectEffects(
     options: EffectOptions,
     hostRef: HostRef,
-    strictMode: boolean,
     destroyObserver: DestroyObserver,
     viewRenderer: ViewRenderer,
     injector: Injector,
@@ -153,7 +143,7 @@ export function injectEffects(
     destroyObserver.destroyed.subscribe(() => sub.unsubscribe())
 
     return Array.from(
-        exploreEffects(defaults, state, hostContext, strictMode, injector, notifier, [
+        exploreEffects(defaults, state, hostContext, injector, notifier, [
             hostRef.instance,
             ...effects,
         ]),
@@ -164,7 +154,6 @@ export function* exploreEffects(
     defaults: EffectOptions,
     proxy: any,
     hostContext: any,
-    strictMode: boolean,
     injector: Injector,
     notifier: Subject<void>,
     effects: any[],
@@ -182,18 +171,17 @@ export function* exploreEffects(
             if (effectFn && maybeOptions) {
                 let adapter: EffectHandler<any, any> | undefined
                 const options: EffectOptions<any> = Object.assign({}, defaults, maybeOptions)
-                const binding = strictMode ? options.bind : options.bind || key
-                const checkBinding = options.bind
+                const binding = options.bind
 
                 if (options.adapter) {
                     adapter = injector.get(options.adapter)
                 }
 
                 if (
-                    typeof checkBinding === "string" &&
-                    Object.getOwnPropertyDescriptor(hostContext, checkBinding) === undefined
+                    typeof binding === "string" &&
+                    Object.getOwnPropertyDescriptor(hostContext, binding) === undefined
                 ) {
-                    throwMissingPropertyError(checkBinding, hostContext.constructor.name)
+                    throwMissingPropertyError(binding, hostContext.constructor.name)
                 }
 
                 const metadata = {

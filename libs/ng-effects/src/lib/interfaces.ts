@@ -23,10 +23,6 @@ export interface EffectHandler<TValue, TOptions = never> {
     next(value: TValue, options: TOptions): void
 }
 
-export type Effects<T> = {
-    [key in keyof T]?: EffectFn<T, T[key]>
-}
-
 export interface DefaultEffectOptions {
     detectChanges?: boolean
     whenRendered?: boolean

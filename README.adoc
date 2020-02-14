@@ -266,28 +266,6 @@ export class AppEffects implements Effects<AppComponent> {
 }
 ----
 
-=== Implicit bindings
-
-By default, bindings are created implicitly when the name of an effect matches the name of any own property in the host context. This behavior can be disabled by providing `USE_STRICT_EFFECTS` in the root module of your application.
-
-[source,typescript]
-----
-@Injectable()
-export class AppEffects implements Effects<AppComponent> {
-//  Functionally equivalent to
-//  @Effect("count", { markDirty: true })
-    @Effect({ markDirty: true })
-    count(state: State<AppState>) {
-        return timer(1000).pipe(
-            switchMapTo(state.count),
-            increment(1),
-            take(1),
-            repeat()
-        )
-    }
-}
-----
-
 === Multiple bindings
 
 Multiple effects can be bound to the same property.

@@ -1,5 +1,5 @@
 import { InitEffects } from "./internals/init-effects"
-import { EFFECTS, HOST_INITIALIZER, HostRef, STRICT_MODE } from "./constants"
+import { EFFECTS, HOST_INITIALIZER, HostRef } from "./constants"
 import { Injector, Type } from "@angular/core"
 import { DestroyObserver } from "./internals/destroy-observer"
 import { ViewRenderer } from "./internals/view-renderer"
@@ -13,14 +13,9 @@ export function effects(types: Type<any> | Type<any>[] = [], effectOptions?: Def
         {
             provide: EFFECTS,
             useFactory: injectEffects,
-            deps: [
-                EffectOptions,
-                HostRef,
-                STRICT_MODE,
-                DestroyObserver,
-                ViewRenderer,
-                Injector,
-            ].concat(types as any),
+            deps: [EffectOptions, HostRef, DestroyObserver, ViewRenderer, Injector].concat(
+                types as any,
+            ),
         },
         {
             provide: EffectOptions,
@@ -53,12 +48,6 @@ export interface Connect {
 export abstract class Connect {}
 
 export const HOST_EFFECTS = effects()
-
-// noinspection JSUnusedGlobalSymbols
-export const USE_STRICT_EFFECTS = {
-    provide: STRICT_MODE,
-    useValue: true,
-}
 
 export const USE_EXPERIMENTAL_RENDER_API = [
     {

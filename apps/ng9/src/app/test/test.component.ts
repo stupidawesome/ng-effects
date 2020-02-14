@@ -17,7 +17,6 @@ import {
     createEffect,
     Effect,
     effects,
-    Effects,
     HostRef,
     latest,
     State,
@@ -25,8 +24,6 @@ import {
 import { Events, increment } from "../utils"
 import { map, mapTo, repeat, switchMapTo, take } from "rxjs/operators"
 import { Dispatch } from "../dispatch-adapter"
-
-export type Maybe<T> = T | undefined
 
 interface TestState {
     name: string
@@ -46,7 +43,7 @@ function toggleSwitch(source: Observable<boolean>): OperatorFunction<any, boolea
 }
 
 @Injectable()
-export class TestEffects implements Effects<TestComponent> {
+export class TestEffects {
     // noinspection JSUnusedLocalSymbols
     /**
      * Effect factory with explicit binding example
@@ -102,7 +99,7 @@ export class TestEffects implements Effects<TestComponent> {
     /**
      * Property binding example
      */
-    @Effect()
+    @Effect("age")
     public age(state: State<TestState>) {
         return timer(1000).pipe(switchMapTo(state.age), increment(1), take(1), repeat())
     }
