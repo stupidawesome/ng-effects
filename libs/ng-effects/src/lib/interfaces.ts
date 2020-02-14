@@ -3,8 +3,12 @@ import { Type } from "@angular/core"
 import { MapSelect } from "./internals/interfaces"
 
 export type State<T> = MapSelect<T>
+export type Context<T> = Readonly<T>
 
-export type EffectFn<T, U = any> = (state: State<T>, context: T) => Observable<U> | TeardownLogic
+export type EffectFn<T, U = any> = (
+    state: State<T>,
+    context: Context<T>,
+) => Observable<U> | TeardownLogic
 export type BoundEffectFn = () => Observable<unknown> | TeardownLogic
 
 export interface EffectMetadata {

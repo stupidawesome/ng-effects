@@ -205,7 +205,7 @@ Alternative syntax for effect declaration.
 @Component()
 export class AppComponent implements AppState {
     incrementCount = createEffect(
-        (state: State<TestState>, ctx: TestComponent) =>
+        (state: State<TestState>, context: Context<TestComponent>) =>
             timer(1000).pipe(
                 switchMapTo(state.count),
                 take(1),
@@ -384,7 +384,7 @@ Effects can be easily connected to host context outputs.
 @Injectable()
 export class AppEffects implements Effects<AppComponent> {
     @Effect()
-    countChange(state: State<TestState>, context: AppComponent) {
+    countChange(state: State<TestState>, context: Context<AppComponent>) {
         return changes(state.count).subscribe(context.countChange)
     }
 }
@@ -425,7 +425,7 @@ Alternatively, use an event emitter.
 @Injectable()
 export class AppEffects {
     @Effect()
-    handleTemplateClick(state: State<AppComponent>, context: AppComponent) {
+    handleTemplateClick(state: State<AppComponent>, context: Context<AppComponent>) {
         return context.clicked.subscribe(event => console.log(`click:`, event))
     }
 }
@@ -483,7 +483,7 @@ Alternatively, use an event emitter.
 @Injectable()
 export class AppEffects {
     @Effect()
-    handleHostClick(state: State<AppComponent>, context: AppComponent) {
+    handleHostClick(state: State<AppComponent>, context: Context<AppComponent>) {
         return context.clicked.subscribe(event => console.log(`click:`, event))
     }
 }
@@ -581,7 +581,7 @@ export class AppEffects {
     constructor(private elementRef: ElementRef) {}
 
     @Effect({ whenRendered: true })
-    mounted(state: State<AppComponent>, context: AppComponent) {
+    mounted(state: State<AppComponent>, context: Context<AppComponent>) {
         const instance = thirdPartyLib.mount(this.elementRef.nativeElement)
         return function () {
             // cleanup logic
@@ -608,7 +608,7 @@ export class AppEffects {
     }
 
     @Effect()
-    dispatchForm(state: State<AppComponent>, context: AppComponent) {
+    dispatchForm(state: State<AppComponent>, context: Context<AppComponent>) {
         return context.formData.valueChanges.subscribe(payload => {
             this.store.dispatch({
                 type: "FORM_UPDATED",
@@ -618,7 +618,7 @@ export class AppEffects {
     }
 
     @Effect()
-    fetchUsers(state: State<AppComponent>, context: AppComponent) {
+    fetchUsers(state: State<AppComponent>, context: Context<AppComponent>) {
         return changes(state.userId).pipe(
             switchMap(userId => this.http.get<Users>(`https://example.com/users/${userId}`).pipe(
                 catchError(error => {
@@ -662,7 +662,7 @@ export class Dispatch implements EffectHandler<Action, Options> {
 @Injectable()
 export class AppEffects {
     @Effect(Dispatch)
-    dispatchAction(state: State<AppComponent>, context: AppComponent) {
+    dispatchAction(state: State<AppComponent>, context: Context<AppComponent>) {
         return context.formData.valueChanges.pipe(
             map(payload => ({
                 type: "FORM_UPDATED",

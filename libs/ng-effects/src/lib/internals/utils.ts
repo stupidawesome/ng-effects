@@ -19,7 +19,7 @@ function selectKey(source: Observable<any>, key: PropertyKey) {
     )
 }
 
-export function select<T>(source: Observable<T>, target: any) {
+export function state<T>(source: Observable<T>, target: any) {
     return Proxy.revocable(target as any, {
         get(_, key: PropertyKey) {
             return selectKey(source, key)
@@ -35,7 +35,7 @@ export function noop() {}
 export function observe(obj: any, destroyObserver: DestroyObserver) {
     const notifier = new Subject<any>()
     const observer = notifier.pipe(mapTo(obj))
-    const { proxy: state, revoke } = select(observer, obj)
+    const { proxy, revoke } = state(observer, obj)
 
     destroyObserver.destroyed.subscribe(() => {
         revoke()
@@ -45,7 +45,7 @@ export function observe(obj: any, destroyObserver: DestroyObserver) {
 
     return {
         notifier,
-        state,
+        state: proxy,
     }
 }
 

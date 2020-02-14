@@ -5,6 +5,6 @@ export const HOST_INITIALIZER = new InjectionToken<any[]>("HOST_INITIALIZER")
 export const STRICT_MODE = new InjectionToken("STRICT_MODE", { factory: () => false })
 
 export interface HostRef<T = any> {
-    instance: T
+    instance: Readonly<T>
 }
 export abstract class HostRef<T = any> {}

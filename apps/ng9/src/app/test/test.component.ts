@@ -13,6 +13,7 @@ import { Observable, of, OperatorFunction, timer } from "rxjs"
 import {
     changes,
     Connect,
+    Context,
     createEffect,
     Effect,
     effects,
@@ -51,7 +52,7 @@ export class TestEffects implements Effects<TestComponent> {
      * Effect factory with explicit binding example
      */
     public name = createEffect(
-        (state: State<TestState>, ctx: TestComponent) => {
+        (state: State<TestState>, context: Context<TestComponent>) => {
             return timer(1000).pipe(mapTo("stupidawesome"))
         },
         { bind: "name", markDirty: true },
@@ -110,8 +111,8 @@ export class TestEffects implements Effects<TestComponent> {
      * Output binding example
      */
     @Effect({ whenRendered: true })
-    public ageChange(state: State<TestState>, ctx: TestComponent) {
-        return changes(state.age).subscribe(ctx.ageChange)
+    public ageChange(state: State<TestState>, context: Context<TestComponent>) {
+        return changes(state.age).subscribe(context.ageChange)
     }
 
     /**
@@ -128,8 +129,8 @@ export class TestEffects implements Effects<TestComponent> {
      * Template event binding example
      */
     @Effect()
-    public clicked(state: State<TestState>, ctx: TestComponent) {
-        return ctx.events.subscribe(event => console.log(`click:`, event))
+    public clicked(state: State<TestState>, context: Context<TestComponent>) {
+        return context.events.subscribe(event => console.log(`click:`, event))
     }
 
     /**
@@ -174,9 +175,9 @@ export class TestEffects implements Effects<TestComponent> {
     }
 
     @Effect("show")
-    public toggleShow(state: State<TestComponent>, ctx: TestComponent) {
+    public toggleShow(state: State<TestComponent>, context: TestComponent) {
         const { show } = state
-        return ctx.events.pipe(toggleSwitch(show))
+        return context.events.pipe(toggleSwitch(show))
     }
 }
 
