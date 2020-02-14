@@ -158,9 +158,9 @@ interface AppState {
 }
 
 @Injectable()
-export class AppEffects implements Effects<AppComponent> {
-    @Effect()
-    count(state: State<AppState>) {
+export class AppEffects {
+    @Effect("count")
+    incrementCount(state: State<AppState>) {
         return timer(1000).pipe(
             switchMapTo(state.count),
             take(1),
@@ -171,7 +171,7 @@ export class AppEffects implements Effects<AppComponent> {
 }
 
 @Injectable()
-export class OtherEffects implements Effects<Other> {
+export class OtherEffects {
     // etc...
 }
 
@@ -224,7 +224,7 @@ Injected services share the same injector scope as their host. Special tokens su
 [source,typescript]
 ----
 @Injectable()
-export class AppEffects implements Effects<AppComponent> {
+export class AppEffects {
     constructor(private elementRef: ElementRef, private renderer: Renderer2) {}
 }
 ----
@@ -236,7 +236,7 @@ A reference to the host context can be injected using `HostRef<T>`
 [source,typescript]
 ----
 @Injectable()
-export class AppEffects implements Effects<AppComponent> {
+export class AppEffects {
     host: AppComponent
     constructor(hostRef: HostRef<AppComponent>) {
         this.host = hostRef.instance
@@ -251,7 +251,7 @@ Effects can be bound a named property on the host context by setting the `bind` 
 [source,typescript]
 ----
 @Injectable()
-export class AppEffects implements Effects<AppComponent> {
+export class AppEffects {
 //  Alternatively:
 //  @Effect({ bind: count, markDirty: true }
     @Effect("count", { markDirty: true })
@@ -314,7 +314,7 @@ Effects with bindings are inferred from function arguments. Omitting these argum
 [source,typescript]
 ----
 @Injectable()
-export class AppEffects implements Effects<AppComponent> {
+export class AppEffects {
     @Effect<any>("name")
     suppressTypeChecking() {
         // do unsafe binding
@@ -330,7 +330,7 @@ Effects that do not bind a property, or return a subscription/teardown function,
 [source,typescript]
 ----
 @Injectable()
-export class AppEffects implements Effects<AppComponent> {
+export class AppEffects {
     @Effect()
     logCountWithObservable(state: State<AppState>) {
         return state.count.pipe(
@@ -360,7 +360,7 @@ Effects can be easily connected to host context outputs.
 [source,typescript]
 ----
 @Injectable()
-export class AppEffects implements Effects<AppComponent> {
+export class AppEffects {
     @Effect()
     countChange(state: State<TestState>, context: Context<AppComponent>) {
         return changes(state.count).subscribe(context.countChange)
