@@ -31,8 +31,8 @@ export type Maybe<T> = T | undefined
 interface TestState {
     name: string
     age: number
-    viewChild: Maybe<ElementRef>
-    viewChildren: Maybe<QueryList<ElementRef>>
+    viewChild?: ElementRef
+    viewChildren?: QueryList<ElementRef>
 }
 
 function toggleSwitch(source: Observable<boolean>): OperatorFunction<any, boolean> {
@@ -164,7 +164,7 @@ export class TestEffects implements Effects<TestComponent> {
     /**
      * Dispatch adapter example
      */
-    @Effect(Dispatch, { test: true })
+    @Effect(Dispatch, { test: true, markDirty: true })
     public dispatch() {
         return of({
             type: "MY_ACTION",
@@ -210,10 +210,10 @@ export class TestComponent implements TestState {
     public ageChange: Events<number>
 
     @ViewChild("test")
-    public viewChild: Maybe<ElementRef>
+    public viewChild?: ElementRef
 
     @ViewChildren("test")
-    public viewChildren: Maybe<QueryList<ElementRef>>
+    public viewChildren?: QueryList<ElementRef>
 
     public show: boolean
 

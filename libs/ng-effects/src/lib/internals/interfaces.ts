@@ -23,5 +23,5 @@ export interface RenderApi {
 }
 
 export type MapSelect<T> = {
-    [key in keyof T]: Observable<T[key]>
+    [key in keyof Required<T>]: Observable<T[key]>
 }

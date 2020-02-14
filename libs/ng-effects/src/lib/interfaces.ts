@@ -42,7 +42,7 @@ export interface ApplyEffectOptions extends DefaultEffectOptions {
     apply?: boolean
 }
 
-export interface AdapterEffectOptions {
+export interface AdapterEffectOptions extends DefaultEffectOptions {
     adapter?: Type<EffectHandler<any, any>>
 }
 

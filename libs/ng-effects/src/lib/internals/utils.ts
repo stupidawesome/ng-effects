@@ -1,6 +1,14 @@
-import { asapScheduler, isObservable, merge, Observable, Subject, TeardownLogic } from "rxjs"
+import {
+    asapScheduler,
+    BehaviorSubject,
+    isObservable,
+    merge,
+    Observable,
+    Subject,
+    TeardownLogic,
+} from "rxjs"
 import { InitEffectArgs } from "./interfaces"
-import { distinctUntilChanged, map, mapTo, observeOn, tap } from "rxjs/operators"
+import { distinctUntilChanged, map, mapTo, subscribeOn, tap } from "rxjs/operators"
 import { currentContext, defaultOptions, effectsMap } from "./constants"
 import { HostRef } from "../constants"
 import { EffectHandler, EffectMetadata, EffectOptions } from "../interfaces"
@@ -33,7 +41,7 @@ export function state<T>(source: Observable<T>, target: any) {
 export function noop() {}
 
 export function observe(obj: any, destroyObserver: DestroyObserver) {
-    const notifier = new Subject<any>()
+    const notifier = new BehaviorSubject<any>(null)
     const observer = notifier.pipe(mapTo(obj))
     const { proxy, revoke } = state(observer, obj)
 
@@ -85,7 +93,6 @@ export function initEffect({
                     tap((value: any) => {
                         if (adapter) {
                             adapter.next(value, options)
-                            return
                         }
                         // first set the value
                         else if (options.apply) {
@@ -95,7 +102,10 @@ export function initEffect({
                                 }
                                 hostContext[prop] = value[prop]
                             }
-                        } else if (hostContext.hasOwnProperty(binding)) {
+                        } else if (binding) {
+                            if (!hostContext.hasOwnProperty(binding)) {
+                                throwMissingPropertyError(binding, hostContext.constructor.name)
+                            }
                             hostContext[binding] = value
                         }
                         if (options.detectChanges) {
@@ -104,12 +114,9 @@ export function initEffect({
                             notifier.next()
                         }
                     }),
-                    observeOn(asapScheduler),
+                    subscribeOn(asapScheduler),
                 )
                 .subscribe(() => {
-                    if (options.adapter) {
-                        return
-                    }
                     if (options.markDirty) {
                         viewRenderer.markDirty(hostContext, cdr)
                     }
@@ -186,7 +193,7 @@ export function* exploreEffects(
                     typeof checkBinding === "string" &&
                     Object.getOwnPropertyDescriptor(hostContext, checkBinding) === undefined
                 ) {
-                    throwMissingPropertyError(checkBinding, effect.constructor.name)
+                    throwMissingPropertyError(checkBinding, hostContext.constructor.name)
                 }
 
                 const metadata = {

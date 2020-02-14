@@ -19,9 +19,9 @@ export function createEffect<T extends EffectHandler<U, V>, U, V>(
     options: { adapter: Type<T> } & V,
 ): EffectFn<any, NextValue<T>>
 export function createEffect<T, U extends keyof T>(
-    fn: EffectFn<T, T[U]>,
+    fn: EffectFn<unknown>,
     options: any = {},
-): EffectFn<T, T[U]> {
+): EffectFn<unknown> {
     if (options.apply && options.bind) {
         delete options.bind
     }
