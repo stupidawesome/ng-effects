@@ -1,6 +1,14 @@
-import { BehaviorSubject, isObservable, merge, Observable, Subject, TeardownLogic } from "rxjs"
+import {
+    asapScheduler,
+    BehaviorSubject,
+    isObservable,
+    merge,
+    Observable,
+    Subject,
+    TeardownLogic,
+} from "rxjs"
 import { InitEffectArgs } from "./interfaces"
-import { distinctUntilChanged, map, mapTo, skipUntil, tap } from "rxjs/operators"
+import { distinctUntilChanged, map, mapTo, observeOn, tap } from "rxjs/operators"
 import { currentContext, defaultOptions, effectsMap } from "./constants"
 import { HostRef } from "../constants"
 import { EffectHandler, EffectMetadata, EffectOptions } from "../interfaces"
@@ -70,7 +78,6 @@ export function initEffect({
     viewRenderer,
     adapter,
     notifier,
-    whenRendered,
 }: InitEffectArgs) {
     const returnValue = effect()
 
@@ -104,8 +111,7 @@ export function initEffect({
                             notifier.next()
                         }
                     }),
-                    // don't mark views dirty on first change detection run
-                    skipUntil(whenRendered),
+                    observeOn(asapScheduler),
                 )
                 .subscribe(() => {
                     if (options.markDirty) {

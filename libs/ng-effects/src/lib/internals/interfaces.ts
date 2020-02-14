@@ -13,7 +13,6 @@ export interface InitEffectArgs {
     viewRenderer: ViewRenderer
     adapter?: EffectHandler<any, any>
     notifier: Subject<void>
-    whenRendered: Observable<any>
 }
 
 export interface RenderApi {
