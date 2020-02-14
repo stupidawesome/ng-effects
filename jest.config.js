@@ -7,4 +7,13 @@ module.exports = {
     moduleFileExtensions: ["ts", "js", "html"],
     coverageReporters: ["html"],
     passWithNoTests: true,
+    globals: {
+        "ts-jest": {
+            diagnostics: {
+                ignoreCodes: [151001],
+            },
+            tsConfig: "<rootDir>/tsconfig.spec.json",
+        },
+    },
+    setupFilesAfterEnv: ["<rootDir>/src/test-setup.ts"],
 }
