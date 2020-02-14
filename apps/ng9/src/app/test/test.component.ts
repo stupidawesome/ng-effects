@@ -175,7 +175,7 @@ export class TestEffects implements Effects<TestComponent> {
     }
 
     @Effect("show")
-    public toggleShow(state: State<TestComponent>, context: TestComponent) {
+    public toggleShow(state: State<TestComponent>, context: Context<TestComponent>) {
         const { show } = state
         return context.events.pipe(toggleSwitch(show))
     }

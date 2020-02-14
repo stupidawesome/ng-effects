@@ -246,7 +246,7 @@ export class AppEffects implements Effects<AppComponent> {
 
 === Property bindings
 
-Effects can be bound a named property on the host context by setting the `bind` property. This property is updated whever the effect emits a new value. Throws an error if the property does not exist.
+Effects can be bound a named property on the host context by setting the `bind` property. This property is updated whenever the effect emits a new value. Throws an error if the property does not exist.
 
 [source,typescript]
 ----
