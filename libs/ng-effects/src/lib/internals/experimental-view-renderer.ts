@@ -6,8 +6,8 @@ import { DETECT_CHANGES, MARK_DIRTY } from "./constants"
 export class ExperimentalIvyViewRenderer extends ViewRenderer {
     constructor(
         rendererFactory: RendererFactory2,
-        @Inject(DETECT_CHANGES) detectChanges: (view: any) => void,
-        @Inject(MARK_DIRTY) markDirty: (view: any) => void,
+        @Inject(DETECT_CHANGES) detectChanges: any,
+        @Inject(MARK_DIRTY) markDirty: any,
     ) {
         super(rendererFactory)
 
