@@ -1,6 +1,6 @@
 import { TestBed } from "@angular/core/testing"
 import { effects, HOST_EFFECTS } from "../providers"
-import { createEffectsClass, createSimpleComponent, createSimpleDirective } from "./utils"
+import { createEffectsClass, createSimpleComponent, createSimpleDirective } from "./test-utils"
 import { defaultOptions } from "../internals/constants"
 import { InitEffects } from "../internals/init-effects"
 import { EffectMetadata } from "../interfaces"

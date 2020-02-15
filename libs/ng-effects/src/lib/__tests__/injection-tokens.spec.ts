@@ -1,4 +1,4 @@
-import { createSimpleComponent } from "./utils"
+import { createSimpleComponent } from "./test-utils"
 import { ElementRef, Injectable, Provider, Renderer2 } from "@angular/core"
 import { effects } from "../providers"
 import { HostRef } from "../constants"

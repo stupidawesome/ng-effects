@@ -7,6 +7,7 @@ import {
     Injectable,
     NO_ERRORS_SCHEMA,
     Provider,
+    Type,
 } from "@angular/core"
 import { TestBed } from "@angular/core/testing"
 import { Effect } from "../decorators"
@@ -34,6 +35,30 @@ export class SimpleComponent {
     }
     @Effect()
     public hostEffect() {}
+}
+
+export function createDirective(directive: Type<any>, deps?: any[], providers?: Provider[]) {
+    void TestBed.configureTestingModule({
+        providers: [
+            {
+                provide: directive,
+                useClass: directive,
+                deps,
+            },
+            providers,
+            {
+                provide: ChangeDetectorRef,
+                useClass: ChangeDetectorRef,
+            },
+            {
+                provide: ElementRef,
+                useValue: {
+                    nativeElement: document.createElement("div"),
+                },
+            },
+        ],
+    }).compileComponents()
+    return TestBed.inject(directive)
 }
 
 export function createSimpleDirective(providers: Provider[] = []) {

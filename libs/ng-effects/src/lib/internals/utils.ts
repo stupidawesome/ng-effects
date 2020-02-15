@@ -92,7 +92,8 @@ export function initEffect({
                     tap((value: any) => {
                         if (adapter) {
                             adapter.next(value, options)
-                        } else if (options.apply) {
+                        }
+                        if (options.apply) {
                             for (const prop of Object.keys(value)) {
                                 if (!hostContext.hasOwnProperty(prop)) {
                                     throwMissingPropertyError(prop, hostContext.constructor.name)
@@ -113,10 +114,12 @@ export function initEffect({
                     }),
                     observeOn(asapScheduler),
                 )
-                .subscribe(() => {
-                    if (options.markDirty) {
-                        viewRenderer.markDirty(hostContext, cdr)
-                    }
+                .subscribe({
+                    next: () => {
+                        if (options.markDirty) {
+                            viewRenderer.markDirty(hostContext, cdr)
+                        }
+                    },
                 }),
         )
     } else if (isTeardownLogic(returnValue)) {
@@ -156,6 +159,12 @@ export function injectEffects(
     )
 }
 
+export function checkPropertyExists(key: any, obj: any) {
+    if (typeof key === "string" && Object.getOwnPropertyDescriptor(obj, key) === undefined) {
+        throwMissingPropertyError(key, obj.constructor.name)
+    }
+}
+
 export function* exploreEffects(
     defaults: EffectOptions,
     proxy: any,
@@ -181,13 +190,6 @@ export function* exploreEffects(
 
                 if (options.adapter) {
                     adapter = injector.get(options.adapter)
-                }
-
-                if (
-                    typeof binding === "string" &&
-                    Object.getOwnPropertyDescriptor(hostContext, binding) === undefined
-                ) {
-                    throwMissingPropertyError(binding, hostContext.constructor.name)
                 }
 
                 const metadata = {
