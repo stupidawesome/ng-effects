@@ -4,12 +4,14 @@ import {
     Component,
     Directive,
     ElementRef,
+    Inject,
     Injectable,
+    Injector,
     NO_ERRORS_SCHEMA,
     Provider,
     Type,
 } from "@angular/core"
-import { TestBed } from "@angular/core/testing"
+import { ComponentFixture, TestBed } from "@angular/core/testing"
 import { Effect } from "../decorators"
 import { Connect } from "../providers"
 import { EffectOptions } from "../interfaces"
@@ -45,10 +47,12 @@ export function createDirective(directive: Type<any>, deps?: any[], providers?: 
                 useClass: directive,
                 deps,
             },
-            providers,
             {
                 provide: ChangeDetectorRef,
-                useClass: ChangeDetectorRef,
+                useValue: {
+                    markForCheck: fn(),
+                    detectChanges: fn(),
+                },
             },
             {
                 provide: ElementRef,
@@ -56,12 +60,41 @@ export function createDirective(directive: Type<any>, deps?: any[], providers?: 
                     nativeElement: document.createElement("div"),
                 },
             },
+            providers,
         ],
     }).compileComponents()
     return TestBed.inject(directive)
 }
 
-export function createSimpleDirective(providers: Provider[] = []) {
+interface ComponentDef extends Partial<Component> {
+    component: Type<any>
+    deps?: any[]
+    rootProviders?: Provider[]
+    declarations?: Type<any>[]
+    imports?: any[]
+}
+
+export function createComponent<T extends any = any>(def: ComponentDef): ComponentFixture<T> {
+    // noinspection AngularMissingOrInvalidDeclarationInModule
+    @Component({
+        ...def,
+        template: def.template || "",
+    })
+    class MockComponent {
+        constructor(@Inject(Injector) injector: Injector) {
+            const deps = (def.deps || []).map(token => injector.get(token))
+            return new def.component(...deps)
+        }
+    }
+    void TestBed.configureTestingModule({
+        declarations: [MockComponent, ...(def.declarations ? def.declarations : [])],
+        imports: def.imports || [],
+        providers: def.rootProviders || [],
+    }).compileComponents()
+    return TestBed.createComponent(MockComponent as any)
+}
+
+export function createSimpleDirective(providers: Provider[]) {
     return TestBed.configureTestingModule({
         providers: [
             SimpleDirective,
@@ -80,7 +113,7 @@ export function createSimpleDirective(providers: Provider[] = []) {
     }).inject(SimpleDirective)
 }
 
-export function createSimpleComponent(providers: Provider[] = []) {
+export function createSimpleComponent(providers: Provider[]) {
     void TestBed.configureTestingModule({
         declarations: [SimpleComponent],
         schemas: [NO_ERRORS_SCHEMA],

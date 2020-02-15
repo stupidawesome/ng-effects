@@ -1,5 +1,5 @@
 import { effectsMap } from "./internals/constants"
-import { ApplyEffectOptions, BindEffectOptions, EffectFn, EffectHandler } from "./interfaces"
+import { AssignEffectOptions, BindEffectOptions, EffectFn, EffectHandler } from "./interfaces"
 import { combineLatest, MonoTypeOperatorFunction, Observable } from "rxjs"
 import { Type } from "@angular/core"
 import { NextValue } from "./decorators"
@@ -12,7 +12,7 @@ export function createEffect<T, U extends keyof T>(
 ): EffectFn<T, T[U]>
 export function createEffect<T>(
     fn: EffectFn<T, Partial<T>>,
-    options?: ApplyEffectOptions,
+    options?: AssignEffectOptions,
 ): EffectFn<T, Partial<T>>
 export function createEffect<T extends EffectHandler<U, V>, U, V>(
     fn: EffectFn<any, U>,
@@ -22,9 +22,6 @@ export function createEffect<T, U extends keyof T>(
     fn: EffectFn<unknown>,
     options: any = {},
 ): EffectFn<unknown> {
-    if (options.apply && options.bind) {
-        delete options.bind
-    }
     effectsMap.set(fn, options)
     return fn
 }
@@ -39,7 +36,7 @@ export function changes<T>(source?: Observable<T>): any {
     return source ? changesOperator(source) : changesOperator
 }
 
-export function latest<T>(source: MapSelect<T>): Observable<T> {
+export function latestFrom<T>(source: MapSelect<T>): Observable<T> {
     const keys = Object.keys(source) as (keyof T)[]
     return combineLatest(keys.map(key => source[key])).pipe(
         map(values =>

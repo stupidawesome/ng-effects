@@ -1,6 +1,6 @@
 import { effectsMap } from "./internals/constants"
 import {
-    ApplyEffectOptions,
+    AssignEffectOptions,
     BindEffectOptions,
     DefaultEffectOptions,
     EffectFn,
@@ -41,7 +41,7 @@ export function Effect<T extends string>(
     options?: DefaultEffectOptions,
 ): EffectDecorator<T>
 export function Effect<T extends string>(options?: BindEffectOptions<T>): EffectDecorator<T>
-export function Effect<T extends ApplyEffectOptions>(options?: T): EffectDecorator<T["apply"]>
+export function Effect<T extends AssignEffectOptions>(options?: T): EffectDecorator<T["assign"]>
 export function Effect<T extends EffectHandler<U, V>, U, V>(
     adapter: Type<T>,
     options?: V,

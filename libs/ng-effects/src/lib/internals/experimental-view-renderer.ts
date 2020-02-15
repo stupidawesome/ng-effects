@@ -1,13 +1,17 @@
-import { Injectable, ɵdetectChanges as detectChanges, ɵmarkDirty as markDirty } from "@angular/core"
+import { Inject, Injectable, RendererFactory2 } from "@angular/core"
 import { ViewRenderer } from "./view-renderer"
+import { DETECT_CHANGES, MARK_DIRTY } from "./constants"
 
 @Injectable()
 export class ExperimentalIvyViewRenderer extends ViewRenderer {
-    public detectChanges(componentOrView: any): void {
-        detectChanges(componentOrView)
-    }
+    constructor(
+        rendererFactory: RendererFactory2,
+        @Inject(DETECT_CHANGES) detectChanges: (view: any) => void,
+        @Inject(MARK_DIRTY) markDirty: (view: any) => void,
+    ) {
+        super(rendererFactory)
 
-    public markDirty(componentOrView: any): void {
-        markDirty(componentOrView)
+        this.detectChanges = detectChanges
+        this.markDirty = markDirty
     }
 }

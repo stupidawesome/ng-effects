@@ -17,7 +17,9 @@ export class ViewRenderer implements RenderApi, OnDestroy {
 
         rendererFactory.begin = function() {
             origBeginFn.apply(rendererFactory)
-            begin.next(null)
+            if (observers.length > 0) {
+                begin.next(null)
+            }
         }
 
         rendererFactory.end = function() {

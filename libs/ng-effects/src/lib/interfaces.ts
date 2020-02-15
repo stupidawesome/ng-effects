@@ -34,8 +34,8 @@ export interface BindEffectOptions<TKey extends PropertyKey | unknown = unknown>
     bind?: TKey
 }
 
-export interface ApplyEffectOptions extends DefaultEffectOptions {
-    apply?: boolean
+export interface AssignEffectOptions extends DefaultEffectOptions {
+    assign?: boolean
 }
 
 export interface AdapterEffectOptions extends DefaultEffectOptions {
@@ -46,6 +46,6 @@ export interface EffectOptions<TKey extends PropertyKey | unknown = unknown>
     extends DefaultEffectOptions,
         BindEffectOptions<TKey>,
         AdapterEffectOptions,
-        ApplyEffectOptions {}
+        AssignEffectOptions {}
 
 export abstract class EffectOptions<TKey extends PropertyKey | unknown = unknown> {}

@@ -18,7 +18,7 @@ import {
     Effect,
     effects,
     HostRef,
-    latest,
+    latestFrom,
     State,
 } from "@ng9/ng-effects"
 import { Events, increment } from "../utils"
@@ -72,11 +72,11 @@ export class TestEffects {
     }
 
     /**
-     * Apply example
+     * Assign example
      */
-    @Effect({ apply: true })
+    @Effect({ assign: true })
     public bindAll(state: State<TestState>) {
-        return latest(state).pipe(mapTo({}))
+        return latestFrom(state).pipe(mapTo({}))
     }
 
     /**

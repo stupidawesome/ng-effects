@@ -35,7 +35,7 @@ describe("How to use effect bindCounts using factories", () => {
         )
     }))
 
-    it("should throw an error when applying effects to uninitialised properties", fakeAsync(() => {
+    it("should throw an error when attempting to assign values to uninitialised properties", fakeAsync(() => {
         let AppDirective: Type<any>, AppEffects: Type<any>
 
         given: AppDirective = class {
@@ -51,7 +51,7 @@ describe("How to use effect bindCounts using factories", () => {
                 (_: State<any>) => {
                     return of({ name: "stupidawesome" })
                 },
-                { apply: true },
+                { assign: true },
             )
         }
 
@@ -87,7 +87,7 @@ describe("How to use effect bindCounts using factories", () => {
         then: expect(result.count).toBe(expected)
     })
 
-    it("should apply effects to any matching properties", () => {
+    it("should assign values with matching properties", () => {
         let AppDirective, AppEffects, result, name: string, age: number
 
         given: name = "stupidawesome"
@@ -105,7 +105,7 @@ describe("How to use effect bindCounts using factories", () => {
                 (_: State<{ name: string; count: number }>) => {
                     return of({ name, age })
                 },
-                { apply: true },
+                { assign: true },
             )
         }
 
@@ -142,7 +142,7 @@ describe("How to use effect bindCounts using decorators", () => {
         )
     }))
 
-    it("should throw an error when applying effects to uninitialised properties", fakeAsync(() => {
+    it("should throw an error when attemping to assign to uninitialised properties", fakeAsync(() => {
         let AppDirective: Type<any>, AppEffects: Type<any>
 
         given: AppDirective = class {
@@ -154,7 +154,7 @@ describe("How to use effect bindCounts using decorators", () => {
         }
         given: {
             class MockAppEffects {
-                @Effect({ apply: true })
+                @Effect({ assign: true })
                 bindAll(_: State<{ count: number; name: string }>) {
                     return of({ name: "stupidawesome", age: 1377 })
                 }
@@ -219,7 +219,7 @@ describe("How to use effect bindCounts using decorators", () => {
         then: expect(result.count).toBe(expected)
     })
 
-    it("should apply effects to any matching properties", () => {
+    it("should assign values with matching properties", () => {
         let AppDirective, AppEffects, result, name: string, age: number
 
         given: name = "stupidawesome"
@@ -233,8 +233,8 @@ describe("How to use effect bindCounts using decorators", () => {
         }
         given: {
             class MockAppEffects {
-                @Effect({ apply: true })
-                bindCount(_: State<{ name: string; count: number }>) {
+                @Effect({ assign: true })
+                bindCount({}: State<{ name: string; count: number }>) {
                     return of({ name, age })
                 }
             }

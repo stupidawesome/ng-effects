@@ -87,9 +87,9 @@ Effects can be configured through the decorator or factory function.
 |string
 |When configured, maps values emitted by the effect to a property of the same name on the host context. This option is ignored if the effect does not return an observable.
 
-|apply
+|assign
 |boolean
-|When configured, maps the properties of partial objects emitted by the effect to matching properties on the host context. This option is ignored if the effect does not return an observable.
+|When configured, assigns the properties of partial objects emitted by the effect to matching properties on the host context. This option is ignored if the effect does not return an observable.
 
 |markDirty
 |boolean
@@ -290,13 +290,13 @@ export class AppComponent implements AppState {
 
 === Partial bindings
 
-If the effect should update multiple properties on the host context at the same time, use the `apply` option.
+If the effect should update multiple properties on the host context at the same time, use the `assign` option.
 
 [source,typescript]
 ----
 @Component()
 export class AppComponent implements AppState {
-    @Effect({ apply: true })
+    @Effect({ assign: true })
     assignMany(state: State<AppState>) {
         return of({
             prop1: "value1",

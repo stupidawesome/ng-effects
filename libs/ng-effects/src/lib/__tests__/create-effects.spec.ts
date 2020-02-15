@@ -4,7 +4,7 @@ import { Injectable } from "@angular/core"
 import { effectsMap } from "../internals/constants"
 
 describe("How to create effects", () => {
-    it("can create an effects using the effect decorator", () => {
+    it("should create an effects using the effect decorator", () => {
         let defineEffects, effects
 
         given: defineEffects = () => {
@@ -21,7 +21,7 @@ describe("How to create effects", () => {
         then: expect(effectsMap.has(effects.prototype.decoratedEffect)).toBe(true)
     })
 
-    it("can create effects using the effect factory", () => {
+    it("should create effects using the effect factory", () => {
         let createEffects, effects
 
         given: createEffects = () => {

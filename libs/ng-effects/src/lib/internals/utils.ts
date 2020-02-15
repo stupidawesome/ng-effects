@@ -93,17 +93,13 @@ export function initEffect({
                         if (adapter) {
                             adapter.next(value, options)
                         }
-                        if (options.apply) {
+                        if (options.assign) {
                             for (const prop of Object.keys(value)) {
-                                if (!hostContext.hasOwnProperty(prop)) {
-                                    throwMissingPropertyError(prop, hostContext.constructor.name)
-                                }
+                                assertPropertyExists(prop, hostContext)
                                 hostContext[prop] = value[prop]
                             }
                         } else if (binding) {
-                            if (!hostContext.hasOwnProperty(binding)) {
-                                throwMissingPropertyError(binding, hostContext.constructor.name)
-                            }
+                            assertPropertyExists(binding, hostContext)
                             hostContext[binding] = value
                         }
                         if (options.detectChanges) {
@@ -114,12 +110,10 @@ export function initEffect({
                     }),
                     observeOn(asapScheduler),
                 )
-                .subscribe({
-                    next: () => {
-                        if (options.markDirty) {
-                            viewRenderer.markDirty(hostContext, cdr)
-                        }
-                    },
+                .subscribe(() => {
+                    if (options.markDirty) {
+                        viewRenderer.markDirty(hostContext, cdr)
+                    }
                 }),
         )
     } else if (isTeardownLogic(returnValue)) {
@@ -159,7 +153,7 @@ export function injectEffects(
     )
 }
 
-export function checkPropertyExists(key: any, obj: any) {
+export function assertPropertyExists(key: any, obj: any) {
     if (typeof key === "string" && Object.getOwnPropertyDescriptor(obj, key) === undefined) {
         throwMissingPropertyError(key, obj.constructor.name)
     }

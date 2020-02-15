@@ -1,10 +1,18 @@
 import { TestBed } from "@angular/core/testing"
-import { effects, HOST_EFFECTS } from "../providers"
-import { createEffectsClass, createSimpleComponent, createSimpleDirective } from "./test-utils"
+import { Connect, effects, HOST_EFFECTS } from "../providers"
+import {
+    createDirective,
+    createEffectsClass,
+    createSimpleComponent,
+    createSimpleDirective,
+} from "./test-utils"
 import { defaultOptions } from "../internals/constants"
 import { InitEffects } from "../internals/init-effects"
 import { EffectMetadata } from "../interfaces"
 import { EFFECTS } from "../constants"
+import { EMPTY } from "rxjs"
+import { createEffect } from "../utils"
+import { OnDestroy } from "@angular/core"
 import fn = jest.fn
 import Mock = jest.Mock
 
@@ -74,7 +82,7 @@ describe("How to init effects", () => {
             bind: undefined,
             markDirty: undefined,
             adapter: undefined,
-            apply: undefined,
+            assign: undefined,
             detectChanges: undefined,
             whenRendered: undefined,
         }
@@ -126,7 +134,7 @@ describe("How to init effects", () => {
     it("should apply options, in ascending order of precedence: global defaults < local defaults < effect options", () => {
         let effectOptions, localDefaults, result, effectsClass, spy: Mock, MockInitEffects
 
-        given: effectOptions = { apply: true, whenRendered: false }
+        given: effectOptions = { assign: true, whenRendered: false }
         given: localDefaults = { markDirty: !defaultOptions.markDirty, whenRendered: true }
         given: result = Object.assign({}, defaultOptions, localDefaults, effectOptions)
         given: effectsClass = createEffectsClass(effectOptions)
@@ -153,10 +161,11 @@ describe("How to init effects", () => {
         let spy: Mock, MockInitEffects
 
         given: spy = fn()
-        given: MockInitEffects = class {
+        given: MockInitEffects = class implements OnDestroy {
             constructor(effectMetadata: EffectMetadata[]) {
                 spy(effectMetadata.length)
             }
+            ngOnDestroy() {}
         }
 
         when: createSimpleComponent([
@@ -169,5 +178,51 @@ describe("How to init effects", () => {
         ])
 
         then: expect(spy).toHaveBeenCalledWith(1)
+    })
+
+    it("should accept effects that return observables, teardown logic, or void", () => {
+        let AppDirective: any
+
+        given: AppDirective = class {
+            // noinspection JSUnusedGlobalSymbols
+            observableEffect = createEffect(() => {
+                return EMPTY
+            })
+            // noinspection JSUnusedGlobalSymbols
+            subscriptionEffect = createEffect(() => {
+                return EMPTY.subscribe()
+            })
+            // noinspection JSUnusedGlobalSymbols
+            teardownEffect = createEffect(() => {
+                return () => {}
+            })
+            // noinspection JSUnusedGlobalSymbols
+            voidEffect = createEffect(() => {
+                return
+            })
+            constructor(connect: Connect) {
+                connect(this)
+            }
+        }
+
+        then: expect(() => createDirective(AppDirective, [Connect], HOST_EFFECTS)).not.toThrow()
+    })
+
+    it("should throw an error when an effect returns an unexpected value", () => {
+        let AppDirective: any
+
+        given: AppDirective = class {
+            // noinspection JSUnusedGlobalSymbols
+            badReturnType = createEffect(() => {
+                return "BAD RETURN TYPE" as any
+            })
+            constructor(connect: Connect) {
+                connect(this)
+            }
+        }
+
+        then: expect(() => createDirective(AppDirective, [Connect], HOST_EFFECTS)).toThrowError(
+            "[ng-effects] Effects must either return an observable, subscription, or void",
+        )
     })
 })
