@@ -5,23 +5,35 @@ import { effectsMap } from "../internals/constants"
 
 describe("How to create effects", () => {
     it("can create an effects using the effect decorator", () => {
-        @Injectable()
-        class TestEffects {
-            @Effect()
-            decoratedEffect() {}
+        let defineEffects, effects
+
+        given: defineEffects = () => {
+            @Injectable()
+            class TestEffects {
+                @Effect()
+                decoratedEffect() {}
+            }
+            return TestEffects
         }
 
-        expect(effectsMap.has(TestEffects.prototype.decoratedEffect)).toBe(true)
+        when: effects = defineEffects()
+
+        then: expect(effectsMap.has(effects.prototype.decoratedEffect)).toBe(true)
     })
 
     it("can create effects using the effect factory", () => {
-        @Injectable()
-        class TestEffects {
-            effectFactory = createEffect(() => {})
+        let createEffects, effects
+
+        given: createEffects = () => {
+            @Injectable()
+            class TestEffects {
+                effect = createEffect(() => {})
+            }
+            return new TestEffects()
         }
 
-        const effects = new TestEffects()
+        when: effects = createEffects()
 
-        expect(effectsMap.has(effects.effectFactory)).toBe(true)
+        then: expect(effectsMap.has(effects.effect)).toBe(true)
     })
 })

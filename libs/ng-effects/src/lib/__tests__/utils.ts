@@ -16,7 +16,7 @@ import fn = jest.fn
 
 // noinspection AngularMissingOrInvalidDeclarationInModule
 @Directive()
-class SimpleDirective {
+export class SimpleDirective {
     constructor(connect: Connect) {
         connect(this)
     }
@@ -28,10 +28,12 @@ class SimpleDirective {
     providers: [],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-class SimpleComponent {
+export class SimpleComponent {
     constructor(connect: Connect) {
         connect(this)
     }
+    @Effect()
+    public hostEffect() {}
 }
 
 export function createSimpleDirective(providers: Provider[] = []) {

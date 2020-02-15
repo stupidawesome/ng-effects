@@ -1,69 +1,77 @@
 import { TestBed } from "@angular/core/testing"
-import { effects } from "../providers"
+import { effects, HOST_EFFECTS } from "../providers"
 import { createEffectsClass, createSimpleComponent, createSimpleDirective } from "./utils"
 import { defaultOptions } from "../internals/constants"
 import { InitEffects } from "../internals/init-effects"
-import { Inject, Injectable } from "@angular/core"
 import { EffectMetadata } from "../interfaces"
 import { EFFECTS } from "../constants"
 import fn = jest.fn
+import Mock = jest.Mock
 
 describe("How to init effects", () => {
     it("should instantiate one effect on directives", () => {
-        const effectsClass = createEffectsClass()
+        let effectsClass, effect
 
-        createSimpleDirective(effects(effectsClass))
+        given: effectsClass = createEffectsClass()
 
-        const effect = TestBed.inject(effectsClass)
+        when: createSimpleDirective(effects(effectsClass))
 
-        expect(effect.spy).toHaveBeenCalledTimes(1)
+        then: effect = TestBed.inject(effectsClass)
+        then: expect(effect.spy).toHaveBeenCalledTimes(1)
     })
 
     it("should init one effect on components", () => {
-        const effectsClass = createEffectsClass()
+        let effectsClass, component, effect
 
-        const component = createSimpleComponent(effects(effectsClass))
+        given: effectsClass = createEffectsClass()
 
-        const effect = component.debugElement.injector.get(effectsClass)
+        when: component = createSimpleComponent(effects(effectsClass))
 
-        expect(effect.spy).toHaveBeenCalledTimes(1)
+        then: effect = component.debugElement.injector.get(effectsClass)
+        then: expect(effect.spy).toHaveBeenCalledTimes(1)
     })
 
     it("should init many effects", () => {
-        const effectsClassList = [createEffectsClass(), createEffectsClass()]
+        let effectsClassList, effectsClass, effect
 
-        createSimpleDirective(effects(effectsClassList))
+        given: effectsClassList = [createEffectsClass(), createEffectsClass()]
 
-        for (const effectsClass of effectsClassList) {
-            const effect = TestBed.inject(effectsClass)
+        when: createSimpleDirective(effects(effectsClassList))
+
+        then: for (effectsClass of effectsClassList) {
+            effect = TestBed.inject(effectsClass)
             expect(effect.spy).toHaveBeenCalledTimes(1)
         }
     })
 
     it("should configure default options", () => {
-        const effectsClass = createEffectsClass()
-        const spy = fn()
+        let effectsClass, spy: Mock, initEffects
 
-        @Injectable()
-        class MockInitEffects {
-            constructor(@Inject(EFFECTS) effectMetadata: EffectMetadata[]) {
-                effectMetadata.forEach(meta => spy(meta.options))
+        given: effectsClass = createEffectsClass()
+        given: spy = fn()
+        given: initEffects = () =>
+            class MockInitEffects {
+                constructor(effectMetadata: EffectMetadata[]) {
+                    effectMetadata.forEach(meta => spy(meta.options))
+                }
             }
-        }
 
-        createSimpleDirective([
+        when: createSimpleDirective([
             effects(effectsClass),
             {
                 provide: InitEffects,
-                useClass: MockInitEffects,
+                useClass: initEffects(),
+                deps: [EFFECTS],
             },
         ])
 
-        expect(spy).toHaveBeenCalledWith(defaultOptions)
+        then: expect(spy).toHaveBeenCalledWith(defaultOptions)
     })
 
     it("should configure effect options", () => {
-        const options = {
+        let options, effectsClass, spy: Mock, initEffects
+
+        given: options = {
             bind: undefined,
             markDirty: undefined,
             adapter: undefined,
@@ -71,73 +79,100 @@ describe("How to init effects", () => {
             detectChanges: undefined,
             whenRendered: undefined,
         }
-        const effectsClass = createEffectsClass(options)
-        const spy = fn()
-
-        @Injectable()
-        class MockInitEffects {
-            constructor(@Inject(EFFECTS) effectMetadata: EffectMetadata[]) {
-                effectMetadata.forEach(meta => spy(meta.options))
+        given: effectsClass = createEffectsClass(options)
+        given: spy = fn()
+        given: initEffects = () =>
+            class MockInitEffects {
+                constructor(effectMetadata: EffectMetadata[]) {
+                    effectMetadata.forEach(meta => spy(meta.options))
+                }
             }
-        }
 
-        createSimpleDirective([
+        when: createSimpleDirective([
             effects(effectsClass),
             {
                 provide: InitEffects,
-                useClass: MockInitEffects,
+                useClass: initEffects(),
+                deps: [EFFECTS],
             },
         ])
 
-        expect(spy).toHaveBeenCalledWith(options)
+        then: expect(spy).toHaveBeenCalledWith(options)
     })
 
     it("should override default effect options", () => {
-        const options = { markDirty: !defaultOptions.markDirty }
-        const result = Object.assign({}, defaultOptions, options)
-        const effectsClass = createEffectsClass()
-        const spy = fn()
+        let options, effectsClass, spy: Mock, result, initEffects
 
-        @Injectable()
-        class MockInitEffects {
-            constructor(@Inject(EFFECTS) effectMetadata: EffectMetadata[]) {
-                effectMetadata.forEach(meta => spy(meta.options))
+        given: options = { markDirty: !defaultOptions.markDirty }
+        given: result = Object.assign({}, defaultOptions, options)
+        given: effectsClass = createEffectsClass()
+        given: spy = fn()
+        given: initEffects = () =>
+            class MockInitEffects {
+                constructor(effectMetadata: EffectMetadata[]) {
+                    effectMetadata.forEach(meta => spy(meta.options))
+                }
             }
-        }
 
-        createSimpleDirective([
+        when: createSimpleDirective([
             effects(effectsClass, options),
             {
                 provide: InitEffects,
-                useClass: MockInitEffects,
+                useClass: initEffects(),
+                deps: [EFFECTS],
             },
         ])
 
-        expect(spy).toHaveBeenCalledWith(result)
+        then: expect(spy).toHaveBeenCalledWith(result)
     })
 
     it("should apply options, in ascending order of precedence: global defaults < local defaults < effect options", () => {
-        const effectOptions = { apply: true, whenRendered: false }
-        const localDefaults = { markDirty: !defaultOptions.markDirty, whenRendered: true }
-        const result = Object.assign({}, defaultOptions, localDefaults, effectOptions)
-        const effectsClass = createEffectsClass(effectOptions)
-        const spy = fn()
+        let effectOptions, localDefaults, result, effectsClass, spy: Mock, initEffects
 
-        @Injectable()
-        class MockInitEffects {
-            constructor(@Inject(EFFECTS) effectMetadata: EffectMetadata[]) {
-                effectMetadata.forEach(meta => spy(meta.options))
+        given: effectOptions = { apply: true, whenRendered: false }
+        given: localDefaults = { markDirty: !defaultOptions.markDirty, whenRendered: true }
+        given: result = Object.assign({}, defaultOptions, localDefaults, effectOptions)
+        given: effectsClass = createEffectsClass(effectOptions)
+        given: spy = fn()
+        given: initEffects = () =>
+            class MockInitEffects {
+                constructor(effectMetadata: EffectMetadata[]) {
+                    effectMetadata.forEach(meta => spy(meta.options))
+                }
             }
-        }
 
-        createSimpleDirective([
+        when: createSimpleDirective([
             effects(effectsClass, localDefaults),
             {
                 provide: InitEffects,
-                useClass: MockInitEffects,
+                useClass: initEffects(),
+                deps: [EFFECTS],
             },
         ])
 
-        expect(spy).toHaveBeenCalledWith(result)
+        then: expect(spy).toHaveBeenCalledWith(result)
+    })
+
+    it("should init with host effects", function() {
+        let spy: Mock, initEffects
+
+        given: spy = fn()
+        given: initEffects = () =>
+            class MockInitEffects {
+                constructor(effectMetadata: EffectMetadata[]) {
+                    spy(effectMetadata.length)
+                }
+            }
+
+        when: createSimpleComponent([
+            HOST_EFFECTS,
+            {
+                provide: InitEffects,
+                useClass: initEffects(),
+                deps: [EFFECTS],
+            },
+        ])
+
+        then: expect(spy).toHaveBeenCalledWith(1)
     })
 })
