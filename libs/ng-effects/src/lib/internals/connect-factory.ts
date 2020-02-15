@@ -9,8 +9,6 @@ export class ConnectFactory {
             currentContext.add(context)
             try {
                 initializers.forEach(injector.get, injector)
-            } catch (e) {
-                throw e
             } finally {
                 currentContext.clear()
             }

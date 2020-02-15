@@ -45,22 +45,21 @@ describe("How to init effects", () => {
     })
 
     it("should configure default options", () => {
-        let effectsClass, spy: Mock, initEffects
+        let effectsClass, spy: Mock, MockInitEffects
 
         given: effectsClass = createEffectsClass()
         given: spy = fn()
-        given: initEffects = () =>
-            class MockInitEffects {
-                constructor(effectMetadata: EffectMetadata[]) {
-                    effectMetadata.forEach(meta => spy(meta.options))
-                }
+        given: MockInitEffects = class {
+            constructor(effectMetadata: EffectMetadata[]) {
+                effectMetadata.forEach(meta => spy(meta.options))
             }
+        }
 
         when: createSimpleDirective([
             effects(effectsClass),
             {
                 provide: InitEffects,
-                useClass: initEffects(),
+                useClass: MockInitEffects,
                 deps: [EFFECTS],
             },
         ])
@@ -69,7 +68,7 @@ describe("How to init effects", () => {
     })
 
     it("should configure effect options", () => {
-        let options, effectsClass, spy: Mock, initEffects
+        let options, effectsClass, spy: Mock, MockInitEffects
 
         given: options = {
             bind: undefined,
@@ -81,18 +80,17 @@ describe("How to init effects", () => {
         }
         given: effectsClass = createEffectsClass(options)
         given: spy = fn()
-        given: initEffects = () =>
-            class MockInitEffects {
-                constructor(effectMetadata: EffectMetadata[]) {
-                    effectMetadata.forEach(meta => spy(meta.options))
-                }
+        given: MockInitEffects = class {
+            constructor(effectMetadata: EffectMetadata[]) {
+                effectMetadata.forEach(meta => spy(meta.options))
             }
+        }
 
         when: createSimpleDirective([
             effects(effectsClass),
             {
                 provide: InitEffects,
-                useClass: initEffects(),
+                useClass: MockInitEffects,
                 deps: [EFFECTS],
             },
         ])
@@ -101,24 +99,23 @@ describe("How to init effects", () => {
     })
 
     it("should override default effect options", () => {
-        let options, effectsClass, spy: Mock, result, initEffects
+        let options, effectsClass, spy: Mock, result, MockInitEffects
 
         given: options = { markDirty: !defaultOptions.markDirty }
         given: result = Object.assign({}, defaultOptions, options)
         given: effectsClass = createEffectsClass()
         given: spy = fn()
-        given: initEffects = () =>
-            class MockInitEffects {
-                constructor(effectMetadata: EffectMetadata[]) {
-                    effectMetadata.forEach(meta => spy(meta.options))
-                }
+        given: MockInitEffects = class {
+            constructor(effectMetadata: EffectMetadata[]) {
+                effectMetadata.forEach(meta => spy(meta.options))
             }
+        }
 
         when: createSimpleDirective([
             effects(effectsClass, options),
             {
                 provide: InitEffects,
-                useClass: initEffects(),
+                useClass: MockInitEffects,
                 deps: [EFFECTS],
             },
         ])
@@ -127,25 +124,24 @@ describe("How to init effects", () => {
     })
 
     it("should apply options, in ascending order of precedence: global defaults < local defaults < effect options", () => {
-        let effectOptions, localDefaults, result, effectsClass, spy: Mock, initEffects
+        let effectOptions, localDefaults, result, effectsClass, spy: Mock, MockInitEffects
 
         given: effectOptions = { apply: true, whenRendered: false }
         given: localDefaults = { markDirty: !defaultOptions.markDirty, whenRendered: true }
         given: result = Object.assign({}, defaultOptions, localDefaults, effectOptions)
         given: effectsClass = createEffectsClass(effectOptions)
         given: spy = fn()
-        given: initEffects = () =>
-            class MockInitEffects {
-                constructor(effectMetadata: EffectMetadata[]) {
-                    effectMetadata.forEach(meta => spy(meta.options))
-                }
+        given: MockInitEffects = class {
+            constructor(effectMetadata: EffectMetadata[]) {
+                effectMetadata.forEach(meta => spy(meta.options))
             }
+        }
 
         when: createSimpleDirective([
             effects(effectsClass, localDefaults),
             {
                 provide: InitEffects,
-                useClass: initEffects(),
+                useClass: MockInitEffects,
                 deps: [EFFECTS],
             },
         ])
@@ -154,21 +150,20 @@ describe("How to init effects", () => {
     })
 
     it("should init with host effects", function() {
-        let spy: Mock, initEffects
+        let spy: Mock, MockInitEffects
 
         given: spy = fn()
-        given: initEffects = () =>
-            class MockInitEffects {
-                constructor(effectMetadata: EffectMetadata[]) {
-                    spy(effectMetadata.length)
-                }
+        given: MockInitEffects = class {
+            constructor(effectMetadata: EffectMetadata[]) {
+                spy(effectMetadata.length)
             }
+        }
 
         when: createSimpleComponent([
             HOST_EFFECTS,
             {
                 provide: InitEffects,
-                useClass: initEffects(),
+                useClass: MockInitEffects,
                 deps: [EFFECTS],
             },
         ])

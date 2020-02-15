@@ -56,8 +56,6 @@ export function Effect(): EffectDecorator<unknown> {
         opts = arguments[0]
     }
     return function(target, prop, propertyDescriptor: any) {
-        if (propertyDescriptor.value) {
-            effectsMap.set(propertyDescriptor.value, opts || {})
-        }
+        effectsMap.set(propertyDescriptor.value, opts || {})
     }
 }
