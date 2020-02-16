@@ -7,9 +7,9 @@ import { delay } from "rxjs/operators"
 import { fakeAsync, TestBed, tick } from "@angular/core/testing"
 import { ChangeDetectorRef } from "@angular/core"
 import { ViewRenderer } from "../internals/view-renderer"
-import { DETECT_CHANGES, MARK_DIRTY } from "../internals/constants"
 import Mock = jest.Mock
 import fn = jest.fn
+import { DETECT_CHANGES, MARK_DIRTY } from "../internals/providers"
 
 describe("How change detection works", () => {
     it("should mark the view dirty asynchronously when an effect emits", fakeAsync(() => {

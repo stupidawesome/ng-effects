@@ -7,15 +7,21 @@ import { ConnectFactory } from "./internals/connect-factory"
 import { ExperimentalIvyViewRenderer } from "./internals/experimental-view-renderer"
 import { injectEffects, injectHostRef } from "./internals/utils"
 import { DefaultEffectOptions, EffectOptions } from "./interfaces"
+import { STATE_FACTORY } from "./internals/providers"
 
 export function effects(types: Type<any> | Type<any>[] = [], effectOptions?: DefaultEffectOptions) {
     return [
         {
             provide: EFFECTS,
             useFactory: injectEffects,
-            deps: [EffectOptions, HostRef, DestroyObserver, ViewRenderer, Injector].concat(
-                types as any,
-            ),
+            deps: [
+                EffectOptions,
+                HostRef,
+                DestroyObserver,
+                ViewRenderer,
+                Injector,
+                STATE_FACTORY,
+            ].concat(types as any),
         },
         {
             provide: EffectOptions,

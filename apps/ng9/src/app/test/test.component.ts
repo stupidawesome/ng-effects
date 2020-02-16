@@ -141,9 +141,9 @@ export class TestEffects {
     /**
      * ViewChildren example
      */
-    @Effect()
+    @Effect({ whenRendered: true })
     public viewChildren(state: State<TestState>) {
-        return changes(state.viewChildren).subscribe()
+        return state.viewChildren.subscribe()
     }
 
     /**
