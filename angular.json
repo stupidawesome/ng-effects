@@ -134,11 +134,135 @@
                 }
             },
             "schematics": {}
+        },
+        "todomvc": {
+            "projectType": "application",
+            "schematics": {
+                "@schematics/angular:interceptor": {
+                    "skipTests": true
+                },
+                "@nrwl/angular:class": {
+                    "skipTests": true
+                },
+                "@nrwl/angular:component": {
+                    "inlineTemplate": true,
+                    "inlineStyle": true,
+                    "skipTests": true
+                },
+                "@nrwl/angular:directive": {
+                    "skipTests": true
+                },
+                "@nrwl/angular:guard": {
+                    "skipTests": true
+                },
+                "@nrwl/angular:module": {
+                    "skipTests": true
+                },
+                "@nrwl/angular:pipe": {
+                    "skipTests": true
+                },
+                "@nrwl/angular:service": {
+                    "skipTests": true
+                }
+            },
+            "root": "apps/todomvc",
+            "sourceRoot": "apps/todomvc/src",
+            "prefix": "todo",
+            "architect": {
+                "build": {
+                    "builder": "@angular-devkit/build-angular:browser",
+                    "options": {
+                        "outputPath": "dist/apps/todomvc",
+                        "index": "apps/todomvc/src/index.html",
+                        "main": "apps/todomvc/src/main.ts",
+                        "polyfills": "apps/todomvc/src/polyfills.ts",
+                        "tsConfig": "apps/todomvc/tsconfig.app.json",
+                        "aot": true,
+                        "assets": ["apps/todomvc/src/favicon.ico", "apps/todomvc/src/assets"],
+                        "styles": ["apps/todomvc/src/styles.css"],
+                        "scripts": []
+                    },
+                    "configurations": {
+                        "production": {
+                            "fileReplacements": [
+                                {
+                                    "replace": "apps/todomvc/src/environments/environment.ts",
+                                    "with": "apps/todomvc/src/environments/environment.prod.ts"
+                                }
+                            ],
+                            "optimization": true,
+                            "outputHashing": "all",
+                            "sourceMap": false,
+                            "extractCss": true,
+                            "namedChunks": false,
+                            "extractLicenses": true,
+                            "vendorChunk": false,
+                            "buildOptimizer": true,
+                            "budgets": [
+                                {
+                                    "type": "initial",
+                                    "maximumWarning": "2mb",
+                                    "maximumError": "5mb"
+                                },
+                                {
+                                    "type": "anyComponentStyle",
+                                    "maximumWarning": "6kb",
+                                    "maximumError": "10kb"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "serve": {
+                    "builder": "@angular-devkit/build-angular:dev-server",
+                    "options": {
+                        "browserTarget": "todomvc:build"
+                    },
+                    "configurations": {
+                        "production": {
+                            "browserTarget": "todomvc:build:production"
+                        }
+                    }
+                },
+                "extract-i18n": {
+                    "builder": "@angular-devkit/build-angular:extract-i18n",
+                    "options": {
+                        "browserTarget": "todomvc:build"
+                    }
+                },
+                "lint": {
+                    "builder": "@angular-devkit/build-angular:tslint",
+                    "options": {
+                        "tsConfig": [
+                            "apps/todomvc/tsconfig.app.json",
+                            "apps/todomvc/tsconfig.spec.json"
+                        ],
+                        "exclude": ["**/node_modules/**", "!apps/todomvc/**"]
+                    }
+                },
+                "test": {
+                    "builder": "@nrwl/jest:jest",
+                    "options": {
+                        "jestConfig": "apps/todomvc/jest.config.js",
+                        "tsConfig": "apps/todomvc/tsconfig.spec.json",
+                        "setupFile": "apps/todomvc/src/test-setup.ts"
+                    }
+                }
+            }
         }
     },
-    "defaultProject": "ng9",
+    "defaultProject": "todomvc",
     "cli": {
         "analytics": false,
         "defaultCollection": "@nrwl/angular"
+    },
+    "schematics": {
+        "@nrwl/angular:application": {
+            "unitTestRunner": "jest",
+            "e2eTestRunner": "cypress"
+        },
+        "@nrwl/angular:library": {
+            "unitTestRunner": "jest"
+        }
     }
 }
