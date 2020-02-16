@@ -1,6 +1,6 @@
 import { Inject, Injectable, RendererFactory2 } from "@angular/core"
 import { ViewRenderer } from "./view-renderer"
-import { DETECT_CHANGES, MARK_DIRTY } from "./constants"
+import { DETECT_CHANGES, MARK_DIRTY } from "./providers"
 
 @Injectable()
 export class ExperimentalIvyViewRenderer extends ViewRenderer {

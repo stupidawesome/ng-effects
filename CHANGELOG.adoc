@@ -1,0 +1,13 @@
+= Changelog
+
+== 9.0.0.beta.1
+
+=== Features
+
+- defer state object creation until effect is called
+
+State is proxied in dev mode to intercept and report uninitialised property access eg. `state.viewChildren`. This change allows Angular to bind properties before the state object is created by setting `whenRendered: true`.
+
+== 9.0.0-beta.0
+
+Initial release

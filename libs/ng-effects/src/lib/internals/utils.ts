@@ -1,14 +1,5 @@
-import {
-    asapScheduler,
-    BehaviorSubject,
-    isObservable,
-    merge,
-    Observable,
-    Subject,
-    TeardownLogic,
-} from "rxjs"
-import { InitEffectArgs } from "./interfaces"
-import { distinctUntilChanged, map, mapTo, observeOn, tap } from "rxjs/operators"
+import { BehaviorSubject, merge, NEVER, Observable, Subject, TeardownLogic } from "rxjs"
+import { distinctUntilChanged, map, mapTo } from "rxjs/operators"
 import { currentContext, defaultOptions, effectsMap } from "./constants"
 import { HostRef } from "../constants"
 import { EffectHandler, EffectMetadata, EffectOptions } from "../interfaces"
@@ -27,35 +18,41 @@ function selectKey(source: Observable<any>, key: PropertyKey) {
     )
 }
 
+export function proxyState<T>(source: Observable<T>, target: any) {
+    if (typeof Proxy !== "undefined") {
+        return new Proxy(target as any, {
+            get(target, key: PropertyKey) {
+                try {
+                    assertPropertyExists(key, target)
+                } catch (e) {
+                    console.error(e)
+                    return NEVER
+                }
+                return selectKey(source, key)
+            },
+            set() {
+                return false
+            },
+        })
+    } else {
+        console.warn(
+            "[ng-effects] This browser does not support Proxy objects. Dev mode diagnostics will be limited.",
+        )
+        return state(source, target)
+    }
+}
+
 export function state<T>(source: Observable<T>, target: any) {
-    return Proxy.revocable(target as any, {
-        get(_, key: PropertyKey) {
-            return selectKey(source, key)
-        },
-        set() {
-            return false
-        },
-    })
+    const keys = Object.getOwnPropertyNames(target)
+    const sources: any = {}
+
+    for (const key of keys) {
+        sources[key] = selectKey(source, key)
+    }
+    return sources
 }
 
 export function noop() {}
-
-export function observe(obj: any, destroyObserver: DestroyObserver) {
-    const notifier = new BehaviorSubject<any>(null)
-    const observer = notifier.pipe(mapTo(obj))
-    const { proxy, revoke } = state(observer, obj)
-
-    destroyObserver.destroyed.subscribe(() => {
-        revoke()
-        notifier.complete()
-        notifier.unsubscribe()
-    })
-
-    return {
-        notifier,
-        state: proxy,
-    }
-}
 
 export function throwBadReturnTypeError() {
     throw new Error("[ng-effects] Effects must either return an observable, subscription, or void")
@@ -66,61 +63,6 @@ export function isTeardownLogic(value: any): value is TeardownLogic {
         typeof value === "function" ||
         (typeof value === "object" && typeof value.unsubscribe === "function")
     )
-}
-
-export function initEffect({
-    effect,
-    binding,
-    options,
-    cdr,
-    hostContext,
-    subs,
-    viewRenderer,
-    adapter,
-    notifier,
-}: InitEffectArgs) {
-    const returnValue = effect()
-
-    if (returnValue === undefined) {
-        return
-    }
-
-    if (isObservable(returnValue)) {
-        subs.add(
-            returnValue
-                .pipe(
-                    tap((value: any) => {
-                        if (adapter) {
-                            adapter.next(value, options)
-                        }
-                        if (options.assign) {
-                            for (const prop of Object.keys(value)) {
-                                assertPropertyExists(prop, hostContext)
-                                hostContext[prop] = value[prop]
-                            }
-                        } else if (binding) {
-                            assertPropertyExists(binding, hostContext)
-                            hostContext[binding] = value
-                        }
-                        if (options.detectChanges) {
-                            viewRenderer.detectChanges(hostContext, cdr)
-                        } else {
-                            notifier.next()
-                        }
-                    }),
-                    observeOn(asapScheduler),
-                )
-                .subscribe(() => {
-                    if (options.markDirty) {
-                        viewRenderer.markDirty(hostContext, cdr)
-                    }
-                }),
-        )
-    } else if (isTeardownLogic(returnValue)) {
-        subs.add(returnValue)
-    } else {
-        throwBadReturnTypeError()
-    }
 }
 
 export function injectHostRef() {
@@ -136,17 +78,22 @@ export function injectEffects(
     destroyObserver: DestroyObserver,
     viewRenderer: ViewRenderer,
     injector: Injector,
+    stateFactory: Function,
     ...effects: any[]
 ): EffectMetadata[] {
     const hostContext = hostRef.instance
-    const { state, notifier } = observe(hostContext, destroyObserver)
+    const notifier = new BehaviorSubject<any>(null)
     const defaults = Object.assign({}, defaultOptions, options)
     const sub = merge(viewRenderer.whenScheduled(), viewRenderer.whenRendered()).subscribe(notifier)
 
-    destroyObserver.destroyed.subscribe(() => sub.unsubscribe())
+    destroyObserver.destroyed.subscribe(() => {
+        notifier.complete()
+        notifier.unsubscribe()
+        sub.unsubscribe()
+    })
 
     return Array.from(
-        exploreEffects(defaults, state, hostContext, injector, notifier, [
+        exploreEffects(defaults, state, hostContext, injector, notifier, stateFactory, [
             hostRef.instance,
             ...effects,
         ]),
@@ -165,8 +112,11 @@ export function* exploreEffects(
     hostContext: any,
     injector: Injector,
     notifier: Subject<void>,
+    stateFactory: Function,
     effects: any[],
 ) {
+    const observer = notifier.pipe(mapTo(hostContext))
+
     for (const effect of effects) {
         const props = [
             ...Object.getOwnPropertyNames(Object.getPrototypeOf(effect)),
@@ -189,7 +139,8 @@ export function* exploreEffects(
                 const metadata = {
                     key,
                     binding,
-                    effect: effectFn.bind(effect, proxy, hostContext),
+                    effect: () =>
+                        effectFn.call(effect, stateFactory(observer, hostContext), hostContext),
                     options,
                     adapter,
                     notifier,

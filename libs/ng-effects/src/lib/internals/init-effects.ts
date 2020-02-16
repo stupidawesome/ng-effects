@@ -1,11 +1,66 @@
 import { ChangeDetectorRef, Host, Inject, Injectable, OnDestroy } from "@angular/core"
-import { Subscription } from "rxjs"
+import { asapScheduler, isObservable, Subscription } from "rxjs"
 import { EFFECTS, HostRef } from "../constants"
-import { initEffect } from "./utils"
 import { ViewRenderer } from "./view-renderer"
 import { InitEffectArgs } from "./interfaces"
 import { EffectMetadata } from "../interfaces"
-import { take } from "rxjs/operators"
+import { observeOn, take, tap } from "rxjs/operators"
+import { assertPropertyExists, isTeardownLogic, throwBadReturnTypeError } from "./utils"
+
+export function initEffect({
+    effect,
+    binding,
+    options,
+    cdr,
+    hostContext,
+    subs,
+    viewRenderer,
+    adapter,
+    notifier,
+}: InitEffectArgs) {
+    const returnValue = effect()
+
+    if (returnValue === undefined) {
+        return
+    }
+
+    if (isObservable(returnValue)) {
+        subs.add(
+            returnValue
+                .pipe(
+                    tap((value: any) => {
+                        if (adapter) {
+                            adapter.next(value, options)
+                        }
+                        if (options.assign) {
+                            for (const prop of Object.keys(value)) {
+                                assertPropertyExists(prop, hostContext)
+                                hostContext[prop] = value[prop]
+                            }
+                        } else if (binding) {
+                            assertPropertyExists(binding, hostContext)
+                            hostContext[binding] = value
+                        }
+                        if (options.detectChanges) {
+                            viewRenderer.detectChanges(hostContext, cdr)
+                        } else {
+                            notifier.next()
+                        }
+                    }),
+                    observeOn(asapScheduler),
+                )
+                .subscribe(() => {
+                    if (options.markDirty) {
+                        viewRenderer.markDirty(hostContext, cdr)
+                    }
+                }),
+        )
+    } else if (isTeardownLogic(returnValue)) {
+        subs.add(returnValue)
+    } else {
+        throwBadReturnTypeError()
+    }
+}
 
 @Injectable()
 export class InitEffects implements OnDestroy {
