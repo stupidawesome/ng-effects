@@ -1,120 +1,120 @@
-import { ChangeDetectorRef, Host, Inject, Injectable, OnDestroy } from "@angular/core"
-import { asapScheduler, isObservable, Subscription } from "rxjs"
+import { ChangeDetectorRef, ElementRef, Host, Inject, Injectable } from "@angular/core"
+import { asapScheduler, BehaviorSubject, isObservable, merge, Subject } from "rxjs"
 import { EFFECTS, HostRef } from "../constants"
 import { ViewRenderer } from "./view-renderer"
-import { InitEffectArgs } from "./interfaces"
-import { EffectMetadata } from "../interfaces"
-import { last, observeOn, take, takeUntil, tap } from "rxjs/operators"
-import { assertPropertyExists, isTeardownLogic, throwBadReturnTypeError } from "./utils"
+import { DefaultEffectOptions, EffectMetadata, State } from "../interfaces"
+import { filter, observeOn, take, takeUntil, tap } from "rxjs/operators"
+import { assertPropertyExists, isTeardownLogic, state, throwBadReturnTypeError } from "./utils"
+import { globalNotifier } from "./constants"
+import { DestroyObserver } from "./destroy-observer"
 
-export function initEffect({
-    effect,
-    binding,
-    options,
-    cdr,
-    hostContext,
-    subs,
-    viewRenderer,
-    adapter,
-    notifier,
-}: InitEffectArgs) {
-    const returnValue = effect()
+export function initEffects(state: State<any>, whenRendered: boolean) {
+    return function(
+        hostContext: any,
+        effectsMetadata: EffectMetadata[],
+        observer: DestroyObserver,
+        notifier: Subject<any>,
+    ) {
+        for (const metadata of effectsMetadata) {
+            if (metadata.options.whenRendered === whenRendered) {
+                const returnValue = metadata.method.call(metadata.target, state, hostContext)
 
-    if (returnValue === undefined) {
-        return
+                if (returnValue === undefined) {
+                    continue
+                }
+
+                if (isObservable(returnValue)) {
+                    returnValue
+                        .pipe(takeUntil(observer.destroyed))
+                        .subscribe(value => handleEffect(value, hostContext, metadata, notifier))
+                } else if (isTeardownLogic(returnValue)) {
+                    observer.add(returnValue)
+                } else {
+                    throwBadReturnTypeError()
+                }
+            }
+        }
     }
+}
 
-    if (isObservable(returnValue)) {
-        returnValue
+export function handleEffect(
+    value: any,
+    hostContext: any,
+    metadata: EffectMetadata,
+    notifier: Subject<any>,
+) {
+    const { assign, bind } = metadata.options
+    let dirty = false
+
+    if (metadata.adapter) {
+        metadata.adapter.next(value, metadata.options, metadata)
+    }
+    if (assign) {
+        for (const prop of Object.keys(value)) {
+            assertPropertyExists(prop, hostContext)
+            if (hostContext[prop] !== value[prop]) {
+                hostContext[prop] = value[prop]
+                dirty = true
+            }
+        }
+    } else if (bind) {
+        assertPropertyExists(bind, hostContext)
+        if (hostContext[bind] !== value) {
+            hostContext[bind] = value
+            dirty = true
+        }
+    }
+    if (dirty) {
+        notifier.next(metadata.options)
+    }
+}
+
+@Injectable()
+export class InitEffects {
+    constructor(
+        @Host() hostRef: HostRef,
+        @Host() @Inject(EFFECTS) effectsMetadata: EffectMetadata[],
+        @Host() cdr: ChangeDetectorRef,
+        viewRenderer: ViewRenderer,
+        elementRef: ElementRef,
+        changeDetector: ChangeDetectorRef,
+        destroyObserver: DestroyObserver,
+    ) {
+        const hostContext = hostRef.instance
+        const whenRendered = viewRenderer.whenRendered().pipe(take(1))
+        const nativeElement = elementRef.nativeElement
+        const notifier = new BehaviorSubject<any>(hostContext)
+        const events = globalNotifier.pipe(filter(element => element === nativeElement))
+        const changeNotifier = new Subject<DefaultEffectOptions>()
+
+        const scheduler = merge(viewRenderer.whenScheduled(), viewRenderer.whenRendered(), events)
+
+        changeNotifier
             .pipe(
-                takeUntil(notifier.pipe(last())),
-                tap((value: any) => {
-                    if (adapter) {
-                        adapter.next(value, options)
-                    }
-                    if (options.assign) {
-                        for (const prop of Object.keys(value)) {
-                            assertPropertyExists(prop, hostContext)
-                            hostContext[prop] = value[prop]
-                        }
-                    } else if (binding) {
-                        assertPropertyExists(binding, hostContext)
-                        hostContext[binding] = value
-                    }
-                    if (options.detectChanges) {
-                        viewRenderer.detectChanges(hostContext, cdr)
-                    } else {
+                tap(({ detectChanges, markDirty }) => {
+                    if (detectChanges) {
+                        viewRenderer.detectChanges(hostContext, changeDetector)
+                    } else if (!markDirty) {
                         notifier.next(hostContext)
                     }
                 }),
                 observeOn(asapScheduler),
             )
-            .subscribe(() => {
-                if (options.markDirty) {
-                    viewRenderer.markDirty(hostContext, cdr)
+            .subscribe(({ markDirty }) => {
+                if (markDirty) {
+                    viewRenderer.markDirty(hostContext, changeDetector)
                 }
             })
-    } else if (isTeardownLogic(returnValue)) {
-        subs.add(returnValue)
-    } else {
-        throwBadReturnTypeError()
-    }
-}
 
-@Injectable()
-export class InitEffects implements OnDestroy {
-    private readonly subs: Subscription
-    private readonly effects: any[]
-    private readonly cdr: ChangeDetectorRef
-    private readonly viewRenderer: ViewRenderer
-    private readonly hostContext: any
+        const args: any = [hostContext, effectsMetadata, destroyObserver, changeNotifier]
 
-    constructor(
-        @Host() hostRef: HostRef,
-        @Host() @Inject(EFFECTS) effects: EffectMetadata[],
-        @Host() cdr: ChangeDetectorRef,
-        viewRenderer: ViewRenderer,
-    ) {
-        this.subs = new Subscription()
-        this.effects = effects
-        this.cdr = cdr
-        this.viewRenderer = viewRenderer
-        this.hostContext = hostRef.instance
+        initEffects(state(notifier, hostContext), false).apply(null, args)
 
-        this.run()
-    }
+        whenRendered.subscribe(() => {
+            initEffects(state(notifier, hostContext), true).apply(null, args)
+        })
 
-    public run() {
-        const { cdr, subs, effects, viewRenderer, hostContext } = this
-
-        const whenRendered = viewRenderer.whenRendered().pipe(take(1))
-
-        for (const { effect, binding, options, adapter, notifier } of effects) {
-            const args: InitEffectArgs = {
-                effect,
-                hostContext,
-                binding,
-                options,
-                cdr,
-                subs,
-                viewRenderer,
-                adapter,
-                notifier,
-            }
-            if (options.whenRendered) {
-                subs.add(
-                    whenRendered.subscribe(
-                        () => initEffect(args),
-                        error => console.error(error),
-                    ),
-                )
-            } else {
-                initEffect(args)
-            }
-        }
-    }
-
-    public ngOnDestroy() {
-        this.subs.unsubscribe()
+        // Start event loop
+        destroyObserver.add(notifier, changeNotifier, scheduler.subscribe())
     }
 }

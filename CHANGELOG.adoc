@@ -1,6 +1,16 @@
 = Changelog
 
-== 9.0.0.beta.2
+== 9.0.0-beta.4
+
+=== Features
+- Adapters now receive effect metadata as a third argument
+
+== 9.0.0-beta.3
+
+=== Misc
+- refactor internals for better code flow
+
+== 9.0.0-beta.2
 
 === Features
 - performance improvements
@@ -9,7 +19,7 @@
 === Bug fixes
 - fix max call stack errors
 
-== 9.0.0.beta.1
+== 9.0.0-beta.1
 
 === Features
 

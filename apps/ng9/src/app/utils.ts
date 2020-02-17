@@ -15,7 +15,7 @@ export interface Update {
 }
 export class Update {
     constructor() {
-        return function <T>(this: any, arg?: T): T | undefined {
+        return function<T>(this: any, arg?: T): T | undefined {
             markDirty(this)
             return arg
         }

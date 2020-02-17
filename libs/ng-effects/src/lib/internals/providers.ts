@@ -1,4 +1,9 @@
-import { InjectionToken, isDevMode, ɵdetectChanges as detectChanges, ɵmarkDirty as markDirty } from "@angular/core"
+import {
+    InjectionToken,
+    isDevMode,
+    ɵdetectChanges as detectChanges,
+    ɵmarkDirty as markDirty,
+} from "@angular/core"
 import { proxyState, state } from "./utils"
 
 export const DETECT_CHANGES = new InjectionToken("DETECT_CHANGES", {

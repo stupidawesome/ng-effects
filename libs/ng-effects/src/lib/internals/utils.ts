@@ -1,11 +1,6 @@
-import { BehaviorSubject, EMPTY, merge, Observable, Subject, TeardownLogic } from "rxjs"
-import { distinctUntilChanged, filter, map } from "rxjs/operators"
-import { currentContext, defaultOptions, effectsMap, globalNotifier } from "./constants"
-import { HostRef } from "../constants"
-import { EffectHandler, EffectMetadata, EffectOptions } from "../interfaces"
-import { DestroyObserver } from "./destroy-observer"
-import { ElementRef, Injector, KeyValueDiffers } from "@angular/core"
-import { ViewRenderer } from "./view-renderer"
+import { EMPTY, Observable, TeardownLogic } from "rxjs"
+import { distinctUntilChanged, map } from "rxjs/operators"
+import { currentContext } from "./constants"
 
 export function throwMissingPropertyError(key: string, name: string) {
     throw new Error(`[ng-effects] Property "${key}" is not initialised in "${name}".`)
@@ -72,93 +67,8 @@ export function injectHostRef() {
     }
 }
 
-export function injectEffects(
-    options: EffectOptions,
-    hostRef: HostRef,
-    destroyObserver: DestroyObserver,
-    viewRenderer: ViewRenderer,
-    injector: Injector,
-    stateFactory: Function,
-    differs: KeyValueDiffers,
-    elementRef: ElementRef,
-    ...effects: any[]
-): EffectMetadata[] {
-    const hostContext = hostRef.instance
-    const nativeElement = elementRef.nativeElement
-    const differ = differs.find(hostContext).create()
-    const notifier = new BehaviorSubject<any>(hostContext)
-    const defaults = Object.assign({}, defaultOptions, options)
-    const events = globalNotifier.pipe(filter(element => element === nativeElement))
-    const sub = merge(viewRenderer.whenScheduled(), viewRenderer.whenRendered(), events).subscribe(
-        () => {
-            const dirty = differ.diff(hostContext)
-
-            if (dirty) {
-                notifier.next(hostContext)
-            }
-        },
-    )
-
-    destroyObserver.destroyed.subscribe(() => {
-        notifier.complete()
-        notifier.unsubscribe()
-        sub.unsubscribe()
-    })
-
-    return Array.from(
-        exploreEffects(defaults, state, hostContext, injector, notifier, stateFactory, [
-            hostRef.instance,
-            ...effects,
-        ]),
-    )
-}
-
 export function assertPropertyExists(key: any, obj: any) {
     if (typeof key === "string" && Object.getOwnPropertyDescriptor(obj, key) === undefined) {
         throwMissingPropertyError(key, obj.constructor.name)
-    }
-}
-
-export function* exploreEffects(
-    defaults: EffectOptions,
-    proxy: any,
-    hostContext: any,
-    injector: Injector,
-    notifier: Subject<void>,
-    stateFactory: Function,
-    effects: any[],
-) {
-    for (const effect of effects) {
-        const props = [
-            ...Object.getOwnPropertyNames(Object.getPrototypeOf(effect)),
-            ...Object.getOwnPropertyNames(effect),
-        ]
-
-        for (const key of props) {
-            const effectFn = effect[key]
-            const maybeOptions = effectsMap.get(effectFn)
-
-            if (effectFn && maybeOptions) {
-                let adapter: EffectHandler<any, any> | undefined
-                const options: EffectOptions<any> = Object.assign({}, defaults, maybeOptions)
-                const binding = options.bind
-
-                if (options.adapter) {
-                    adapter = injector.get(options.adapter)
-                }
-
-                const metadata = {
-                    key,
-                    binding,
-                    effect: () =>
-                        effectFn.call(effect, stateFactory(notifier, hostContext), hostContext),
-                    options,
-                    adapter,
-                    notifier,
-                }
-
-                yield metadata
-            }
-        }
     }
 }
