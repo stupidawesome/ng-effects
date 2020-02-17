@@ -2,8 +2,6 @@ import { EffectHandler, EffectMetadata, EffectOptions } from "../interfaces"
 import { Injector, Type } from "@angular/core"
 import { effectsMap } from "./constants"
 
-export const effectsMetadata = new Map()
-
 export function* exploreEffects(
     defaults: EffectOptions,
     hostContext: any,
@@ -11,32 +9,15 @@ export function* exploreEffects(
     injector: Injector,
     effects: Type<any>[],
 ): Generator<EffectMetadata> {
-    if (effectsMetadata.has(hostType)) {
-        yield effectsMetadata.get(hostType)
-    } else {
-        const metadata = yield* exploreEffect(
-            defaults,
-            injector,
-            hostType,
-            hostContext,
-            hostContext,
-        )
-        if (metadata) {
-            effectsMetadata.set(hostType, metadata)
-            yield metadata
-        }
+    const metadata = yield* exploreEffect(defaults, injector, hostType, hostContext, hostContext)
+    if (metadata) {
+        yield metadata
     }
     for (const type of effects) {
-        if (effectsMetadata.has(type)) {
-            yield effectsMetadata.get(type)
-            continue
-        }
-
         const effect = injector.get(type)
         const metadata = yield* exploreEffect(defaults, injector, type, effect, hostContext)
 
         if (metadata) {
-            effectsMetadata.set(type, metadata)
             yield metadata
         }
     }
