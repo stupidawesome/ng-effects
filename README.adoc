@@ -105,7 +105,7 @@ Effects can be configured through the decorator or factory function.
 
 |adapter
 |Type<any>
-|Hook into effects with a link:#custom-effect-handlers[custom effect handler]. For example, to dispatch all values emitted by the effect as actions to a global store.
+|Hook into effects with a custom link:#_effect_adapters[effect adapter]. For example, to dispatch actions to a global store.
 |===
 
 ==== Default options
@@ -619,18 +619,24 @@ export class AppComponent {
 }
 ----
 
-=== Custom Effect Handlers
+=== Effect Adapters
 
-An effect handler can be passed in to do additional processing after the observable has emitted a value. This can be useful for adding a dispatcher to automatically dispatch actions to a global state store.
+An effect adapter can be passed in to do additional processing after the observable has emitted a value. This can be useful for adding a dispatcher to automatically dispatch actions to a global state store.
 
 [source,typescript]
 ----
+interface Options {
+    customOption: boolean
+}
+
 @Injectable({ providedIn: "root" })
 export class Dispatch implements EffectHandler<Action, Options> {
     constructor(private store: Store<any>) {}
 
-    next(value: Action, options: Options) {
-        this.store.dispatch(value)
+    next(action: Action, options: Options, metadata: EffectMetadata) {
+        if (options.customOption) {
+            this.store.dispatch(action)
+        }
     }
 }
 ----
@@ -639,7 +645,7 @@ export class Dispatch implements EffectHandler<Action, Options> {
 ----
 @Injectable()
 export class AppEffects {
-    @Effect(Dispatch)
+    @Effect(Dispatch, { customOption: true })
     dispatchAction(state: State<AppComponent>, context: Context<AppComponent>) {
         return context.formData.valueChanges.pipe(
             map(payload => ({
