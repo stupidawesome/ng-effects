@@ -30,6 +30,7 @@ interface TestState {
     age: number
     viewChild?: ElementRef
     viewChildren?: QueryList<ElementRef>
+    events: MouseEvent | undefined
 }
 
 function toggleSwitch(source: Observable<boolean>): OperatorFunction<any, boolean> {
@@ -126,8 +127,8 @@ export class TestEffects {
      * Template event binding example
      */
     @Effect()
-    public clicked(state: State<TestState>, context: Context<TestComponent>) {
-        return context.events.subscribe(event => console.log(`click:`, event))
+    public clicked(state: State<TestState>) {
+        return changes(state.events).subscribe(event => console.log(`click:`, event))
     }
 
     /**
@@ -172,9 +173,9 @@ export class TestEffects {
     }
 
     @Effect("show")
-    public toggleShow(state: State<TestComponent>, context: Context<TestComponent>) {
+    public toggleShow(state: State<TestComponent>) {
         const { show } = state
-        return context.events.pipe(toggleSwitch(show))
+        return changes(state.events).pipe(toggleSwitch(show))
     }
 }
 
@@ -193,7 +194,7 @@ export class TestEffects {
     changeDetection: ChangeDetectionStrategy.OnPush,
     providers: [effects(TestEffects, { markDirty: true })],
     host: {
-        "(click)": "events.next($event) //noinspection UnresolvedVariable",
+        "(click)": "events= $event //noinspection UnresolvedVariable",
     },
 })
 export class TestComponent implements TestState {
@@ -214,13 +215,13 @@ export class TestComponent implements TestState {
 
     public show: boolean
 
-    public events: Events<MouseEvent>
+    public events: MouseEvent | undefined
 
     constructor(connect: Connect) {
         this.name = "abc"
         this.age = 0
         this.ageChange = new Events()
-        this.events = new Events()
+        this.events = undefined
         this.show = true
 
         connect(this)

@@ -4,7 +4,7 @@ import { EFFECTS, HostRef } from "../constants"
 import { ViewRenderer } from "./view-renderer"
 import { InitEffectArgs } from "./interfaces"
 import { EffectMetadata } from "../interfaces"
-import { observeOn, take, tap } from "rxjs/operators"
+import { last, observeOn, take, takeUntil, tap } from "rxjs/operators"
 import { assertPropertyExists, isTeardownLogic, throwBadReturnTypeError } from "./utils"
 
 export function initEffect({
@@ -25,36 +25,35 @@ export function initEffect({
     }
 
     if (isObservable(returnValue)) {
-        subs.add(
-            returnValue
-                .pipe(
-                    tap((value: any) => {
-                        if (adapter) {
-                            adapter.next(value, options)
+        returnValue
+            .pipe(
+                takeUntil(notifier.pipe(last())),
+                tap((value: any) => {
+                    if (adapter) {
+                        adapter.next(value, options)
+                    }
+                    if (options.assign) {
+                        for (const prop of Object.keys(value)) {
+                            assertPropertyExists(prop, hostContext)
+                            hostContext[prop] = value[prop]
                         }
-                        if (options.assign) {
-                            for (const prop of Object.keys(value)) {
-                                assertPropertyExists(prop, hostContext)
-                                hostContext[prop] = value[prop]
-                            }
-                        } else if (binding) {
-                            assertPropertyExists(binding, hostContext)
-                            hostContext[binding] = value
-                        }
-                        if (options.detectChanges) {
-                            viewRenderer.detectChanges(hostContext, cdr)
-                        } else {
-                            notifier.next()
-                        }
-                    }),
-                    observeOn(asapScheduler),
-                )
-                .subscribe(() => {
-                    if (options.markDirty) {
-                        viewRenderer.markDirty(hostContext, cdr)
+                    } else if (binding) {
+                        assertPropertyExists(binding, hostContext)
+                        hostContext[binding] = value
+                    }
+                    if (options.detectChanges) {
+                        viewRenderer.detectChanges(hostContext, cdr)
+                    } else {
+                        notifier.next(hostContext)
                     }
                 }),
-        )
+                observeOn(asapScheduler),
+            )
+            .subscribe(() => {
+                if (options.markDirty) {
+                    viewRenderer.markDirty(hostContext, cdr)
+                }
+            })
     } else if (isTeardownLogic(returnValue)) {
         subs.add(returnValue)
     } else {

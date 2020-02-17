@@ -1,6 +1,6 @@
 import { InitEffects } from "./internals/init-effects"
 import { EFFECTS, HOST_INITIALIZER, HostRef } from "./constants"
-import { Injector, Type } from "@angular/core"
+import { ElementRef, Injector, KeyValueDiffers, NgZone, Type } from "@angular/core"
 import { DestroyObserver } from "./internals/destroy-observer"
 import { ViewRenderer } from "./internals/view-renderer"
 import { ConnectFactory } from "./internals/connect-factory"
@@ -8,6 +8,8 @@ import { ExperimentalIvyViewRenderer } from "./internals/experimental-view-rende
 import { injectEffects, injectHostRef } from "./internals/utils"
 import { DefaultEffectOptions, EffectOptions } from "./interfaces"
 import { STATE_FACTORY } from "./internals/providers"
+import { EVENT_MANAGER_PLUGINS, EventManager } from "@angular/platform-browser"
+import { ZonelessEventManager } from "./internals/zoneless-event-manager"
 
 export function effects(types: Type<any> | Type<any>[] = [], effectOptions?: DefaultEffectOptions) {
     return [
@@ -21,6 +23,8 @@ export function effects(types: Type<any> | Type<any>[] = [], effectOptions?: Def
                 ViewRenderer,
                 Injector,
                 STATE_FACTORY,
+                KeyValueDiffers,
+                ElementRef
             ].concat(types as any),
         },
         {
@@ -60,4 +64,15 @@ export const USE_EXPERIMENTAL_RENDER_API = [
         provide: ViewRenderer,
         useClass: ExperimentalIvyViewRenderer,
     },
+    {
+        provide: EventManager,
+        useFactory: (plugins: any[], zone: NgZone) => {
+            try {
+                return NgZone.isInAngularZone() ? new EventManager(plugins, zone) : new ZonelessEventManager(plugins, zone)
+            } catch {
+                return new ZonelessEventManager(plugins, zone)
+            }
+        },
+        deps: [EVENT_MANAGER_PLUGINS, NgZone]
+    }
 ]

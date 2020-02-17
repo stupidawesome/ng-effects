@@ -1,10 +1,10 @@
-import { BehaviorSubject, merge, NEVER, Observable, Subject, TeardownLogic } from "rxjs"
-import { distinctUntilChanged, map, mapTo } from "rxjs/operators"
-import { currentContext, defaultOptions, effectsMap } from "./constants"
+import { BehaviorSubject, EMPTY, merge, Observable, Subject, TeardownLogic } from "rxjs"
+import { distinctUntilChanged, filter, map } from "rxjs/operators"
+import { currentContext, defaultOptions, effectsMap, globalNotifier } from "./constants"
 import { HostRef } from "../constants"
 import { EffectHandler, EffectMetadata, EffectOptions } from "../interfaces"
 import { DestroyObserver } from "./destroy-observer"
-import { Injector } from "@angular/core"
+import { ElementRef, Injector, KeyValueDiffers } from "@angular/core"
 import { ViewRenderer } from "./view-renderer"
 
 export function throwMissingPropertyError(key: string, name: string) {
@@ -26,7 +26,7 @@ export function proxyState<T>(source: Observable<T>, target: any) {
                     assertPropertyExists(key, target)
                 } catch (e) {
                     console.error(e)
-                    return NEVER
+                    return EMPTY
                 }
                 return selectKey(source, key)
             },
@@ -79,12 +79,25 @@ export function injectEffects(
     viewRenderer: ViewRenderer,
     injector: Injector,
     stateFactory: Function,
+    differs: KeyValueDiffers,
+    elementRef: ElementRef,
     ...effects: any[]
 ): EffectMetadata[] {
     const hostContext = hostRef.instance
-    const notifier = new BehaviorSubject<any>(null)
+    const nativeElement = elementRef.nativeElement
+    const differ = differs.find(hostContext).create()
+    const notifier = new BehaviorSubject<any>(hostContext)
     const defaults = Object.assign({}, defaultOptions, options)
-    const sub = merge(viewRenderer.whenScheduled(), viewRenderer.whenRendered()).subscribe(notifier)
+    const events = globalNotifier.pipe(filter(element => element === nativeElement))
+    const sub = merge(viewRenderer.whenScheduled(), viewRenderer.whenRendered(), events).subscribe(
+        () => {
+            const dirty = differ.diff(hostContext)
+
+            if (dirty) {
+                notifier.next(hostContext)
+            }
+        },
+    )
 
     destroyObserver.destroyed.subscribe(() => {
         notifier.complete()
@@ -115,8 +128,6 @@ export function* exploreEffects(
     stateFactory: Function,
     effects: any[],
 ) {
-    const observer = notifier.pipe(mapTo(hostContext))
-
     for (const effect of effects) {
         const props = [
             ...Object.getOwnPropertyNames(Object.getPrototypeOf(effect)),
@@ -140,7 +151,7 @@ export function* exploreEffects(
                     key,
                     binding,
                     effect: () =>
-                        effectFn.call(effect, stateFactory(observer, hostContext), hostContext),
+                        effectFn.call(effect, stateFactory(notifier, hostContext), hostContext),
                     options,
                     adapter,
                     notifier,
