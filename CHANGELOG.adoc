@@ -1,5 +1,14 @@
 = Changelog
 
+== 9.0.0.beta.2
+
+=== Features
+- performance improvements
+- add experimental zoneless event manager
+
+=== Bug fixes
+- fix max call stack errors
+
 == 9.0.0.beta.1
 
 === Features
