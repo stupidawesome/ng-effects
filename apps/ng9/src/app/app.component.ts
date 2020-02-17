@@ -1,12 +1,14 @@
 import { ChangeDetectionStrategy, Component } from "@angular/core"
 import { Connect, Effect, HOST_EFFECTS, State } from "@ng9/ng-effects"
-import { animationFrameScheduler, interval } from "rxjs"
+import { interval } from "rxjs"
 import { distinctUntilChanged, map, mapTo } from "rxjs/operators"
 
 @Component({
     selector: "app-root",
     template: `
-        <app-test *ngFor="let t of a" [age]="age"></app-test>
+        <app-test [age]="age" (ageChange)="age = $event">
+            <app-test *ngIf="show">Nested!</app-test>
+        </app-test>
     `,
     styleUrls: ["./app.component.scss"],
     providers: [HOST_EFFECTS],
@@ -16,7 +18,6 @@ export class AppComponent {
     title = "ng9"
     show: boolean
     age: number
-    a = Array.from({ length: 500 })
 
     constructor(connect: Connect) {
         this.show = false
@@ -29,7 +30,7 @@ export class AppComponent {
      */
     @Effect("age", { markDirty: true })
     public resetAge(_: State<AppComponent>) {
-        return interval(1000, animationFrameScheduler).pipe(mapTo(30))
+        return interval(10000).pipe(mapTo(30))
     }
 
     @Effect("show", { markDirty: true })

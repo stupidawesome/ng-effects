@@ -3,7 +3,10 @@
 == 9.0.0-beta.4
 
 === Features
-- Adapters now receive effect metadata as a third argument
+- adapters now receive effect metadata as a third argument
+
+=== Bug fixes
+- fix change detection bug
 
 == 9.0.0-beta.3
 

@@ -115,6 +115,10 @@ export class InitEffects {
         })
 
         // Start event loop
-        destroyObserver.add(notifier, changeNotifier, scheduler.subscribe())
+        destroyObserver.add(
+            notifier,
+            changeNotifier,
+            scheduler.subscribe(() => notifier.next(hostContext)),
+        )
     }
 }

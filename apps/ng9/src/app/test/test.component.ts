@@ -9,7 +9,7 @@ import {
     ViewChild,
     ViewChildren,
 } from "@angular/core"
-import { animationFrameScheduler, Observable, of, OperatorFunction, timer } from "rxjs"
+import { Observable, of, OperatorFunction, timer } from "rxjs"
 import {
     changes,
     Connect,
@@ -22,7 +22,7 @@ import {
     State,
 } from "@ng9/ng-effects"
 import { Events, increment } from "../utils"
-import { map, mapTo, repeat, share, switchMapTo, take } from "rxjs/operators"
+import { map, mapTo, repeat, switchMapTo, take } from "rxjs/operators"
 import { Dispatch } from "../dispatch-adapter"
 
 interface TestState {
@@ -42,8 +42,6 @@ function toggleSwitch(source: Observable<boolean>): OperatorFunction<any, boolea
             repeat(),
         )
 }
-
-const time = timer(1000 / 60, animationFrameScheduler).pipe(share())
 
 @Injectable()
 export class TestEffects {
@@ -104,7 +102,7 @@ export class TestEffects {
      */
     @Effect("age")
     public age(state: State<TestState>) {
-        return time.pipe(switchMapTo(state.age), increment(1), take(1), repeat())
+        return timer(1000).pipe(switchMapTo(state.age), increment(1), take(1), repeat())
     }
 
     /**
