@@ -1,5 +1,13 @@
 = Changelog
 
+== 9.0.0-beta.9
+
+=== Misc
+
+- minor code refactor
+
+`HostRef` property `instance` renamed to `context`
+
 == 9.0.0-beta.8
 
 === Features

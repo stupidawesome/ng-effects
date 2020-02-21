@@ -28,4 +28,5 @@ export type NextOptions<T extends any> = T["next"] extends (
 export interface InternalHostRef<T = any> extends HostRef<T> {
     readonly observer: BehaviorSubject<T>
     readonly update: Function
+    readonly next: () => void
 }

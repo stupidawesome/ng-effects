@@ -1,6 +1,10 @@
 import { BehaviorSubject, NEVER, Observable, TeardownLogic } from "rxjs"
 import { distinctUntilChanged, map } from "rxjs/operators"
-import { State } from "../interfaces"
+import { DefaultEffectOptions, EffectMetadata, State } from "../interfaces"
+import { HostRef } from "../constants"
+import { Injector } from "@angular/core"
+import { defaultOptions } from "./constants"
+import { exploreEffects } from "./explore-effects"
 
 export function throwMissingPropertyError(key: string, name: string) {
     throw new Error(`[ng-effects] Property "${key}" is not initialised in "${name}".`)
@@ -81,11 +85,24 @@ export function createHostRef(mapState: Function) {
             observer = observer || new BehaviorSubject(context)
             state = mapState(observer, context)
         },
+        next() {
+            observer.next(context)
+        },
     }
 }
 
 export function assertPropertyExists(key: any, obj: any) {
     if (typeof key === "string" && Object.getOwnPropertyDescriptor(obj, key) === undefined) {
         throwMissingPropertyError(key, obj.constructor.name)
+    }
+}
+
+export function injectEffectsFactory(effects: any | any[], options?: DefaultEffectOptions) {
+    return function injectEffects(hostRef: HostRef, injector: Injector): EffectMetadata[] {
+        const hostContext = hostRef.context
+        const hostType = Object.getPrototypeOf(hostContext).constructor
+        const defaults = Object.assign({}, defaultOptions, options)
+
+        return [...exploreEffects(defaults, hostContext, hostType, injector, [].concat(effects))]
     }
 }

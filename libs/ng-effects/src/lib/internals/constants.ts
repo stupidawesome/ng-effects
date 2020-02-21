@@ -3,7 +3,7 @@ import { Subject } from "rxjs"
 
 export const effectsMap = new WeakMap<EffectFn<any>, any>()
 
-export const defaultOptions: DefaultEffectOptions = {
+export const defaultOptions: Required<DefaultEffectOptions> = {
     whenRendered: false,
     detectChanges: false,
     markDirty: false,

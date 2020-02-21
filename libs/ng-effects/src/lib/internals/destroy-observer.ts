@@ -1,10 +1,10 @@
 import { Injectable, OnDestroy } from "@angular/core"
-import { ReplaySubject, Subject, TeardownLogic } from "rxjs"
+import { Subject, TeardownLogic } from "rxjs"
 
 @Injectable()
 export class DestroyObserver implements OnDestroy {
-    public subs: any[] = []
-    public destroyed = new ReplaySubject<void>()
+    public destroyed = new Subject<void>()
+    public subs: any[] = [this.destroyed]
 
     public add(...sub: (TeardownLogic | Subject<any>)[]) {
         this.subs.concat(sub)
@@ -12,18 +12,9 @@ export class DestroyObserver implements OnDestroy {
 
     public ngOnDestroy() {
         for (const sub of this.subs) {
-            if (sub.complete) {
-                sub.complete()
-            }
-            if (sub.unsubscribe) {
-                sub.unsubscribe()
-            }
-            if (typeof sub === "function") {
-                sub()
-            }
+            sub.complete && sub.complete()
+            sub.unsubscribe && sub.unsubscribe()
+            sub.call && sub()
         }
-        this.destroyed.next()
-        this.destroyed.complete()
-        this.destroyed.unsubscribe()
     }
 }
