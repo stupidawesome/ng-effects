@@ -5,11 +5,10 @@ import { DestroyObserver } from "./internals/destroy-observer"
 import { ViewRenderer } from "./internals/view-renderer"
 import { ConnectFactory } from "./internals/connect-factory"
 import { ExperimentalIvyViewRenderer } from "./internals/experimental-view-renderer"
-import { createHostRef } from "./internals/utils"
+import { createHostRef, injectEffectsFactory } from "./internals/utils"
 import { DefaultEffectOptions } from "./interfaces"
 import { EVENT_MANAGER_PLUGINS, EventManager } from "@angular/platform-browser"
 import { ZonelessEventManager } from "./internals/zoneless-event-manager"
-import { injectEffectsFactory } from "./internals/inject-effects"
 import { STATE_FACTORY } from "./internals/providers"
 
 export function effects(types: Type<any> | Type<any>[] = [], effectOptions?: DefaultEffectOptions) {

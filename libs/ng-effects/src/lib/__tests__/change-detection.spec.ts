@@ -6,10 +6,9 @@ import { createEffect } from "../utils"
 import { delay } from "rxjs/operators"
 import { fakeAsync, TestBed, tick } from "@angular/core/testing"
 import { ChangeDetectorRef } from "@angular/core"
-import { ViewRenderer } from "../internals/view-renderer"
+import { DETECT_CHANGES, MARK_DIRTY } from "../internals/providers"
 import Mock = jest.Mock
 import fn = jest.fn
-import { DETECT_CHANGES, MARK_DIRTY } from "../internals/providers"
 
 describe("How change detection works", () => {
     it("should mark the view dirty asynchronously when an effect emits", fakeAsync(() => {
@@ -159,10 +158,9 @@ describe("How change detection works [USE_EXPERIMENTAL_RENDER_API]", () => {
             ],
         )
 
-        then: spy = TestBed.inject(ViewRenderer)
-        then: expect(spy.detectChanges).toHaveBeenCalledTimes(1)
+        then: expect(spy).toHaveBeenCalledTimes(1)
         then: tick(fakeDelay)
-        then: expect(spy.detectChanges).toHaveBeenCalledTimes(1)
+        then: expect(spy).toHaveBeenCalledTimes(1)
     }))
 
     it("should defer the effect until the view has rendered", async () => {

@@ -33,11 +33,11 @@ export class ViewRenderer implements RenderApi, OnDestroy {
         this.begin = begin
     }
 
-    public detectChanges(componentOrView: any, changeDetector: ChangeDetectorRef) {
+    public detectChanges(hostRef: any, changeDetector: ChangeDetectorRef) {
         changeDetector.detectChanges()
     }
 
-    public markDirty(componentOrView: any, changeDetector: ChangeDetectorRef) {
+    public markDirty(hostRef: any, changeDetector: ChangeDetectorRef) {
         changeDetector.markForCheck()
     }
 
