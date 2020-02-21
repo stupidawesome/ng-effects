@@ -698,14 +698,14 @@ export class ParentComponent {
     selected: any = undefined
 
     @ViewChildren(ChildRef)
-    children?: QueryList<HostRef>
+    children?: QueryList<ChildRef>
 
     constructor(connect: Connect) {
         connect(this)
     }
 
     @Effect("selected", { whenRendered: true })
-    withChild(state: State<ParentComponent>) {
+    select(state: State<ParentComponent>) {
         return state.children.pipe(
             mergeMap(children =>
                 children.map(child => child.select)
