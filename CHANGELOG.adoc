@@ -2,6 +2,16 @@
 
 == 9.0.0-beta.9
 
+=== Features
+
+- add `HostEmitter` type for binding template/host events
+
+=== Bug fixes
+
+- fix unsubscribe errors
+
+== 9.0.0-beta.9
+
 === Misc
 
 - minor code refactor

@@ -1,6 +1,7 @@
 import { ChangeDetectorRef } from "@angular/core"
 import { BehaviorSubject, Observable } from "rxjs"
 import { HostRef } from "../constants"
+import { HostEmitter } from "./utils"
 
 export interface RenderApi {
     detectChanges(componentOrView: any, changeDetector?: ChangeDetectorRef): void
@@ -10,7 +11,7 @@ export interface RenderApi {
 }
 
 export type MapSelect<T> = {
-    [key in keyof T]: Observable<T[key]>
+    [key in keyof T]: T[key] extends HostEmitter<any> ? T[key] : Observable<T[key]>
 }
 
 export type NextValue<T extends any> = T["next"] extends (value: infer R, ...args: any[]) => any

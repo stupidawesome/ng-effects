@@ -7,7 +7,7 @@ export class DestroyObserver implements OnDestroy {
     public subs: any[] = [this.destroyed]
 
     public add(...sub: (TeardownLogic | Subject<any>)[]) {
-        this.subs.concat(sub)
+        this.subs = this.subs.concat(sub)
     }
 
     public ngOnDestroy() {

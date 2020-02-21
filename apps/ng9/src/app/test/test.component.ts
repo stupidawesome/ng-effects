@@ -2,6 +2,7 @@ import {
     ChangeDetectionStrategy,
     Component,
     ElementRef,
+    HostListener,
     Injectable,
     Input,
     Output,
@@ -17,11 +18,12 @@ import {
     createEffect,
     Effect,
     effects,
+    HostEmitter,
     HostRef,
     latestFrom,
     State,
 } from "@ng9/ng-effects"
-import { Events, increment } from "../utils"
+import { increment } from "../utils"
 import { map, mapTo, repeat, switchMapTo, take } from "rxjs/operators"
 import { Dispatch } from "../dispatch-adapter"
 
@@ -30,7 +32,8 @@ interface TestState {
     age: number
     viewChild?: ElementRef
     viewChildren?: QueryList<ElementRef>
-    events: MouseEvent | undefined
+    event: HostEmitter<MouseEvent | undefined>
+    ageChange: HostEmitter<number>
 }
 
 function toggleSwitch(source: Observable<boolean>): OperatorFunction<any, boolean> {
@@ -111,8 +114,8 @@ export class TestEffects {
      * Output binding example
      */
     @Effect({ whenRendered: true })
-    public ageChange(state: State<TestState>, context: Context<TestComponent>) {
-        return changes(state.age).subscribe(context.ageChange)
+    public ageChange(state: State<TestState>) {
+        return changes(state.age).subscribe(state.ageChange)
     }
 
     /**
@@ -130,7 +133,7 @@ export class TestEffects {
      */
     @Effect()
     public clicked(state: State<TestState>) {
-        return changes(state.events).subscribe(event => console.log(`click:`, event))
+        return state.event.subscribe(event => console.log(`click:`, event))
     }
 
     /**
@@ -177,14 +180,14 @@ export class TestEffects {
     @Effect("show")
     public toggleShow(state: State<TestComponent>) {
         const { show } = state
-        return changes(state.events).pipe(toggleSwitch(show))
+        return state.event.pipe(toggleSwitch(show))
     }
 }
 
 @Component({
     selector: "app-test",
     template: `
-        <p>test works!</p>
+        <p (click)="event($event)">test works!</p>
         <p>Name: {{ name }}</p>
         <p>Age: {{ age }}</p>
         <div #test *ngIf="show">Showing</div>
@@ -195,9 +198,6 @@ export class TestEffects {
     styleUrls: ["./test.component.scss"],
     changeDetection: ChangeDetectionStrategy.OnPush,
     providers: [effects(TestEffects, { markDirty: true })],
-    host: {
-        "(click)": "events= $event //noinspection UnresolvedVariable",
-    },
 })
 export class TestComponent implements TestState {
     @Input()
@@ -207,7 +207,7 @@ export class TestComponent implements TestState {
     public age: number
 
     @Output()
-    public ageChange: Events<number>
+    public ageChange: HostEmitter<number>
 
     @ViewChild("test")
     public viewChild?: ElementRef
@@ -217,13 +217,14 @@ export class TestComponent implements TestState {
 
     public show: boolean
 
-    public events: MouseEvent | undefined
+    @HostListener("ageChange")
+    public event: HostEmitter<MouseEvent | undefined>
 
     constructor(connect: Connect) {
         this.name = "abc"
         this.age = 0
-        this.ageChange = new Events()
-        this.events = undefined
+        this.ageChange = new HostEmitter()
+        this.event = new HostEmitter(true)
         this.show = true
 
         connect(this)
