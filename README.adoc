@@ -735,7 +735,7 @@ export class ChildComponent {
 
     @Effect("selected", { whenRendered: true })
     withParent(state: State<ChildComponent>, context: Context<ChildComponent>) {
-        return this.parentRef.selected.pipe(
+        return this.parentRef.state.selected.pipe(
             map(selected => selected === context)
         )
     }
