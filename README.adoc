@@ -256,7 +256,7 @@ export class AppEffects {
 A reference to the component or directive instance.
 
 ===== state
-A reference to the _observable state_ of the component or directive. This can be injected with the `StateRef<T>` token. Properties on this object are not populated unless they have been initialised in the host context constructor before calling `connect()`. Deferred properties such as view children are attached  after the component has rendered.
+A reference to the _observable state_ of the component or directive. Properties on this object are not populated unless they have been initialised in the host context constructor before calling `connect()`. Deferred properties such as view children are attached  after the component has rendered.
 
 The parent context can be injected using `SkipSelf()` or through provider mapping (eg. `{ provide: Parent, useExisting: HostRef }`. Child contexts can be queried via `ViewChild(HostRef)` or `ViewChild("ref", { read: HostRef })` etc.
 
