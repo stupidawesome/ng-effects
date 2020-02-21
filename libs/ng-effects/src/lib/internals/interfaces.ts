@@ -23,7 +23,7 @@ export interface RenderApi {
 }
 
 export type MapSelect<T> = {
-    [key in keyof Required<T>]: Observable<T[key]>
+    [key in keyof T]: Observable<T[key]>
 }
 
 export type NextValue<T extends any> = T["next"] extends (value: infer R, ...args: any[]) => any

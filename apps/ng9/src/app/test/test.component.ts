@@ -155,7 +155,7 @@ export class TestEffects {
      * Dispatch adapter example
      */
     @Effect(Dispatch, { whenRendered: true })
-    public dispatch() {
+    public dispatch(_: State<TestComponent>) {
         return of({
             type: "MY_ACTION",
             payload: {

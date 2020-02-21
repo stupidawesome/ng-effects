@@ -1,5 +1,13 @@
 import { effectsMap } from "./internals/constants"
-import { AssignEffectOptions, BindEffectOptions, DefaultEffectOptions, EffectFn, EffectHandler, EffectOptions } from "./interfaces"
+import {
+    AnyEffectFn,
+    AssignEffectOptions,
+    BindEffectOptions,
+    DefaultEffectOptions,
+    EffectFn,
+    EffectHandler,
+    EffectOptions,
+} from "./interfaces"
 import { Type } from "@angular/core"
 import { NextOptions, NextValue } from "./internals/interfaces"
 
@@ -20,11 +28,18 @@ export interface EffectAdapterDecorator<T> {
         target: any,
         prop: any,
         propertyDescriptor: {
-            value?: EffectFn<any, T>
+            value?: AnyEffectFn<any, T>
         },
     ): void
 }
 
+export function Effect<T extends Type<EffectHandler<any, any>>>(
+    adapter: T,
+    options?: NextOptions<InstanceType<T>> & DefaultEffectOptions,
+): EffectAdapterDecorator<NextValue<InstanceType<T>>>
+export function Effect<T extends Type<EffectHandler<any, any>>, TOptions = NextOptions<InstanceType<T>>, TValue = NextValue<InstanceType<T>>>(
+    options?: { adapter: T } & TOptions & DefaultEffectOptions,
+): EffectAdapterDecorator<TValue>
 export function Effect(): EffectDecorator<unknown>
 export function Effect<T extends string>(
     target?: T,
@@ -32,10 +47,6 @@ export function Effect<T extends string>(
 ): EffectDecorator<T>
 export function Effect<T extends string>(options?: BindEffectOptions<T>): EffectDecorator<T>
 export function Effect<T extends AssignEffectOptions>(options?: T): EffectDecorator<T["assign"]>
-export function Effect<T extends Type<EffectHandler<any, any>>>(
-    adapter: T,
-    options?: NextOptions<InstanceType<T>> & DefaultEffectOptions,
-): EffectAdapterDecorator<NextValue<InstanceType<T>>>
 export function Effect(): EffectDecorator<unknown> {
     let opts: EffectOptions
     if (typeof arguments[0] === "string") {

@@ -2,8 +2,13 @@ import { Observable, TeardownLogic } from "rxjs"
 import { Type } from "@angular/core"
 import { MapSelect } from "./internals/interfaces"
 
-export type State<T> = MapSelect<T>
+export type State<T> = MapSelect<Required<T>>
 export type Context<T> = Readonly<T>
+
+export type AnyEffectFn<T, U = any> = (
+    state: MapSelect<T>,
+    context: Context<T>,
+) => Observable<U> | TeardownLogic
 
 export type EffectFn<T, U = any> = (
     state: State<T>,
