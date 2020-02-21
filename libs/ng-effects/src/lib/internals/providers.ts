@@ -4,7 +4,7 @@ import {
     ɵdetectChanges as detectChanges,
     ɵmarkDirty as markDirty,
 } from "@angular/core"
-import { proxyState, state } from "./utils"
+import { mapState, proxyState } from "./utils"
 
 export const DETECT_CHANGES = new InjectionToken("DETECT_CHANGES", {
     providedIn: "root",
@@ -16,5 +16,5 @@ export const MARK_DIRTY = new InjectionToken("DETECT_CHANGES", {
 })
 export const STATE_FACTORY = new InjectionToken("STATE_FACTORY", {
     providedIn: "root",
-    factory: () => (isDevMode() ? proxyState : state),
+    factory: () => (isDevMode() ? proxyState : mapState),
 })

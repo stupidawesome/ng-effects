@@ -1,5 +1,11 @@
 import { effectsMap } from "./internals/constants"
-import { AssignEffectOptions, BindEffectOptions, DefaultEffectOptions, EffectFn, EffectHandler } from "./interfaces"
+import {
+    AssignEffectOptions,
+    BindEffectOptions,
+    DefaultEffectOptions,
+    EffectFn,
+    EffectHandler,
+} from "./interfaces"
 import { combineLatest, MonoTypeOperatorFunction, Observable } from "rxjs"
 import { Type } from "@angular/core"
 import { MapSelect, NextOptions, NextValue } from "./internals/interfaces"
@@ -15,7 +21,7 @@ export function createEffect<T>(
 ): EffectFn<T, Partial<T>>
 export function createEffect<T extends Type<EffectHandler<any, any>>, U>(
     fn: EffectFn<U, NextValue<InstanceType<T>>>,
-    options?: { adapter: T } &  (NextOptions<InstanceType<T>> | DefaultEffectOptions),
+    options?: { adapter: T } & (NextOptions<InstanceType<T>> | DefaultEffectOptions),
 ): EffectFn<U, NextValue<InstanceType<T>>>
 export function createEffect<T, U extends keyof T>(
     fn: EffectFn<unknown>,

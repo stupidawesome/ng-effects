@@ -10,7 +10,17 @@ import {
     ViewChildren,
 } from "@angular/core"
 import { Observable, of, OperatorFunction, timer } from "rxjs"
-import { changes, Connect, Context, createEffect, Effect, effects, HostRef, latestFrom, State } from "@ng9/ng-effects"
+import {
+    changes,
+    Connect,
+    Context,
+    createEffect,
+    Effect,
+    effects,
+    HostRef,
+    latestFrom,
+    State,
+} from "@ng9/ng-effects"
 import { Events, increment } from "../utils"
 import { map, mapTo, repeat, switchMapTo, take } from "rxjs/operators"
 import { Dispatch } from "../dispatch-adapter"
@@ -42,7 +52,7 @@ export class TestEffects {
     public name = createEffect(
         (state: State<TestState>, context: Context<TestComponent>) => {
             return of({
-                type: ""
+                type: "MY_ACTION",
             })
         },
         { adapter: Dispatch },
@@ -51,9 +61,9 @@ export class TestEffects {
     // noinspection JSUnusedLocalSymbols
     /**
      * Injector example with special tokens
-     * HostRef can be injected to get host context
+     * HostRef can be injected to get host context.
      */
-    constructor(private elementRef: ElementRef, hostRef: HostRef<TestComponent>) {}
+    constructor(private elementRef: ElementRef, hostRef: HostRef<any>) {}
 
     /**
      * Effect decorator with explicit binding example

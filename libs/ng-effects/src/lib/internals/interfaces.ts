@@ -1,19 +1,6 @@
 import { ChangeDetectorRef } from "@angular/core"
-import { Observable, Subject, Subscription } from "rxjs"
-import { ViewRenderer } from "./view-renderer"
-import { EffectHandler, EffectOptions } from "../interfaces"
-
-export interface InitEffectArgs {
-    effect: Function
-    binding: string
-    options: EffectOptions
-    cdr: ChangeDetectorRef
-    hostContext: any
-    subs: Subscription
-    viewRenderer: ViewRenderer
-    adapter?: EffectHandler<any, any>
-    notifier: Subject<void>
-}
+import { BehaviorSubject, Observable } from "rxjs"
+import { HostRef } from "../constants"
 
 export interface RenderApi {
     detectChanges(componentOrView: any, changeDetector?: ChangeDetectorRef): void
@@ -30,6 +17,15 @@ export type NextValue<T extends any> = T["next"] extends (value: infer R, ...arg
     ? R
     : never
 
-export type NextOptions<T extends any> = T["next"] extends (value: any, options: infer R, ...args: any[]) => any
+export type NextOptions<T extends any> = T["next"] extends (
+    value: any,
+    options: infer R,
+    ...args: any[]
+) => any
     ? R
     : never
+
+export interface InternalHostRef<T = any> extends HostRef<T> {
+    readonly observer: BehaviorSubject<T>
+    readonly update: Function
+}

@@ -1,6 +1,6 @@
-import { EMPTY, Observable, TeardownLogic } from "rxjs"
+import { BehaviorSubject, NEVER, Observable, TeardownLogic } from "rxjs"
 import { distinctUntilChanged, map } from "rxjs/operators"
-import { currentContext } from "./constants"
+import { State } from "../interfaces"
 
 export function throwMissingPropertyError(key: string, name: string) {
     throw new Error(`[ng-effects] Property "${key}" is not initialised in "${name}".`)
@@ -13,6 +13,8 @@ function selectKey(source: Observable<any>, key: PropertyKey) {
     )
 }
 
+const stateMap = new WeakMap()
+
 export function proxyState<T>(source: Observable<T>, target: any) {
     if (typeof Proxy !== "undefined") {
         return new Proxy(target as any, {
@@ -21,7 +23,7 @@ export function proxyState<T>(source: Observable<T>, target: any) {
                     assertPropertyExists(key, target)
                 } catch (e) {
                     console.error(e)
-                    return EMPTY
+                    return NEVER
                 }
                 return selectKey(source, key)
             },
@@ -33,18 +35,18 @@ export function proxyState<T>(source: Observable<T>, target: any) {
         console.warn(
             "[ng-effects] This browser does not support Proxy objects. Dev mode diagnostics will be limited.",
         )
-        return state(source, target)
+        return mapState(source, target)
     }
 }
 
-export function state<T>(source: Observable<T>, target: any) {
+export function mapState<T>(source: Observable<T>, target: any) {
+    const state = stateMap.get(target) || stateMap.set(target, {}).get(target)
     const keys = Object.getOwnPropertyNames(target)
-    const sources: any = {}
 
     for (const key of keys) {
-        sources[key] = selectKey(source, key)
+        state[key] = selectKey(source, key)
     }
-    return sources
+    return state
 }
 
 export function noop() {}
@@ -60,10 +62,25 @@ export function isTeardownLogic(value: any): value is TeardownLogic {
     )
 }
 
-export function injectHostRef() {
-    const instance = currentContext.values().next().value
+export function createHostRef(mapState: Function) {
+    let instance: any,
+        state: State<any> = {},
+        observer: BehaviorSubject<any>
     return {
-        instance,
+        get instance() {
+            return instance
+        },
+        get state() {
+            return state
+        },
+        get observer() {
+            return observer
+        },
+        update(context: any) {
+            instance = instance || context
+            observer = observer || new BehaviorSubject(context)
+            state = mapState(observer, instance)
+        },
     }
 }
 

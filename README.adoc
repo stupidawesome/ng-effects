@@ -231,18 +231,37 @@ export class AppEffects {
 
 ==== HostRef
 
-A reference to the host context can be injected using `HostRef<T>`
+A reference to the host context can be injected using the `HostRef<T>` token.
 
 [source,typescript]
 ----
+import { AppComponent } from "./app.component"
 @Injectable()
 export class AppEffects {
     host: AppComponent
+    state: State<AppComponent>
+    observer: Observable<AppComponent>
+
     constructor(hostRef: HostRef<AppComponent>) {
         this.host = hostRef.instance
+        this.state = hostRef.state
+        this.observer = hostRef.observer
     }
 }
 ----
+
+
+===== instance
+
+A reference to the component or directive instance.
+
+===== state
+A reference to the _observable state_ of the component or directive. This can be injected with the `StateRef<T>` token. Properties on this object are not populated unless they have been initialised in the host context constructor before calling `connect()`. Deferred properties such as view children are attached  after the component has rendered.
+
+The parent context can be injected using `SkipSelf()` or through provider mapping (eg. `{ provide: Parent, useExisting: HostRef }`. Child contexts can be queried via `ViewChild(HostRef)` or `ViewChild("ref", { read: HostRef })` etc.
+
+=== observer
+Similar to `DoCheck`, except observable. Emits very frequently. Useful for custom change detection strategies or debugging.
 
 === Property bindings
 

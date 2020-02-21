@@ -1,12 +1,13 @@
 import { ChangeDetectorRef, ElementRef, Host, Inject, Injectable } from "@angular/core"
-import { asapScheduler, BehaviorSubject, isObservable, merge, Subject } from "rxjs"
+import { asapScheduler, isObservable, merge, Subject } from "rxjs"
 import { EFFECTS, HostRef } from "../constants"
 import { ViewRenderer } from "./view-renderer"
 import { DefaultEffectOptions, EffectMetadata, State } from "../interfaces"
 import { filter, observeOn, take, takeUntil, tap } from "rxjs/operators"
-import { assertPropertyExists, isTeardownLogic, state, throwBadReturnTypeError } from "./utils"
+import { assertPropertyExists, isTeardownLogic, throwBadReturnTypeError } from "./utils"
 import { globalNotifier } from "./constants"
 import { DestroyObserver } from "./destroy-observer"
+import { InternalHostRef } from "./interfaces"
 
 export function runEffects(state: State<any>, whenRendered: boolean) {
     return function(
@@ -43,8 +44,8 @@ export function handleEffect(
     metadata: EffectMetadata,
     notifier: Subject<any>,
 ) {
-    const { assign, bind } = metadata.options
-    let dirty = false
+    const { assign, bind, markDirty, detectChanges } = metadata.options
+    let dirty = !bind && !assign && (markDirty || detectChanges)
 
     if (metadata.adapter) {
         metadata.adapter.next(value, metadata.options, metadata)
@@ -72,23 +73,22 @@ export function handleEffect(
 @Injectable()
 export class RunEffects {
     constructor(
-        @Host() hostRef: HostRef,
+        @Host() @Inject(HostRef) hostRef: InternalHostRef,
         @Host() @Inject(EFFECTS) effectsMetadata: EffectMetadata[],
-        @Host() cdr: ChangeDetectorRef,
+        @Host() elementRef: ElementRef,
+        @Host() changeDetector: ChangeDetectorRef,
+        @Host() destroyObserver: DestroyObserver,
         viewRenderer: ViewRenderer,
-        elementRef: ElementRef,
-        changeDetector: ChangeDetectorRef,
-        destroyObserver: DestroyObserver,
     ) {
         const hostContext = hostRef.instance
         const whenRendered = viewRenderer.whenRendered().pipe(take(1))
         const nativeElement = elementRef.nativeElement
-        const notifier = new BehaviorSubject<any>(hostContext)
+        const notifier = hostRef.observer
         const events = globalNotifier.pipe(filter(element => element === nativeElement))
         const changeNotifier = new Subject<DefaultEffectOptions>()
         const scheduler = merge(viewRenderer.whenScheduled(), viewRenderer.whenRendered(), events)
         const args: any = [hostContext, effectsMetadata, destroyObserver, changeNotifier]
-        const sources = state(notifier, hostContext)
+        const state = hostRef.state
 
         changeNotifier
             .pipe(
@@ -101,17 +101,17 @@ export class RunEffects {
                 }),
                 observeOn(asapScheduler),
             )
-            .subscribe(({ markDirty }) => {
-                if (markDirty) {
+            .subscribe(({ markDirty, detectChanges }) => {
+                if (markDirty && !detectChanges) {
                     viewRenderer.markDirty(hostContext, changeDetector)
                 }
             })
 
-        runEffects(sources, false).apply(null, args)
+        runEffects(state, false).apply(null, args)
 
         whenRendered.subscribe(() => {
-            Object.assign(sources, state(notifier, hostContext))
-            runEffects(sources, true).apply(null, args)
+            hostRef.update()
+            runEffects(state, true).apply(null, args)
         })
 
         // Start event loop

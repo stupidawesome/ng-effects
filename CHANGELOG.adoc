@@ -1,5 +1,20 @@
 = Changelog
 
+== 9.0.0-beta.8
+
+=== Features
+
+- better error reporting in dev mode when attempting to use uninitialised state in effects.
+
+- add observable state to `HostRef`
+
+`HostRef` now contains references to the observable state of the component or directive it is attached to. See docs for more information.
+
+== 9.0.0-beta.7
+
+=== Bug fixes
+- fix more adapter effect types
+
 == 9.0.0-beta.6
 
 === Bug fixes

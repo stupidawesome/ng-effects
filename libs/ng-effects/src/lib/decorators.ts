@@ -37,9 +37,11 @@ export function Effect<T extends Type<EffectHandler<any, any>>>(
     adapter: T,
     options?: NextOptions<InstanceType<T>> & DefaultEffectOptions,
 ): EffectAdapterDecorator<NextValue<InstanceType<T>>>
-export function Effect<T extends Type<EffectHandler<any, any>>, TOptions = NextOptions<InstanceType<T>>, TValue = NextValue<InstanceType<T>>>(
-    options?: { adapter: T } & TOptions & DefaultEffectOptions,
-): EffectAdapterDecorator<TValue>
+export function Effect<
+    T extends Type<EffectHandler<any, any>>,
+    TOptions = NextOptions<InstanceType<T>>,
+    TValue = NextValue<InstanceType<T>>
+>(options?: { adapter: T } & TOptions & DefaultEffectOptions): EffectAdapterDecorator<TValue>
 export function Effect(): EffectDecorator<unknown>
 export function Effect<T extends string>(
     target?: T,

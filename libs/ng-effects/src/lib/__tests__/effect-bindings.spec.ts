@@ -115,7 +115,7 @@ describe("How to use effect bindCounts using factories", () => {
     })
 })
 
-describe("How to use effect bindCounts using decorators", () => {
+describe("How to use effect bindCount using decorators", () => {
     it("should throw an error when trying to bind effects to an uninitialised property", fakeAsync(() => {
         let AppDirective: Type<any>, AppEffects: Type<any>
 
