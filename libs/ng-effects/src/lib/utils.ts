@@ -52,3 +52,5 @@ export function latestFrom<T>(source: MapSelect<T>): Observable<T> {
         ),
     )
 }
+
+export { HostEmitter } from "./internals/utils"

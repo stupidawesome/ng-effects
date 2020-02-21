@@ -1,8 +1,8 @@
-import { BehaviorSubject, NEVER, Observable, TeardownLogic } from "rxjs"
+import { BehaviorSubject, NEVER, Observable, Subject, TeardownLogic } from "rxjs"
 import { distinctUntilChanged, map } from "rxjs/operators"
-import { DefaultEffectOptions, EffectMetadata, State } from "../interfaces"
+import { DefaultEffectOptions, EffectMetadata, NextFn, State } from "../interfaces"
 import { HostRef } from "../constants"
-import { Injector } from "@angular/core"
+import { EventEmitter, Injector } from "@angular/core"
 import { defaultOptions } from "./constants"
 import { exploreEffects } from "./explore-effects"
 
@@ -29,7 +29,11 @@ export function proxyState<T>(source: Observable<T>, target: any) {
                     console.error(e)
                     return NEVER
                 }
-                return selectKey(source, key)
+                if (target[key] instanceof HostEmitter) {
+                    return target[key]
+                } else {
+                    return selectKey(source, key)
+                }
             },
             set() {
                 return false
@@ -48,7 +52,11 @@ export function mapState<T>(source: Observable<T>, target: any) {
     const keys = Object.getOwnPropertyNames(target)
 
     for (const key of keys) {
-        state[key] = selectKey(source, key)
+        if (target[key] instanceof HostEmitter) {
+            state[key] = target[key]
+        } else {
+            state[key] = selectKey(source, key)
+        }
     }
     return state
 }
@@ -104,5 +112,42 @@ export function injectEffectsFactory(effects: any | any[], options?: DefaultEffe
         const defaults = Object.assign({}, defaultOptions, options)
 
         return [...exploreEffects(defaults, hostContext, hostType, injector, [].concat(effects))]
+    }
+}
+
+export class Callable<T extends Function> extends Function {
+    constructor(fn: T) {
+        super()
+        return Object.setPrototypeOf(fn, new.target.prototype)
+    }
+}
+
+export interface HostEmitter<T> extends Subject<T> {
+    (value?: T): void
+    (...value: T extends Array<infer U> ? T : never[]): void
+    emit(value?: T): void
+}
+
+function apply(target: any, ...sources: any[]) {
+    for (const source of sources) {
+        Object.defineProperties(
+            target.prototype || target,
+            Object.getOwnPropertyDescriptors(source.prototype || source),
+        )
+    }
+}
+
+export class HostEmitter<T> extends Callable<NextFn<T>> {
+    // noinspection JSUnusedLocalSymbols
+    private mixin = apply(HostEmitter, Observable, Subject, EventEmitter)
+    constructor(isAsync?: boolean) {
+        super((...values: any) => {
+            if (values.length <= 1) {
+                this.next(values[0])
+            } else {
+                this.next(values)
+            }
+        })
+        apply(this, new EventEmitter(isAsync))
     }
 }

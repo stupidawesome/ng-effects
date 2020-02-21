@@ -380,131 +380,74 @@ export class AppEffects {
 
 === Output bindings
 
-Effects can be easily connected to host context outputs.
+Effects can be easily connected to host outputs.
 
 [source,typescript]
 ----
+interface TestState {
+    count: number
+    countChange: HostEmitter<number>
+}
+
 @Injectable()
 export class AppEffects {
     @Effect()
-    countChange(state: State<TestState>, context: Context<AppComponent>) {
-        return changes(state.count).subscribe(context.countChange)
+    countChange(state: State<TestState>) {
+        return changes(state.count).subscribe(state.countChange)
     }
 }
 ----
 
 === Template event bindings
 
-Component template events can be exposed via `State`.
+Use an event emitter to ensure template events are properly propagated to trigger effects.
 
 [source,typescript]
 ----
-@Injectable()
-export class AppEffects {
+@Component({
+    selector: "app-root",
+    template: `<div (click)="clicked($event)">Click me<div>`,
+    providers: [HOST_EFFECTS]
+})
+export class AppComponent {
+    clicked = new HostEmitter<MouseEvent>()
+
+    constructor(connect: Connect) {
+        connect(this)
+    }
+
     @Effect()
     handleTemplateClick(state: State<AppComponent>) {
-        return state.clicked.subscribe(event => console.log(`click:`, event))
-    }
-}
-
-@Component({
-    selector: "app-root",
-    template: `<div (click)="clicked = $event">Click me<div>`,
-    providers: [effects(AppEffects)]
-})
-export class AppComponent {
-    clicked: MouseEvent
-
-    constructor(connect: Connect) {
-        connect(this)
-    }
-}
-----
-
-Alternatively, use an event emitter.
-
-[source,typescript]
-----
-@Injectable()
-export class AppEffects {
-    @Effect()
-    handleTemplateClick(state: State<AppComponent>, context: Context<AppComponent>) {
-        return context.clicked.subscribe(event => console.log(`click:`, event))
-    }
-}
-
-@Component({
-    selector: "app-root",
-    template: `<div (click)="clicked.next($event)">Click me<div>`,
-    providers: [effects(AppEffects)]
-})
-export class AppComponent {
-    clicked: Subject<MouseEvent>
-
-    constructor(connect: Connect) {
-        this.clicked = new Subject()
-        connect(this)
+        return state.clicked.subscribe(
+            event => console.log(`click:`, event)
+        )
     }
 }
 ----
 
 === Host listener bindings
 
-Host listener events can be exposed via `State`.
+Use `HostEmitter` to bind `HostListener` properties. `HostEmitter` is a special subject that can also be invoked as a function. It's value is also unwrapped inside `State` so it can be used directly.
 
 [source,typescript]
 ----
-@Injectable()
-export class AppEffects {
-    @Effect()
-    handleHostClick(state: State<AppComponent>) {
-        return state.click.subscribe(event => console.log(`click:`, event))
-    }
-}
-
 @Component({
     selector: "app-root",
-    template: `<div (click)="clicked = $event">Click me<div>`,
-    providers: [effects(AppEffects)],
-    host: {
-        "(click)": "clicked = $event"
-    }
+    providers: [HOST_EFFECTS],
 })
 export class AppComponent {
+    @HostListener("click", ["$event"])
     clicked: MouseEvent
 
     constructor(connect: Connect) {
         connect(this)
     }
-}
-----
 
-Alternatively, use an event emitter.
-
-[source,typescript]
-----
-@Injectable()
-export class AppEffects {
     @Effect()
-    handleHostClick(state: State<AppComponent>, context: Context<AppComponent>) {
-        return context.clicked.subscribe(event => console.log(`click:`, event))
-    }
-}
-
-@Component({
-    selector: "app-root",
-    template: `Click me`,
-    providers: [effects(AppEffects)],
-    host: {
-        "(click)": "clicked.next($event)"
-    }
-})
-export class AppComponent {
-    clicked: Subject<MouseEvent>
-
-    constructor(connect: Connect) {
-        this.clicked = new Subject()
-        connect(this)
+    handleClick(state: State<AppComponent>) {
+        return state.clicked.subscribe((event) => {
+            console.log("clicked", event)
+        })
     }
 }
 ----
@@ -621,7 +564,7 @@ export class AppEffects {
     }
 
     @Effect()
-    fetchUsers(state: State<AppComponent>, context: Context<AppComponent>) {
+    fetchUsers(state: State<AppComponent>) {
         return changes(state.userId).pipe(
             switchMap(userId => this.http.get<Users>(`https://example.com/users/${userId}`).pipe(
                 catchError(error => {
@@ -629,14 +572,14 @@ export class AppEffects {
                     return NEVER
                 })
             ))
-        ).subscribe(context.usersFetched)
+        ).subscribe(state.usersFetched)
     }
 }
 
 @Component()
 export class AppComponent {
     @Input() userId: string
-    @Output() usersFetched: EventEmitter<Users>
+    @Output() usersFetched: HostEmitter<Users>
     activeUser: User
     formData: FormGroup
 
@@ -684,7 +627,7 @@ export class AppEffects {
 
 === Bi-directional observable state
 
-Through provider mapping it is easy to observe state from parent to child or child to parent.
+Through provider mapping observable state can be accessed from parent to child or vice versa.
 
 [source,typescript]
 ----
@@ -695,7 +638,8 @@ Through provider mapping it is easy to observe state from parent to child or chi
     }, HOST_EFFECTS]
 })
 export class ParentComponent {
-    selected: any = undefined
+    @Input()
+    selected?: ChildComponent = undefined
 
     @ViewChildren(ChildRef)
     children?: QueryList<ChildRef>
@@ -707,9 +651,8 @@ export class ParentComponent {
     @Effect("selected", { whenRendered: true })
     select(state: State<ParentComponent>) {
         return state.children.pipe(
-            mergeMap(children =>
-                children.map(child => child.select)
-            ),
+            mergeAll(),
+            mergeMap(child => child.state.select),
         )
     }
 }
@@ -718,23 +661,22 @@ export class ParentComponent {
     providers: [{
         provide: ChildRef,
         useExisting: HostRef
-    }, HOST_EFFECTS]
+    }, HOST_EFFECTS],
 })
 export class ChildComponent {
-    select: any = new Subject<ChildComponent>()
-    selected: boolean = false
+    @Input()
+    selected = false
+
+    @Output()
+    @HostListener("click", "this")
+    select = new HostEmitter<ChildComponent>()
 
     constructor(private parentRef: ParentRef, connect: Connect) {
         connect(this)
     }
 
-    @HostListener("click")
-    public handleClick() {
-        this.select.next(this)
-    }
-
     @Effect("selected", { whenRendered: true })
-    withParent(state: State<ChildComponent>, context: Context<ChildComponent>) {
+    isSelected(state: State<ChildComponent>, context: Context<ChildComponent>) {
         return this.parentRef.state.selected.pipe(
             map(selected => selected === context)
         )
