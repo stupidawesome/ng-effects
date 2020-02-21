@@ -63,12 +63,12 @@ export function isTeardownLogic(value: any): value is TeardownLogic {
 }
 
 export function createHostRef(mapState: Function) {
-    let instance: any,
+    let context: any,
         state: State<any> = {},
         observer: BehaviorSubject<any>
     return {
-        get instance() {
-            return instance
+        get context() {
+            return context
         },
         get state() {
             return state
@@ -76,10 +76,10 @@ export function createHostRef(mapState: Function) {
         get observer() {
             return observer
         },
-        update(context: any) {
-            instance = instance || context
+        update(value: any) {
+            context = context || value
             observer = observer || new BehaviorSubject(context)
-            state = mapState(observer, instance)
+            state = mapState(observer, context)
         },
     }
 }

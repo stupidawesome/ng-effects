@@ -6,7 +6,7 @@ import { exploreEffects } from "./explore-effects"
 
 export function injectEffectsFactory(effects: any | any[], options?: DefaultEffectOptions) {
     return function injectEffects(hostRef: HostRef, injector: Injector): EffectMetadata[] {
-        const hostContext = hostRef.instance
+        const hostContext = hostRef.context
         const hostType = Object.getPrototypeOf(hostContext).constructor
         const defaults = Object.assign({}, defaultOptions, options)
 

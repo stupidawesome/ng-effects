@@ -80,7 +80,7 @@ export class RunEffects {
         @Host() destroyObserver: DestroyObserver,
         viewRenderer: ViewRenderer,
     ) {
-        const hostContext = hostRef.instance
+        const hostContext = hostRef.context
         const whenRendered = viewRenderer.whenRendered().pipe(take(1))
         const nativeElement = elementRef.nativeElement
         const notifier = hostRef.observer

@@ -29,6 +29,6 @@ describe("How to use injection tokens", () => {
         when: fixture = createSimpleComponent(providers)
 
         then: hostRef = fixture.debugElement.injector.get(HostRef)
-        then: expect(hostRef.instance).toBe(fixture.debugElement.componentInstance)
+        then: expect(hostRef.context).toBe(fixture.debugElement.componentInstance)
     })
 })

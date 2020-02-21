@@ -235,7 +235,6 @@ A reference to the host context can be injected using the `HostRef<T>` token.
 
 [source,typescript]
 ----
-import { AppComponent } from "./app.component"
 @Injectable()
 export class AppEffects {
     host: AppComponent
@@ -250,6 +249,15 @@ export class AppEffects {
 }
 ----
 
+The parent context can be injected using `SkipSelf()`
+
+[source,typescript]
+----
+@Injectable()
+export class ChildEffects {
+    constructor(@SkipSelf() parent: HostRef<ParentComponent>) {}
+}
+----
 
 ===== instance
 
@@ -257,8 +265,6 @@ A reference to the component or directive instance.
 
 ===== state
 A reference to the _observable state_ of the component or directive. Properties on this object are not populated unless they have been initialised in the host context constructor before calling `connect()`. Deferred properties such as view children are attached  after the component has rendered.
-
-The parent context can be injected using `SkipSelf()` or through provider mapping (eg. `{ provide: Parent, useExisting: HostRef }`. Child contexts can be queried via `ViewChild(HostRef)` or `ViewChild("ref", { read: HostRef })` etc.
 
 === observer
 Similar to `DoCheck`, except observable. Emits very frequently. Useful for custom change detection strategies or debugging.
@@ -671,6 +677,66 @@ export class AppEffects {
                 type: "FORM_UPDATED",
                 payload
             }))
+        )
+    }
+}
+----
+
+=== Bi-directional Observable State
+
+Through provider mapping it is easy to observe state from parent to child or child to parent.
+
+[source,typescript]
+----
+@Component({
+    providers: [{
+        provide: ParentRef,
+        useExisting: HostRef
+    }, HOST_EFFECTS]
+})
+export class ParentComponent {
+    selected: any = undefined
+
+    @ViewChildren(ChildRef)
+    children?: QueryList<HostRef>
+
+    constructor(connect: Connect) {
+        connect(this)
+    }
+
+    @Effect("selected", { whenRendered: true })
+    withChild(state: State<ParentComponent>) {
+        return state.children.pipe(
+            mergeMap(children =>
+                children.map(child => child.select)
+            ),
+        )
+    }
+}
+
+@Component({
+    providers: [{
+        provide: ChildRef,
+        useExisting: HostRef
+    }, HOST_EFFECTS]
+})
+export class ChildComponent {
+    select: any = new Subject<ChildComponent>()
+    selected: boolean = false
+
+    constructor(private parentRef: ParentRef, connect: Connect) {
+        connect(this)
+    }
+
+    @HostListener("click")
+    public handleClick() {
+        this.select.next(this)
+    }
+
+    @Effect("selected", { whenRendered: true })
+    withParent(state: State<ChildComponent>, context: Context<ChildComponent>) {
+        return this.parentRef.selected.pipe(
+            map(selected => selected === context)
         )
     }
 }
