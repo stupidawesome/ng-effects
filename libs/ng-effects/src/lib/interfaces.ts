@@ -19,8 +19,8 @@ export interface EffectMetadata<T = any> {
     context: T
 }
 
-export interface EffectHandler<TValue, TOptions = never> {
-    next(value: TValue, options: TOptions, metadata: EffectMetadata): void
+export interface EffectHandler<TValue extends any, TOptions> {
+    next(value: TValue, options: TOptions & DefaultEffectOptions, metadata: EffectMetadata): void
 }
 
 export interface DefaultEffectOptions {

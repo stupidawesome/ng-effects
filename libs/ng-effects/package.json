@@ -1,9 +1,9 @@
 {
     "name": "ng-effects",
-    "version": "9.0.0-beta.5",
+    "version": "9.0.0-beta.6",
     "peerDependencies": {
-        "@angular/common": "^9.0.0",
-        "@angular/core": "^9.0.0",
+        "@angular/common": "^8.0.0 || ^9.0.0",
+        "@angular/core": "^8.0.0 || ^9.0.0",
         "tslib": "^1.10.0"
     },
     "keywords": [

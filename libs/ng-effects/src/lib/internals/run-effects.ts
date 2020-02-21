@@ -8,7 +8,7 @@ import { assertPropertyExists, isTeardownLogic, state, throwBadReturnTypeError }
 import { globalNotifier } from "./constants"
 import { DestroyObserver } from "./destroy-observer"
 
-export function initEffects(state: State<any>, whenRendered: boolean) {
+export function runEffects(state: State<any>, whenRendered: boolean) {
     return function(
         hostContext: any,
         effectsMetadata: EffectMetadata[],
@@ -70,7 +70,7 @@ export function handleEffect(
 }
 
 @Injectable()
-export class InitEffects {
+export class RunEffects {
     constructor(
         @Host() hostRef: HostRef,
         @Host() @Inject(EFFECTS) effectsMetadata: EffectMetadata[],
@@ -86,8 +86,9 @@ export class InitEffects {
         const notifier = new BehaviorSubject<any>(hostContext)
         const events = globalNotifier.pipe(filter(element => element === nativeElement))
         const changeNotifier = new Subject<DefaultEffectOptions>()
-
         const scheduler = merge(viewRenderer.whenScheduled(), viewRenderer.whenRendered(), events)
+        const args: any = [hostContext, effectsMetadata, destroyObserver, changeNotifier]
+        const sources = state(notifier, hostContext)
 
         changeNotifier
             .pipe(
@@ -106,12 +107,11 @@ export class InitEffects {
                 }
             })
 
-        const args: any = [hostContext, effectsMetadata, destroyObserver, changeNotifier]
-
-        initEffects(state(notifier, hostContext), false).apply(null, args)
+        runEffects(sources, false).apply(null, args)
 
         whenRendered.subscribe(() => {
-            initEffects(state(notifier, hostContext), true).apply(null, args)
+            Object.assign(sources, state(notifier, hostContext))
+            runEffects(sources, true).apply(null, args)
         })
 
         // Start event loop

@@ -1,4 +1,4 @@
-import { InitEffects } from "./internals/init-effects"
+import { RunEffects } from "./internals/run-effects"
 import { EFFECTS, HOST_INITIALIZER, HostRef } from "./constants"
 import { Injector, NgZone, Type } from "@angular/core"
 import { DestroyObserver } from "./internals/destroy-observer"
@@ -28,11 +28,11 @@ export function effects(types: Type<any> | Type<any>[] = [], effectOptions?: Def
         },
         {
             provide: HOST_INITIALIZER,
-            useValue: InitEffects,
+            useValue: RunEffects,
             multi: true,
         },
         DestroyObserver,
-        InitEffects,
+        RunEffects,
         types,
     ]
 }

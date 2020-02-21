@@ -10,17 +10,7 @@ import {
     ViewChildren,
 } from "@angular/core"
 import { Observable, of, OperatorFunction, timer } from "rxjs"
-import {
-    changes,
-    Connect,
-    Context,
-    createEffect,
-    Effect,
-    effects,
-    HostRef,
-    latestFrom,
-    State,
-} from "@ng9/ng-effects"
+import { changes, Connect, Context, createEffect, Effect, effects, HostRef, latestFrom, State } from "@ng9/ng-effects"
 import { Events, increment } from "../utils"
 import { map, mapTo, repeat, switchMapTo, take } from "rxjs/operators"
 import { Dispatch } from "../dispatch-adapter"
@@ -51,9 +41,11 @@ export class TestEffects {
      */
     public name = createEffect(
         (state: State<TestState>, context: Context<TestComponent>) => {
-            return timer(1000).pipe(mapTo("stupidawesome"))
+            return of({
+                type: ""
+            })
         },
-        { bind: "name", markDirty: true },
+        { adapter: Dispatch },
     )
 
     // noinspection JSUnusedLocalSymbols
@@ -162,7 +154,7 @@ export class TestEffects {
     /**
      * Dispatch adapter example
      */
-    @Effect(Dispatch, { test: true, markDirty: true })
+    @Effect(Dispatch, { whenRendered: true })
     public dispatch() {
         return of({
             type: "MY_ACTION",

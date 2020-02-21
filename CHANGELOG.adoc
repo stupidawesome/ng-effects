@@ -1,5 +1,10 @@
 = Changelog
 
+== 9.0.0-beta.6
+
+=== Bug fixes
+- fix adapter effect types
+
 == 9.0.0-beta.5
 
 === Bug fixes
