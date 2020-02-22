@@ -1,5 +1,6 @@
 import { Injectable, OnDestroy } from "@angular/core"
 import { Subject, TeardownLogic } from "rxjs"
+import { unsubscribe } from "./utils"
 
 @Injectable()
 export class DestroyObserver implements OnDestroy {
@@ -11,10 +12,6 @@ export class DestroyObserver implements OnDestroy {
     }
 
     public ngOnDestroy() {
-        for (const sub of this.subs) {
-            sub.complete && sub.complete()
-            sub.unsubscribe && sub.unsubscribe()
-            sub.call && sub()
-        }
+        unsubscribe(this.subs)
     }
 }

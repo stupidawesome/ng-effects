@@ -540,7 +540,7 @@ export class AppEffects {
 
 Observable services can be injected, then composed. For example, compose http services when inputs change, or map global state to local state.
 
-[source,typescript]
+[source, typescript]
 ----
 @Injectable()
 export class AppEffects {

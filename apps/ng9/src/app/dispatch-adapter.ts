@@ -1,5 +1,5 @@
 import { Inject, Injectable, InjectionToken, Type } from "@angular/core"
-import { EffectHandler, EffectMetadata, HOST_INITIALIZER } from "@ng9/ng-effects"
+import { EffectHandler, EffectMetadata } from "@ng9/ng-effects"
 
 export interface Dispatcher {
     dispatch(action: any): void
@@ -32,11 +32,6 @@ export class Dispatch implements EffectHandler<DispatchValue, DispatchOptions> {
 
 export function dispatchAdapter(dispatcher: Type<Dispatcher>) {
     return [
-        {
-            provide: HOST_INITIALIZER,
-            useValue: Dispatch,
-            multi: true,
-        },
         {
             provide: DISPATCH_ADAPTER,
             useClass: dispatcher,

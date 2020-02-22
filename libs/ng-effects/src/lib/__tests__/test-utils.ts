@@ -13,8 +13,8 @@ import {
 } from "@angular/core"
 import { ComponentFixture, TestBed } from "@angular/core/testing"
 import { Effect } from "../decorators"
-import { Connect } from "../providers"
 import { EffectOptions } from "../interfaces"
+import { Connect } from "../connect"
 import fn = jest.fn
 
 // noinspection AngularMissingOrInvalidDeclarationInModule

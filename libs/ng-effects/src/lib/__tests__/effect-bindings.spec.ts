@@ -2,10 +2,11 @@ import { createEffect } from "../utils"
 import { of } from "rxjs"
 import { State } from "../interfaces"
 import { createDirective } from "./test-utils"
-import { Connect, effects } from "../providers"
+import { effects } from "../providers"
 import { Type } from "@angular/core"
 import { fakeAsync, tick } from "@angular/core/testing"
 import { Effect } from "../decorators"
+import { Connect } from "../connect"
 import objectContaining = jasmine.objectContaining
 
 describe("How to use effect bindCounts using factories", () => {

@@ -54,5 +54,3 @@ export interface EffectOptions<TKey extends PropertyKey | unknown = unknown>
         AssignEffectOptions {}
 
 export abstract class EffectOptions<TKey extends PropertyKey | unknown = unknown> {}
-
-export type NextFn<T> = (next: T) => void

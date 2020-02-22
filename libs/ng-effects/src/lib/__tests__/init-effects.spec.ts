@@ -1,18 +1,18 @@
 import { TestBed } from "@angular/core/testing"
-import { Connect, effects, HOST_EFFECTS } from "../providers"
+import { effects, HOST_EFFECTS } from "../providers"
 import {
     createDirective,
     createEffectsClass,
     createSimpleComponent,
     createSimpleDirective,
 } from "./test-utils"
-import { defaultOptions } from "../internals/constants"
-import { RunEffects } from "../internals/run-effects"
+import { defaultOptions, EFFECTS } from "../internals/constants"
 import { EffectMetadata } from "../interfaces"
-import { EFFECTS } from "../constants"
 import { EMPTY } from "rxjs"
 import { createEffect } from "../utils"
 import { OnDestroy } from "@angular/core"
+import { Connect } from "../connect"
+import { runEffects } from "../internals/run-effects"
 import fn = jest.fn
 import Mock = jest.Mock
 
@@ -66,7 +66,7 @@ describe("How to init effects", () => {
         when: createSimpleDirective([
             effects(effectsClass),
             {
-                provide: RunEffects,
+                provide: runEffects,
                 useClass: MockInitEffects,
                 deps: [EFFECTS],
             },
@@ -97,7 +97,7 @@ describe("How to init effects", () => {
         when: createSimpleDirective([
             effects(effectsClass),
             {
-                provide: RunEffects,
+                provide: runEffects,
                 useClass: MockInitEffects,
                 deps: [EFFECTS],
             },
@@ -122,7 +122,7 @@ describe("How to init effects", () => {
         when: createSimpleDirective([
             effects(effectsClass, options),
             {
-                provide: RunEffects,
+                provide: runEffects,
                 useClass: MockInitEffects,
                 deps: [EFFECTS],
             },
@@ -148,7 +148,7 @@ describe("How to init effects", () => {
         when: createSimpleDirective([
             effects(effectsClass, localDefaults),
             {
-                provide: RunEffects,
+                provide: runEffects,
                 useClass: MockInitEffects,
                 deps: [EFFECTS],
             },
@@ -171,7 +171,7 @@ describe("How to init effects", () => {
         when: createSimpleComponent([
             HOST_EFFECTS,
             {
-                provide: RunEffects,
+                provide: runEffects,
                 useClass: MockInitEffects,
                 deps: [EFFECTS],
             },

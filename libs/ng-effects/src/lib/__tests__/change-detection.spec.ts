@@ -1,4 +1,4 @@
-import { Connect, HOST_EFFECTS, USE_EXPERIMENTAL_RENDER_API } from "../providers"
+import { HOST_EFFECTS, USE_EXPERIMENTAL_RENDER_API } from "../providers"
 import { State } from "../interfaces"
 import { of } from "rxjs"
 import { createComponent, createDirective } from "./test-utils"
@@ -7,6 +7,7 @@ import { delay } from "rxjs/operators"
 import { fakeAsync, TestBed, tick } from "@angular/core/testing"
 import { ChangeDetectorRef } from "@angular/core"
 import { DETECT_CHANGES, MARK_DIRTY } from "../internals/providers"
+import { Connect } from "../connect"
 import Mock = jest.Mock
 import fn = jest.fn
 

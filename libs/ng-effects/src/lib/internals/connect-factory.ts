@@ -1,17 +1,9 @@
-import { Host, Inject, Injectable, Injector } from "@angular/core"
-import { HOST_INITIALIZER, HostRef } from "../constants"
-import { InternalHostRef } from "./interfaces"
+import { Injector } from "@angular/core"
+import { HostRef } from "./host-ref"
 
-@Injectable()
-export class ConnectFactory {
-    constructor(
-        @Host() @Inject(HOST_INITIALIZER) initializers: any[],
-        @Host() injector: Injector,
-        @Host() @Inject(HostRef) hostRef: InternalHostRef,
-    ) {
-        return function connect(context: any) {
-            hostRef.update(context)
-            initializers.forEach(injector.get, injector)
-        }
+export function connectFactory(initializers: any[], injector: Injector, hostRef: HostRef) {
+    return function connect(context: any) {
+        hostRef.setContext(context)
+        initializers.forEach(init => injector.get(init))
     }
 }

@@ -66,7 +66,7 @@ export class TestEffects {
      * Injector example with special tokens
      * HostRef can be injected to get host context.
      */
-    constructor(private elementRef: ElementRef, hostRef: HostRef<any>) {}
+    constructor(private elementRef: ElementRef, hostRef: HostRef) {}
 
     /**
      * Effect decorator with explicit binding example

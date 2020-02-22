@@ -1,9 +1,10 @@
 import { createDirective } from "./test-utils"
-import { Connect, HOST_EFFECTS } from "../providers"
+import { HOST_EFFECTS } from "../providers"
 import { changes, createEffect, latestFrom } from "../utils"
 import { State } from "../interfaces"
 import { from } from "rxjs"
 import { mergeAll } from "rxjs/operators"
+import { Connect } from "../connect"
 import fn = jest.fn
 import Mock = jest.Mock
 
