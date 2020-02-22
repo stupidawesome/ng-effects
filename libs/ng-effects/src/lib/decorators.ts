@@ -24,6 +24,7 @@ export function Effect<
     TValue = NextValue<InstanceType<T>>
 >(options?: { adapter: T } & TOptions & DefaultEffectOptions): EffectAdapterDecorator<TValue>
 export function Effect(): EffectDecorator<unknown>
+export function Effect(options?: DefaultEffectOptions): EffectDecorator<unknown>
 export function Effect<T extends string>(
     target?: T,
     options?: DefaultEffectOptions,
