@@ -1,6 +1,6 @@
 # ng-effects
 
-Reactive local state management for Angular.
+Reactive extensions for Angular.
 
 ```typescript
 interface AppState {
