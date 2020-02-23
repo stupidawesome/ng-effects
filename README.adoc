@@ -2,7 +2,7 @@
 :toc:
 :toc-placement!:
 
-Reactive local state management for Angular.
+Reactive extensions for Angular.
 
 [source,typescript]
 ----
@@ -684,3 +684,87 @@ platformBrowserDynamic()
     .bootstrapModule(AppModule, { ngZone: "noop" }) // set this option
     .catch(err => console.error(err))
 ```
+
+=== Global connect hook
+
+Global hooks are a new feature in Angular 9.0.0. By using some private APIs we don't have to explicitly inject services to connect components.
+
+[source,typescript]
+----
+@Component({
+    providers: [HOST_EFFECTS]
+})
+export class AppComponent {
+    count = 0
+    // no need to inject `Connect`
+    constructor() {
+        connect(this)
+    }
+
+    @Effect("count")
+    incrementCount() {
+        // etc
+    }
+}
+----
+
+=== Connect API
+
+> Under the hood, this the mechanism that makes effects run. This is not a stable API so use it at your own risk.
+
+If you are familiar with `APP_INITIALIZER`, it's like that except for components and directives. To create a service that is automatically instantiated when the component or directive is "connected" (ie. by calling `connect()`), add a multi provider to your providers array similar to this one.
+
+[source,typescript]
+----
+@Injectable()
+export class MyConnectedService {
+    constructor(hostRef: HostRef) {}
+}
+
+export const INITIALIZERS = [{
+    provide: HOST_INITIALIZER,
+    useValue: MyConnectedService,
+    multi: true
+}]
+
+export const CONNECTED = [
+    MyConnectedService,
+    CONNECT,
+    INITIALIZERS
+]
+
+@Component({
+    providers: [CONNECTED]
+})
+export class MyComponent {
+    constructor(connect: Connect) {
+        connect(this)
+    }
+}
+----
+
+When the component is created in this example, `MyConnectedService` will be instatiated and have access to the `HostRef`.
+
+== Future API
+
+This library is designed with the future in mind. It is hoped that it will eventually become possible to declaratively `connect` components without extra wiring.
+
+[source,typescript]
+----
+// long term ideal, perhaps with Angular compiler integration.
+
+@Injectable()
+export class AppEffects {
+    @Effect("count")
+    incrementCount() {
+        // etc
+    }
+}
+
+@Component({
+    effects: [AppEffects]
+})
+export class AppComponent {
+    count = 0
+}
+----

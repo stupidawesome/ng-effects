@@ -12,6 +12,43 @@ import { Connect } from "./connect"
 import { HostRef } from "./host-ref"
 import { createHostRef } from "./internals/host-ref"
 
+export const CONNECT = [
+    {
+        provide: Connect,
+        useFactory: connectFactory,
+        deps: [HOST_INITIALIZER, INJECTOR, HostRef],
+    },
+]
+
+export const HOST_REF = {
+    provide: HostRef,
+    useFactory: createHostRef,
+    deps: [STATE_FACTORY],
+}
+
+export const RUN_EFFECTS = [
+    {
+        provide: runEffects,
+        useFactory: runEffects,
+        deps: [
+            EFFECTS,
+            HostRef,
+            ElementRef,
+            ChangeDetectorRef,
+            DestroyObserver,
+            ViewRenderer,
+            INJECTOR,
+            [HostRef, new SkipSelf(), new Optional()],
+        ],
+    },
+]
+
+export const CONNECT_EFFECTS = {
+    provide: HOST_INITIALIZER,
+    useValue: runEffects,
+    multi: true,
+}
+
 export function effects(types: Type<any> | Type<any>[] = [], effectOptions?: DefaultEffectOptions) {
     return [
         {
@@ -19,35 +56,10 @@ export function effects(types: Type<any> | Type<any>[] = [], effectOptions?: Def
             useFactory: createEffectsFactory(types, effectOptions),
             deps: [HostRef],
         },
-        {
-            provide: Connect,
-            useFactory: connectFactory,
-            deps: [HOST_INITIALIZER, INJECTOR, HostRef],
-        },
-        {
-            provide: HostRef,
-            useFactory: createHostRef,
-            deps: [STATE_FACTORY],
-        },
-        {
-            provide: HOST_INITIALIZER,
-            useValue: runEffects,
-            multi: true,
-        },
-        {
-            provide: runEffects,
-            useFactory: runEffects,
-            deps: [
-                EFFECTS,
-                HostRef,
-                ElementRef,
-                ChangeDetectorRef,
-                DestroyObserver,
-                ViewRenderer,
-                INJECTOR,
-                [HostRef, new SkipSelf(), new Optional()],
-            ],
-        },
+        CONNECT,
+        CONNECT_EFFECTS,
+        RUN_EFFECTS,
+        HOST_REF,
         DestroyObserver,
         types,
     ]
