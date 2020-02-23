@@ -105,7 +105,7 @@ Effects can be configured through the decorator.
 
 |adapter
 |Type<any>
-|Hook into effects with a custom link:#_effect_adapters[effect adapter]. For example, to dispatch actions to a global store.
+|Hook into effects with a custom link:#effect_adapters[effect adapter]. For example, to dispatch actions to a global store.
 |===
 
 ==== Default options
