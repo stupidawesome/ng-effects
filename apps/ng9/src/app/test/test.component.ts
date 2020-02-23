@@ -13,9 +13,7 @@ import {
 import { Observable, of, OperatorFunction, timer } from "rxjs"
 import {
     changes,
-    Connect,
-    Context,
-    createEffect,
+    connect,
     Effect,
     effects,
     HostEmitter,
@@ -48,19 +46,6 @@ function toggleSwitch(source: Observable<boolean>): OperatorFunction<any, boolea
 
 @Injectable()
 export class TestEffects {
-    // noinspection JSUnusedLocalSymbols
-    /**
-     * Effect factory with explicit binding example
-     */
-    public name = createEffect(
-        (state: State<TestState>, context: Context<TestComponent>) => {
-            return of({
-                type: "MY_ACTION",
-            })
-        },
-        { adapter: Dispatch },
-    )
-
     // noinspection JSUnusedLocalSymbols
     /**
      * Injector example with special tokens
@@ -103,9 +88,18 @@ export class TestEffects {
     }
 
     /**
+     * Side effect with default options example
+     */
+    @Effect({ whenRendered: true })
+    public withDefaultArgs() {
+        // do side effect
+        return of("")
+    }
+
+    /**
      * Property binding example
      */
-    @Effect("age")
+    @Effect("age", { markDirty: true })
     public age(state: State<TestState>) {
         return timer(1000).pipe(switchMapTo(state.age), increment(1), take(1), repeat())
     }
@@ -132,8 +126,8 @@ export class TestEffects {
      * Template event binding example
      */
     @Effect()
-    public clicked(state: State<TestState>) {
-        return state.event.subscribe(event => console.log(`click:`, event))
+    public clicked(_: State<TestState>) {
+        // return state.event.subscribe()
     }
 
     /**
@@ -177,7 +171,7 @@ export class TestEffects {
         })
     }
 
-    @Effect("show")
+    @Effect("show", { markDirty: true })
     public toggleShow(state: State<TestComponent>) {
         const { show } = state
         return state.event.pipe(toggleSwitch(show))
@@ -197,7 +191,7 @@ export class TestEffects {
     `,
     styleUrls: ["./test.component.scss"],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    providers: [effects(TestEffects, { markDirty: true })],
+    providers: [effects(TestEffects)],
 })
 export class TestComponent implements TestState {
     @Input()
@@ -220,11 +214,11 @@ export class TestComponent implements TestState {
     @HostListener("ageChange")
     public event: HostEmitter<MouseEvent | undefined>
 
-    constructor(connect: Connect) {
+    constructor() {
         this.name = "abc"
         this.age = 0
         this.ageChange = new HostEmitter()
-        this.event = new HostEmitter(true)
+        this.event = new HostEmitter()
         this.show = true
 
         connect(this)

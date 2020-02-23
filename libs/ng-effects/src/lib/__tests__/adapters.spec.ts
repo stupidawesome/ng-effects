@@ -1,8 +1,7 @@
 import Mock = jest.Mock
 import fn = jest.fn
-import { EffectHandler } from "../interfaces"
+import { EffectAdapter } from "../interfaces"
 import { HOST_EFFECTS } from "../providers"
-import { createEffect } from "../utils"
 import { Type } from "@angular/core"
 import { of } from "rxjs"
 import { createDirective } from "./test-utils"
@@ -11,29 +10,22 @@ import { Connect } from "../connect"
 
 describe("How to use Adapters to hook into effects", () => {
     it("should observe values emitted by effects", () => {
-        let LogAdapter: Type<EffectHandler<any, { prefix: string }>>, AppDirective, spy: Mock
+        let LogAdapter: Type<EffectAdapter<any, { prefix: string }>>, AppDirective, spy: Mock
 
         given: spy = fn()
-        given: LogAdapter = class implements EffectHandler<any, { prefix: string }> {
-            next(value: any, options: { prefix: string }): void {
-                spy(`${options.prefix}: ${value}`)
+        given: LogAdapter = class implements EffectAdapter<any, { prefix: string }> {
+            next(value: any, metadata: any): void {
+                spy(`${metadata.options.prefix}: ${value}`)
             }
         }
         given: {
             class MockAppDirective {
-                // noinspection JSUnusedGlobalSymbols
-                logEffect = createEffect(
-                    () => {
-                        return of("this value should be logged")
-                    },
-                    { adapter: LogAdapter, prefix: "[LogAdapter]" },
-                )
                 constructor(connect: Connect) {
                     connect(this)
                 }
-                @Effect(LogAdapter, { prefix: "[LogAdapterDecorator]" })
+                @Effect(LogAdapter, { prefix: "[LogAdapter]" })
                 logEffectUsingDecorator() {
-                    return of("this value should also be logged")
+                    return of("this value should be logged")
                 }
             }
             AppDirective = MockAppDirective
@@ -41,9 +33,6 @@ describe("How to use Adapters to hook into effects", () => {
 
         when: createDirective(AppDirective, [Connect], [HOST_EFFECTS, LogAdapter])
 
-        then: expect(spy.mock.calls).toEqual([
-            [`[LogAdapterDecorator]: this value should also be logged`],
-            [`[LogAdapter]: this value should be logged`],
-        ])
+        then: expect(spy).toBeCalledWith("[LogAdapter]: this value should be logged")
     })
 })

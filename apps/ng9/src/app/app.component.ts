@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, ViewChild } from "@angular/core"
-import { Connect, Effect, HOST_EFFECTS, HostRef, State } from "@ng9/ng-effects"
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ViewChild } from "@angular/core"
+import { changes, Connect, Effect, HOST_EFFECTS, HostRef, State } from "@ng9/ng-effects"
 import { interval } from "rxjs"
-import { distinctUntilChanged, map, mapTo } from "rxjs/operators"
+import { distinctUntilChanged, map } from "rxjs/operators"
 import { TestComponent } from "./test/test.component"
+import { ViewRenderer } from "../../../../libs/ng-effects/src/lib/internals/view-renderer"
 
 @Component({
     selector: "app-root",
@@ -23,9 +24,21 @@ export class AppComponent {
     @ViewChild(TestComponent, { read: HostRef })
     ref?: HostRef<any>
 
-    constructor(connect: Connect) {
+    constructor(
+        connect: Connect,
+        cdr: ChangeDetectorRef,
+        viewRenderer: ViewRenderer,
+        host: HostRef,
+    ) {
         this.show = false
         this.age = 31
+
+        // imperative change detection should propagate to effects
+        // ie. when inputs are changed
+        interval(10000).subscribe(() => {
+            this.age = 30
+            viewRenderer.markDirty(host, cdr)
+        })
 
         connect(this)
     }
@@ -33,14 +46,10 @@ export class AppComponent {
     /**
      * Inline effect example
      */
-    @Effect("age", { markDirty: true })
-    public resetAge(_: State<AppComponent>) {
-        return interval(10000).pipe(mapTo(30))
-    }
 
     @Effect("show", { markDirty: true })
     public toggleShow(state: State<AppComponent>) {
-        return state.age.pipe(
+        return changes(state.age).pipe(
             map(age => age > 35),
             distinctUntilChanged(),
         )

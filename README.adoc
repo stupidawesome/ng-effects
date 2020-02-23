@@ -78,7 +78,7 @@ export class AppComponent {
 
 === Effect options
 
-Effects can be configured through the decorator or factory function.
+Effects can be configured through the decorator.
 
 |===
 |Option |Type |Description
@@ -195,27 +195,6 @@ export class AppComponent implements AppState {
 ----
 
 == Examples
-
-=== createEffect
-
-Alternative syntax for effect declaration.
-
-[source,typescript]
-----
-@Component()
-export class AppComponent implements AppState {
-    incrementCount = createEffect(
-        (state: State<TestState>, context: Context<TestComponent>) =>
-            timer(1000).pipe(
-                switchMapTo(state.count),
-                take(1),
-                increment(1),
-                repeat()
-            ),
-        { bind: "count", markDirty: true },
-    )
-}
-----
 
 === Special injection tokens
 
@@ -598,11 +577,11 @@ interface Options {
 }
 
 @Injectable({ providedIn: "root" })
-export class Dispatch implements EffectHandler<Action, Options> {
+export class Dispatch implements EffectAdapter<Action, Options> {
     constructor(private store: Store<any>) {}
 
-    next(action: Action, options: Options, metadata: EffectMetadata) {
-        if (options.customOption) {
+    next(action: Action, metadata: EffectMetadata<Options>) {
+        if (metadata.options.customOption) {
             this.store.dispatch(action)
         }
     }

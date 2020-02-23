@@ -1,35 +1,12 @@
-import { effectsMap } from "./internals/constants"
-import {
-    AssignEffectOptions,
-    BindEffectOptions,
-    DefaultEffectOptions,
-    EffectFn,
-    EffectHandler,
-} from "./interfaces"
 import { combineLatest, MonoTypeOperatorFunction, Observable } from "rxjs"
-import { Type } from "@angular/core"
-import { MapSelect, NextOptions, NextValue } from "./internals/interfaces"
+import {
+    ElementRef,
+    ViewContainerRef,
+    ɵSWITCH_VIEW_CONTAINER_REF_FACTORY__POST_R3__ as injectViewContainerRef,
+} from "@angular/core"
+import { MapSelect } from "./internals/interfaces"
 import { map, skip } from "rxjs/operators"
-
-export function createEffect<T, U extends keyof T>(
-    fn: EffectFn<T, T[U]>,
-    options?: BindEffectOptions<U>,
-): EffectFn<T, T[U]>
-export function createEffect<T>(
-    fn: EffectFn<T, Partial<T>>,
-    options?: AssignEffectOptions,
-): EffectFn<T, Partial<T>>
-export function createEffect<T extends Type<EffectHandler<any, any>>, U>(
-    fn: EffectFn<U, NextValue<InstanceType<T>>>,
-    options?: { adapter: T } & (NextOptions<InstanceType<T>> | DefaultEffectOptions),
-): EffectFn<U, NextValue<InstanceType<T>>>
-export function createEffect<T, U extends keyof T>(
-    fn: EffectFn<unknown>,
-    options: any = {},
-): EffectFn<unknown> {
-    effectsMap.set(fn, options)
-    return fn
-}
+import { Connect } from "./connect"
 
 function changesOperator<T>(source: Observable<T>) {
     return source.pipe(skip(1))
@@ -51,4 +28,14 @@ export function latestFrom<T>(source: MapSelect<T>): Observable<T> {
             }, {} as T),
         ),
     )
+}
+
+/**
+ * Connect views without explicitly injecting `Connect`
+ *
+ * @experimental
+ * @param context The component or directive instance
+ */
+export function connect(context: any) {
+    injectViewContainerRef(ViewContainerRef, ElementRef).injector.get(Connect)(context)
 }

@@ -17,28 +17,6 @@ import { EffectOptions } from "../interfaces"
 import { Connect } from "../connect"
 import fn = jest.fn
 
-// noinspection AngularMissingOrInvalidDeclarationInModule
-@Directive()
-export class SimpleDirective {
-    constructor(connect: Connect) {
-        connect(this)
-    }
-}
-
-// noinspection AngularMissingOrInvalidDeclarationInModule
-@Component({
-    template: "",
-    providers: [],
-    changeDetection: ChangeDetectionStrategy.OnPush,
-})
-export class SimpleComponent {
-    constructor(connect: Connect) {
-        connect(this)
-    }
-    @Effect()
-    public hostEffect() {}
-}
-
 export function createDirective(directive: Type<any>, deps?: any[], providers?: Provider[]) {
     void TestBed.configureTestingModule({
         providers: [
@@ -95,6 +73,14 @@ export function createComponent<T extends any = any>(def: ComponentDef): Compone
 }
 
 export function createSimpleDirective(providers: Provider[]) {
+    // noinspection AngularMissingOrInvalidDeclarationInModule
+    @Directive()
+    class SimpleDirective {
+        constructor(connect: Connect) {
+            connect(this)
+        }
+    }
+
     return TestBed.configureTestingModule({
         providers: [
             SimpleDirective,
@@ -114,6 +100,20 @@ export function createSimpleDirective(providers: Provider[]) {
 }
 
 export function createSimpleComponent(providers: Provider[]) {
+    // noinspection AngularMissingOrInvalidDeclarationInModule
+    @Component({
+        template: "",
+        providers: [],
+        changeDetection: ChangeDetectionStrategy.OnPush,
+    })
+    class SimpleComponent {
+        constructor(connect: Connect) {
+            connect(this)
+        }
+        @Effect()
+        public hostEffect() {}
+    }
+
     void TestBed.configureTestingModule({
         declarations: [SimpleComponent],
         schemas: [NO_ERRORS_SCHEMA],

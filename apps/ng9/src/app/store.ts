@@ -6,6 +6,6 @@ import { Dispatcher } from "./dispatch-adapter"
 export class Store<T> extends Observable<T> implements Dispatcher {
     dispatch(action: any) {
         // tslint:disable-next-line:no-console
-        // console.debug("dispatched action!", JSON.stringify(action))
+        console.debug("dispatched action!", JSON.stringify(action))
     }
 }

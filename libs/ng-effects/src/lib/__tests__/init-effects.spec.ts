@@ -7,12 +7,12 @@ import {
     createSimpleDirective,
 } from "./test-utils"
 import { defaultOptions, EFFECTS } from "../internals/constants"
-import { EffectMetadata } from "../interfaces"
 import { EMPTY } from "rxjs"
-import { createEffect } from "../utils"
 import { OnDestroy } from "@angular/core"
 import { Connect } from "../connect"
 import { runEffects } from "../internals/run-effects"
+import { EffectMetadata } from "../interfaces"
+import { Effect } from "../decorators"
 import fn = jest.fn
 import Mock = jest.Mock
 
@@ -183,26 +183,30 @@ describe("How to init effects", () => {
     it("should accept effects that return observables, teardown logic, or void", () => {
         let AppDirective: any
 
-        given: AppDirective = class {
-            // noinspection JSUnusedGlobalSymbols
-            observableEffect = createEffect(() => {
-                return EMPTY
-            })
-            // noinspection JSUnusedGlobalSymbols
-            subscriptionEffect = createEffect(() => {
-                return EMPTY.subscribe()
-            })
-            // noinspection JSUnusedGlobalSymbols
-            teardownEffect = createEffect(() => {
-                return () => {}
-            })
-            // noinspection JSUnusedGlobalSymbols
-            voidEffect = createEffect(() => {
-                return
-            })
-            constructor(connect: Connect) {
-                connect(this)
+        given: {
+            class MockAppDirective {
+                @Effect()
+                observableEffect() {
+                    return EMPTY
+                }
+                @Effect()
+                subscriptionEffect() {
+                    return EMPTY.subscribe()
+                }
+                @Effect()
+                teardownEffect() {
+                    return () => {}
+                }
+                @Effect()
+                voidEffect() {
+                    return
+                }
+
+                constructor(connect: Connect) {
+                    connect(this)
+                }
             }
+            AppDirective = MockAppDirective
         }
 
         then: expect(() => createDirective(AppDirective, [Connect], HOST_EFFECTS)).not.toThrow()
@@ -211,14 +215,17 @@ describe("How to init effects", () => {
     it("should throw an error when an effect returns an unexpected value", () => {
         let AppDirective: any
 
-        given: AppDirective = class {
-            // noinspection JSUnusedGlobalSymbols
-            badReturnType = createEffect(() => {
-                return "BAD RETURN TYPE" as any
-            })
-            constructor(connect: Connect) {
-                connect(this)
+        given: {
+            class MockAppDirective {
+                @Effect()
+                badReturnType() {
+                    return "BAD RETURN TYPE" as any
+                }
+                constructor(connect: Connect) {
+                    connect(this)
+                }
             }
+            AppDirective = MockAppDirective
         }
 
         then: expect(() => createDirective(AppDirective, [Connect], HOST_EFFECTS)).toThrowError(

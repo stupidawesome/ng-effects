@@ -1,5 +1,5 @@
 import { runEffects } from "./internals/run-effects"
-import { ChangeDetectorRef, ElementRef, Injector, Type } from "@angular/core"
+import { ChangeDetectorRef, ElementRef, INJECTOR, Optional, SkipSelf, Type } from "@angular/core"
 import { DestroyObserver } from "./internals/destroy-observer"
 import { ViewRenderer } from "./internals/view-renderer"
 import { connectFactory } from "./internals/connect-factory"
@@ -17,12 +17,12 @@ export function effects(types: Type<any> | Type<any>[] = [], effectOptions?: Def
         {
             provide: EFFECTS,
             useFactory: createEffectsFactory(types, effectOptions),
-            deps: [HostRef, Injector],
+            deps: [HostRef],
         },
         {
             provide: Connect,
             useFactory: connectFactory,
-            deps: [HOST_INITIALIZER, Injector, HostRef],
+            deps: [HOST_INITIALIZER, INJECTOR, HostRef],
         },
         {
             provide: HostRef,
@@ -37,7 +37,16 @@ export function effects(types: Type<any> | Type<any>[] = [], effectOptions?: Def
         {
             provide: runEffects,
             useFactory: runEffects,
-            deps: [EFFECTS, HostRef, ElementRef, ChangeDetectorRef, DestroyObserver, ViewRenderer],
+            deps: [
+                EFFECTS,
+                HostRef,
+                ElementRef,
+                ChangeDetectorRef,
+                DestroyObserver,
+                ViewRenderer,
+                INJECTOR,
+                [HostRef, new SkipSelf(), new Optional()],
+            ],
         },
         DestroyObserver,
         types,
@@ -50,5 +59,5 @@ export const USE_EXPERIMENTAL_RENDER_API = [
     {
         provide: ViewRenderer,
         useClass: ExperimentalIvyViewRenderer,
-    }
+    },
 ]

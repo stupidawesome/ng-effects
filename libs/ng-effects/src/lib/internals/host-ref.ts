@@ -1,6 +1,10 @@
 import { State } from "../interfaces"
 import { BehaviorSubject } from "rxjs"
 
+function throwInitialisationError(): never {
+    throw new Error(`[ng-effects] Cannot access HostRef context before it has been initialised.`)
+}
+
 /**
  * Represents a directive connected via `Connect`. Provides access to the directive and related objects.
  *
@@ -11,9 +15,7 @@ export class HostRef<T = any> {
      * The component or directive instance.
      */
     get context(): T {
-        throw new Error(
-            `[ng-effects] Cannot access HostRef context before it has been initialised.`,
-        )
+        return throwInitialisationError()
     }
     /**
      * The observable state of the component or directive instance.

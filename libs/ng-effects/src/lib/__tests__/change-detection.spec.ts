@@ -2,12 +2,12 @@ import { HOST_EFFECTS, USE_EXPERIMENTAL_RENDER_API } from "../providers"
 import { State } from "../interfaces"
 import { of } from "rxjs"
 import { createComponent, createDirective } from "./test-utils"
-import { createEffect } from "../utils"
 import { delay } from "rxjs/operators"
 import { fakeAsync, TestBed, tick } from "@angular/core/testing"
 import { ChangeDetectorRef } from "@angular/core"
 import { DETECT_CHANGES, MARK_DIRTY } from "../internals/providers"
 import { Connect } from "../connect"
+import { Effect } from "../decorators"
 import Mock = jest.Mock
 import fn = jest.fn
 
@@ -16,18 +16,19 @@ describe("How change detection works", () => {
         let AppComponent, fakeDelay: number, cdr
 
         given: fakeDelay = 1000
-        given: AppComponent = class {
-            count = 0
-            // noinspection JSUnusedGlobalSymbols
-            bindCount = createEffect(
-                ({}: State<any>) => {
-                    return of(1337).pipe(delay(fakeDelay))
-                },
-                { bind: "count", markDirty: true },
-            )
-            constructor(connect: Connect) {
-                connect(this)
+        given: {
+            class MockAppComponent {
+                count = 0
+                // noinspection JSUnusedGlobalSymbols
+                @Effect({ bind: "count", markDirty: true })
+                bindCount({}: State<any>) {
+                    return of(1337)
+                }
+                constructor(connect: Connect) {
+                    connect(this)
+                }
             }
+            AppComponent = MockAppComponent
         }
 
         when: createDirective(AppComponent, [Connect], HOST_EFFECTS)
@@ -42,18 +43,19 @@ describe("How change detection works", () => {
         let AppComponent, fakeDelay: number, cdr
 
         given: fakeDelay = 1000
-        given: AppComponent = class {
-            count = 0
-            // noinspection JSUnusedGlobalSymbols
-            bindCount = createEffect(
-                ({}: State<any>) => {
+        given: {
+            class MockAppComponent {
+                count = 0
+                // noinspection JSUnusedGlobalSymbols
+                @Effect({ bind: "count", detectChanges: true })
+                bindCount({}: State<any>) {
                     return of(1337)
-                },
-                { bind: "count", detectChanges: true },
-            )
-            constructor(connect: Connect) {
-                connect(this)
+                }
+                constructor(connect: Connect) {
+                    connect(this)
+                }
             }
+            AppComponent = MockAppComponent
         }
 
         when: createDirective(AppComponent, [Connect], HOST_EFFECTS)
@@ -68,13 +70,18 @@ describe("How change detection works", () => {
         let AppComponent, fixture, spy: Mock
 
         given: spy = fn()
-        given: AppComponent = class {
-            count = 0
-            // noinspection JSUnusedGlobalSymbols
-            deferredEffect = createEffect(spy, { whenRendered: true })
-            constructor(connect: Connect) {
-                connect(this)
+        given: {
+            class MockAppComponent {
+                count = 0
+                @Effect({ whenRendered: true })
+                deferredEffect() {
+                    spy()
+                }
+                constructor(connect: Connect) {
+                    connect(this)
+                }
             }
+            AppComponent = MockAppComponent
         }
 
         when: fixture = createComponent({
@@ -95,18 +102,18 @@ describe("How change detection works [USE_EXPERIMENTAL_RENDER_API]", () => {
 
         given: spy = fn()
         given: fakeDelay = 1000
-        given: AppComponent = class {
-            count = 0
-            // noinspection JSUnusedGlobalSymbols
-            bindCount = createEffect(
-                ({}: State<any>) => {
+        given: {
+            class MockAppComponent {
+                count = 0
+                @Effect({ bind: "count", markDirty: true })
+                bindCount({}: State<any>) {
                     return of(1337).pipe(delay(fakeDelay))
-                },
-                { bind: "count", markDirty: true },
-            )
-            constructor(connect: Connect) {
-                connect(this)
+                }
+                constructor(connect: Connect) {
+                    connect(this)
+                }
             }
+            AppComponent = MockAppComponent
         }
 
         when: createDirective(
@@ -132,18 +139,18 @@ describe("How change detection works [USE_EXPERIMENTAL_RENDER_API]", () => {
 
         given: spy = fn()
         given: fakeDelay = 1000
-        given: AppComponent = class {
-            count = 0
-            // noinspection JSUnusedGlobalSymbols
-            bindCount = createEffect(
-                ({}: State<any>) => {
+        given: {
+            class MockAppComponent {
+                count = 0
+                @Effect({ bind: "count", detectChanges: true })
+                bindCount({}: State<any>) {
                     return of(1337)
-                },
-                { bind: "count", detectChanges: true },
-            )
-            constructor(connect: Connect) {
-                connect(this)
+                }
+                constructor(connect: Connect) {
+                    connect(this)
+                }
             }
+            AppComponent = MockAppComponent
         }
 
         when: createDirective(
@@ -168,13 +175,19 @@ describe("How change detection works [USE_EXPERIMENTAL_RENDER_API]", () => {
         let AppComponent, fixture, spy: Mock
 
         given: spy = fn()
-        given: AppComponent = class {
-            count = 0
-            // noinspection JSUnusedGlobalSymbols
-            deferredEffect = createEffect(spy, { whenRendered: true })
-            constructor(connect: Connect) {
-                connect(this)
+        given: {
+            class MockAppComponent {
+                count = 0
+                @Effect({ whenRendered: true })
+                // noinspection JSUnusedGlobalSymbols
+                deferredEffect() {
+                    spy()
+                }
+                constructor(connect: Connect) {
+                    connect(this)
+                }
             }
+            AppComponent = MockAppComponent
         }
 
         when: fixture = createComponent({

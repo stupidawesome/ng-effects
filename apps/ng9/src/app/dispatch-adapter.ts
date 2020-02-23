@@ -1,5 +1,5 @@
 import { Inject, Injectable, InjectionToken, Type } from "@angular/core"
-import { EffectHandler, EffectMetadata } from "@ng9/ng-effects"
+import { EffectAdapter, EffectMetadata } from "@ng9/ng-effects"
 
 export interface Dispatcher {
     dispatch(action: any): void
@@ -16,13 +16,13 @@ export interface DispatchOptions {
 }
 
 @Injectable()
-export class Dispatch implements EffectHandler<DispatchValue, DispatchOptions> {
+export class Dispatch implements EffectAdapter<DispatchValue, DispatchOptions> {
     // tslint:disable-next-line:no-shadowed-variable
     constructor(@Inject(DISPATCH_ADAPTER) private dispatcher: Dispatcher) {}
 
-    public next(action: DispatchValue, options: DispatchOptions, metadata: EffectMetadata): void {
+    public next(action: DispatchValue, metadata: EffectMetadata<DispatchOptions>): void {
         if (!action || !action.type) {
-            console.error(`[dispatch adapter] effect must return an action!`)
+            console.error(`[dispatch adapter] effect ${metadata.path} must return an action!`)
             console.error(`Expected: {type: string}`)
             console.error(`Received: ${JSON.stringify(action)}`)
         }

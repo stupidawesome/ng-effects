@@ -8,24 +8,24 @@ export type Context<T> = Readonly<T>
 export type AnyEffectFn<T, U = any> = (
     state: MapSelect<T>,
     context: Context<T>,
+    observer: Observable<T>,
 ) => Observable<U> | TeardownLogic
 
 export type EffectFn<T, U = any> = (
     state: State<T>,
     context: Context<T>,
+    observer: Observable<T>,
 ) => Observable<U> | TeardownLogic
 
 export interface EffectMetadata<T = any> {
     name: string
-    target: any
-    method: Function
-    options: EffectOptions<any>
-    adapter?: EffectHandler<any, any>
-    context: T
+    path: string
+    type: Type<any>
+    options: EffectOptions<T>
 }
 
-export interface EffectHandler<TValue extends any, TOptions> {
-    next(value: TValue, options: TOptions & DefaultEffectOptions, metadata: EffectMetadata): void
+export interface EffectAdapter<TValue extends any, TOptions = DefaultEffectOptions> {
+    next(value: TValue, metadata: EffectMetadata<TOptions & DefaultEffectOptions>): void
 }
 
 export interface DefaultEffectOptions {
@@ -44,7 +44,7 @@ export interface AssignEffectOptions extends DefaultEffectOptions {
 }
 
 export interface AdapterEffectOptions extends DefaultEffectOptions {
-    adapter?: Type<EffectHandler<any, any>>
+    adapter?: Type<EffectAdapter<any, any>>
 }
 
 export interface EffectOptions<TKey extends PropertyKey | unknown = unknown>

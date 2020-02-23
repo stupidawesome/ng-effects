@@ -1,24 +1,26 @@
-import { ChangeDetectorRef, ElementRef } from "@angular/core"
-import { asapScheduler, isObservable, merge, partition, Subject } from "rxjs"
+import { ChangeDetectorRef, ElementRef, Injector, NgZone, Type } from "@angular/core"
+import { isObservable, Subject } from "rxjs"
 import { ViewRenderer } from "./view-renderer"
-import { EffectMetadata } from "../interfaces"
-import { observeOn, take } from "rxjs/operators"
+import { DefaultEffectOptions, EffectMetadata } from "../interfaces"
+import { take } from "rxjs/operators"
 import { assertPropertyExists, isTeardownLogic, throwBadReturnTypeError } from "./utils"
 import { DestroyObserver } from "./destroy-observer"
 import { HostRef } from "./host-ref"
 
-export function effectsRunner(
+function effectRunner(
     effectsMetadata: EffectMetadata[],
     hostRef: HostRef,
     observer: DestroyObserver,
     notifier: Subject<any>,
+    injector: Injector,
 ) {
     let whenRendered = false
+    const hostType = Object.getPrototypeOf(hostRef.context).constructor
     return function runEffects() {
         hostRef.update()
         for (const metadata of effectsMetadata) {
             if (metadata.options.whenRendered === whenRendered) {
-                runEffect(hostRef, metadata, observer, notifier)
+                runEffect(hostRef, hostType, metadata, observer, notifier, injector)
             }
         }
         whenRendered = true
@@ -27,39 +29,49 @@ export function effectsRunner(
 
 function runEffect(
     hostRef: HostRef,
+    hostType: Type<any>,
     metadata: EffectMetadata,
-    observer: DestroyObserver,
+    destroy: DestroyObserver,
     notifier: Subject<any>,
+    injector: Injector,
 ) {
-    const { context, state } = hostRef
-    const returnValue = metadata.method.call(metadata.target, state, context)
+    const { context, state, observer } = hostRef
+    const effect = metadata.type === hostType ? context : injector.get(metadata.type)
+    const returnValue = effect[metadata.name](state, context, observer)
 
     if (returnValue === undefined) {
         return
     } else if (isObservable(returnValue)) {
-        observer.add(
-            returnValue.subscribe((value: any) => {
-                const { assign, bind } = metadata.options
+        destroy.add(
+            returnValue.subscribe({
+                next(value: any) {
+                    const { assign, bind } = metadata.options
 
-                if (metadata.adapter) {
-                    metadata.adapter.next(value, metadata.options, metadata)
-                }
-
-                if (assign) {
-                    for (const prop of Object.keys(value)) {
-                        assertPropertyExists(prop, context)
-                        context[prop] = value[prop]
+                    if (metadata.options.adapter) {
+                        const adapter = injector.get(metadata.options.adapter)
+                        adapter.next(value, metadata)
                     }
-                } else if (bind) {
-                    assertPropertyExists(bind, context)
-                    context[bind] = value
-                }
 
-                notifier.next(metadata.options)
+                    if (assign) {
+                        for (const prop of Object.keys(value)) {
+                            assertPropertyExists(prop, context)
+                            context[prop] = value[prop]
+                        }
+                    } else if (bind) {
+                        assertPropertyExists(bind, context)
+                        context[bind] = value
+                    }
+
+                    notifier.next(metadata.options)
+                },
+                error(error: any) {
+                    console.error(`[ng-effects] Uncaught error in effect: ${metadata.path}`)
+                    console.error(error)
+                },
             }),
         )
     } else if (isTeardownLogic(returnValue)) {
-        observer.add(returnValue)
+        destroy.add(returnValue)
     } else {
         throwBadReturnTypeError()
     }
@@ -72,34 +84,40 @@ export function runEffects(
     changeDetector: ChangeDetectorRef,
     destroyObserver: DestroyObserver,
     viewRenderer: ViewRenderer,
+    injector: Injector,
+    parentRef: HostRef,
 ) {
-    const whenRendered = viewRenderer.whenRendered().pipe(take(1))
     const changeNotifier = new Subject<any>()
-    const scheduler = merge(
-        viewRenderer.whenScheduled(),
-        viewRenderer.whenRendered(),
+    const rendered = viewRenderer.whenRendered().pipe(take(1))
+    const scheduled = viewRenderer.whenScheduled()
+    const runEffects = effectRunner(
+        effectsMetadata,
+        hostRef,
+        destroyObserver,
         changeNotifier,
+        injector,
     )
-    const [asyncChanges, syncChanges] = partition(scheduler, opts =>
-        Boolean(opts && opts.markDirty),
-    )
-    const runEffects = effectsRunner(effectsMetadata, hostRef, destroyObserver, changeNotifier)
+    const detectChanges = async function(opts: DefaultEffectOptions = {}) {
+        hostRef.tick()
+        if (parentRef) {
+            parentRef.tick()
+        }
+        if (opts.detectChanges) {
+            viewRenderer.detectChanges(hostRef, changeDetector)
+        } else if (opts.markDirty) {
+            // async workaround for "noop" zone
+            if (!NgZone.isInAngularZone()) {
+                await Promise.resolve()
+            }
+            viewRenderer.markDirty(hostRef, changeDetector)
+        }
+    }
 
     // Start event loop
     destroyObserver.add(
-        hostRef.observer,
-        whenRendered.subscribe(runEffects),
-        syncChanges.subscribe(opts => {
-            if (opts && opts.detectChanges) {
-                viewRenderer.detectChanges(hostRef, changeDetector)
-            } else {
-                hostRef.tick()
-            }
-        }),
-        asyncChanges.pipe(observeOn(asapScheduler)).subscribe(() => {
-            viewRenderer.markDirty(hostRef, changeDetector)
-        }),
-        destroyObserver.destroyed.subscribe(changeNotifier),
+        scheduled.subscribe(changeNotifier),
+        rendered.pipe(take(1)).subscribe(runEffects),
+        changeNotifier.subscribe(detectChanges),
     )
 
     runEffects()

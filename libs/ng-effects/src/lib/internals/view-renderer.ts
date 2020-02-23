@@ -5,28 +5,23 @@ import { RenderApi } from "./interfaces"
 
 @Injectable({ providedIn: "root" })
 export class ViewRenderer implements RenderApi, OnDestroy {
-    private readonly begin: Subject<null>
-    private readonly end: Subject<null>
+    private readonly begin: Subject<void>
+    private readonly end: Subject<void>
 
     constructor(rendererFactory: RendererFactory2) {
         const origBeginFn = rendererFactory.end || noop
         const origEndFn = rendererFactory.end || noop
-        const begin = new Subject<null>()
-        const end = new Subject<null>()
-        const observers = end.observers
+        const begin = new Subject<void>()
+        const end = new Subject<void>()
 
         rendererFactory.begin = function() {
             origBeginFn.apply(rendererFactory)
-            if (observers.length > 0) {
-                begin.next(null)
-            }
+            begin.next()
         }
 
         rendererFactory.end = function() {
             origEndFn.apply(rendererFactory)
-            if (observers.length > 0) {
-                end.next(null)
-            }
+            end.next()
         }
 
         this.end = end

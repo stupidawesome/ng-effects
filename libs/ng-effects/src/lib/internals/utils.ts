@@ -1,7 +1,6 @@
 import { NEVER, Observable, TeardownLogic } from "rxjs"
 import { distinctUntilChanged, map } from "rxjs/operators"
 import { DefaultEffectOptions, EffectMetadata } from "../interfaces"
-import { Injector } from "@angular/core"
 import { defaultOptions } from "./constants"
 import { exploreEffects } from "./explore-effects"
 import { HostRef } from "./host-ref"
@@ -87,12 +86,11 @@ export function assertPropertyExists(key: any, obj: any) {
 }
 
 export function createEffectsFactory(effects: any | any[], options?: DefaultEffectOptions) {
-    return function injectEffects(hostRef: HostRef, injector: Injector): EffectMetadata[] {
-        const hostContext = hostRef.context
-        const hostType = Object.getPrototypeOf(hostContext).constructor
+    return function injectEffects(hostRef: HostRef): EffectMetadata[] {
+        const hostType = Object.getPrototypeOf(hostRef.context).constructor
         const defaults = Object.assign({}, defaultOptions, options)
 
-        return [...exploreEffects(defaults, hostContext, hostType, injector, [].concat(effects))]
+        return [...exploreEffects(defaults, [hostType].concat(effects))]
     }
 }
 

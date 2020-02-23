@@ -1,59 +1,43 @@
-import { EffectHandler, EffectMetadata, EffectOptions } from "../interfaces"
-import { Injector, Type } from "@angular/core"
+import { EffectMetadata, EffectOptions } from "../interfaces"
+import { Type } from "@angular/core"
 import { effectsMap } from "./constants"
+
+const effectMetadata = new WeakMap<Type<any>, Generator<EffectMetadata>>()
 
 export function* exploreEffects(
     defaults: EffectOptions,
-    hostContext: any,
-    hostType: Type<any>,
-    injector: Injector,
     effects: Type<any>[],
 ): Generator<EffectMetadata> {
-    const metadata = yield* exploreEffect(defaults, injector, hostType, hostContext, hostContext)
-    if (metadata) {
-        yield metadata
-    }
     for (const type of effects) {
-        const effect = injector.get(type)
-        const metadata = yield* exploreEffect(defaults, injector, type, effect, hostContext)
-
+        let metadata = effectMetadata.get(type)
         if (metadata) {
-            yield metadata
+            yield* metadata
+            continue
         }
+        metadata = exploreEffect(defaults, type)
+        effectMetadata.set(type, yield* metadata)
+        yield* metadata
     }
 }
 
 export function* exploreEffect(
     defaults: EffectOptions,
-    injector: Injector,
-    type: any,
-    target: any,
-    context: any,
+    type: Type<any>,
 ): Generator<EffectMetadata> {
-    const props = [
-        ...Object.getOwnPropertyNames(type.prototype),
-        ...Object.getOwnPropertyNames(target),
-    ]
+    const props = Object.getOwnPropertyNames(type.prototype)
     for (const name of props) {
-        const method = target[name]
+        const method = type.prototype[name]
+        const path = `${type.name} -> ${name}`
         const maybeOptions = effectsMap.get(method)
 
-        if (method && maybeOptions) {
-            let adapter: EffectHandler<any, any> | undefined
+        if (maybeOptions) {
             const options: EffectOptions<any> = Object.assign({}, defaults, maybeOptions)
 
-            if (options.adapter) {
-                adapter = injector.get(options.adapter)
-            }
-
             const metadata = {
-                name,
+                path,
                 type,
-                target,
-                method,
+                name,
                 options,
-                adapter,
-                context,
             }
 
             yield metadata

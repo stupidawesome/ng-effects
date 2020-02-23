@@ -1,13 +1,13 @@
 import { ChangeDetectorRef } from "@angular/core"
 import { Observable } from "rxjs"
-import { AnyEffectFn, EffectFn } from "../interfaces"
+import { AnyEffectFn, EffectFn, EffectMetadata } from "../interfaces"
 import { HostEmitter } from "../host-emitter"
 
 export interface RenderApi {
     detectChanges(componentOrView: any, changeDetector?: ChangeDetectorRef): void
     markDirty(componentOrView: any, changeDetector?: ChangeDetectorRef): void
-    whenScheduled(): Observable<null>
-    whenRendered(): Observable<null>
+    whenScheduled(): Observable<void>
+    whenRendered(): Observable<void>
 }
 
 export type MapSelect<T> = {
@@ -20,7 +20,7 @@ export type NextValue<T extends any> = T["next"] extends (value: infer R, ...arg
 
 export type NextOptions<T extends any> = T["next"] extends (
     value: any,
-    options: infer R,
+    options: EffectMetadata<infer R>,
     ...args: any[]
 ) => any
     ? R
