@@ -1,11 +1,11 @@
-import { EffectMetadata, EffectOptions } from "../interfaces"
+import { DefaultEffectOptions, EffectMetadata, EffectOptions } from "../interfaces"
 import { Type } from "@angular/core"
 import { effectsMap } from "./constants"
 
 const effectMetadata = new WeakMap<Type<any>, Generator<EffectMetadata>>()
 
 export function* exploreEffects(
-    defaults: EffectOptions,
+    defaults: DefaultEffectOptions,
     effects: Type<any>[],
 ): Generator<EffectMetadata> {
     for (const type of effects) {
@@ -20,6 +20,15 @@ export function* exploreEffects(
     }
 }
 
+export function mergeOptions(defaults: DefaultEffectOptions, options: EffectOptions<any>) {
+    // default to `markDirty: true` for bound effects unless explicitly set
+    const merged = Object.assign({}, defaults, options)
+    if (merged.markDirty === undefined && Boolean(options.bind || options.assign)) {
+        merged.markDirty = true
+    }
+    return merged
+}
+
 export function* exploreEffect(
     defaults: EffectOptions,
     type: Type<any>,
@@ -27,11 +36,11 @@ export function* exploreEffect(
     const props = Object.getOwnPropertyNames(type.prototype)
     for (const name of props) {
         const method = type.prototype[name]
-        const path = `${type.name} -> ${name}`
         const maybeOptions = effectsMap.get(method)
 
         if (maybeOptions) {
-            const options: EffectOptions<any> = Object.assign({}, defaults, maybeOptions)
+            const path = `${type.name} -> ${name}`
+            const options: EffectOptions<any> = mergeOptions(defaults, maybeOptions)
 
             const metadata = {
                 path,

@@ -3,12 +3,10 @@ import { InjectionToken } from "@angular/core"
 
 export const effectsMap = new WeakMap<EffectFn<any>, any>()
 
-export const defaultOptions: Required<DefaultEffectOptions> = {
+export const globalDefaults: DefaultEffectOptions = {
     whenRendered: false,
-    detectChanges: false,
-    markDirty: false,
+    markDirty: undefined,
+    detectChanges: undefined,
 }
 
 export const EFFECTS = new InjectionToken<EffectMetadata[]>("EFFECTS")
-
-export const HOST_INITIALIZER = new InjectionToken<any[]>("HOST_INITIALIZER")

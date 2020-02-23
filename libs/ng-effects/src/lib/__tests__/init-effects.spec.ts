@@ -6,7 +6,7 @@ import {
     createSimpleComponent,
     createSimpleDirective,
 } from "./test-utils"
-import { defaultOptions, EFFECTS } from "../internals/constants"
+import { globalDefaults, EFFECTS } from "../internals/constants"
 import { EMPTY } from "rxjs"
 import { OnDestroy } from "@angular/core"
 import { Connect } from "../connect"
@@ -72,7 +72,7 @@ describe("How to init effects", () => {
             },
         ])
 
-        then: expect(spy).toHaveBeenCalledWith(defaultOptions)
+        then: expect(spy).toHaveBeenCalledWith(globalDefaults)
     })
 
     it("should configure effect options", () => {
@@ -109,8 +109,8 @@ describe("How to init effects", () => {
     it("should override default effect options", () => {
         let options, effectsClass, spy: Mock, result, MockInitEffects
 
-        given: options = { markDirty: !defaultOptions.markDirty }
-        given: result = Object.assign({}, defaultOptions, options)
+        given: options = { markDirty: !globalDefaults.markDirty }
+        given: result = Object.assign({}, globalDefaults, options)
         given: effectsClass = createEffectsClass()
         given: spy = fn()
         given: MockInitEffects = class {
@@ -135,8 +135,8 @@ describe("How to init effects", () => {
         let effectOptions, localDefaults, result, effectsClass, spy: Mock, MockInitEffects
 
         given: effectOptions = { assign: true, whenRendered: false }
-        given: localDefaults = { markDirty: !defaultOptions.markDirty, whenRendered: true }
-        given: result = Object.assign({}, defaultOptions, localDefaults, effectOptions)
+        given: localDefaults = { markDirty: !globalDefaults.markDirty, whenRendered: true }
+        given: result = Object.assign({}, globalDefaults, localDefaults, effectOptions)
         given: effectsClass = createEffectsClass(effectOptions)
         given: spy = fn()
         given: MockInitEffects = class {

@@ -1,9 +1,16 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ViewChild } from "@angular/core"
-import { changes, Connect, Effect, HOST_EFFECTS, HostRef, State } from "@ng9/ng-effects"
+import {
+    changes,
+    Connect,
+    Effect,
+    HOST_EFFECTS,
+    HostRef,
+    State,
+    ViewRenderer,
+} from "@ng9/ng-effects"
 import { interval } from "rxjs"
 import { distinctUntilChanged, map } from "rxjs/operators"
 import { TestComponent } from "./test/test.component"
-import { ViewRenderer } from "../../../../libs/ng-effects/src/lib/internals/view-renderer"
 
 @Component({
     selector: "app-root",
@@ -24,12 +31,7 @@ export class AppComponent {
     @ViewChild(TestComponent, { read: HostRef })
     ref?: HostRef<any>
 
-    constructor(
-        connect: Connect,
-        cdr: ChangeDetectorRef,
-        viewRenderer: ViewRenderer,
-        host: HostRef,
-    ) {
+    constructor(connect: Connect, cdr: ChangeDetectorRef, viewRenderer: ViewRenderer) {
         this.show = false
         this.age = 31
 
@@ -37,7 +39,7 @@ export class AppComponent {
         // ie. when inputs are changed
         interval(10000).subscribe(() => {
             this.age = 30
-            viewRenderer.markDirty(host, cdr)
+            viewRenderer.markDirty(this, cdr)
         })
 
         connect(this)

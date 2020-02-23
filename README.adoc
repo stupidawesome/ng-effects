@@ -95,17 +95,21 @@ Effects can be configured through the decorator.
 |boolean
 |When set to true, schedule change detection to run whenever a bound effect emits a value.
 
+Default: `true` if `bind` or `apply` is set.
+
 |detectChanges
 |boolean
-|When set to true, detect changes immediately whenever a bound effect emits a value.
+|When set to true, detect changes immediately whenever a bound effect emits a value. Takes precendence over `markDirty`.
 
 |whenRendered
 |boolean
 |When set to true, the effect is not initialised until the host element has been mounted to the DOM.
 
+Default: `false`
+
 |adapter
-|Type<any>
-|Hook into effects with a custom link:#effect_adapters[effect adapter]. For example, to dispatch actions to a global store.
+|Type<EffectAdapter>
+|Hook into effects with a custom link:#effect_adapters[effect adapter]. For example, dispatching actions to NgRx or other global state stores.
 |===
 
 ==== Default options

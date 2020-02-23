@@ -1,11 +1,12 @@
-import { ChangeDetectorRef, ElementRef, Injector, NgZone, Type } from "@angular/core"
+import { ChangeDetectorRef, Injector, NgZone, Type } from "@angular/core"
 import { isObservable, Subject } from "rxjs"
-import { ViewRenderer } from "./view-renderer"
-import { DefaultEffectOptions, EffectMetadata } from "../interfaces"
+import { ViewRenderer } from "../view-renderer"
+import { EffectMetadata, EffectOptions } from "../interfaces"
 import { take } from "rxjs/operators"
 import { assertPropertyExists, isTeardownLogic, throwBadReturnTypeError } from "./utils"
 import { DestroyObserver } from "./destroy-observer"
 import { HostRef } from "./host-ref"
+import { globalDefaults } from "./constants"
 
 function effectRunner(
     effectsMetadata: EffectMetadata[],
@@ -80,13 +81,13 @@ function runEffect(
 export function runEffects(
     effectsMetadata: EffectMetadata[],
     hostRef: HostRef,
-    elementRef: ElementRef,
     changeDetector: ChangeDetectorRef,
     destroyObserver: DestroyObserver,
     viewRenderer: ViewRenderer,
     injector: Injector,
     parentRef: HostRef,
 ) {
+    let createMode = true
     const changeNotifier = new Subject<any>()
     const rendered = viewRenderer.whenRendered().pipe(take(1))
     const scheduled = viewRenderer.whenScheduled()
@@ -97,28 +98,30 @@ export function runEffects(
         changeNotifier,
         injector,
     )
-    const detectChanges = async function(opts: DefaultEffectOptions = {}) {
+
+    const detectChanges = async function(opts: EffectOptions = globalDefaults) {
         hostRef.tick()
         if (parentRef) {
             parentRef.tick()
         }
         if (opts.detectChanges) {
-            viewRenderer.detectChanges(hostRef, changeDetector)
+            viewRenderer.detectChanges(hostRef.context, changeDetector)
         } else if (opts.markDirty) {
             // async workaround for "noop" zone
-            if (!NgZone.isInAngularZone()) {
+            if (createMode || !NgZone.isInAngularZone()) {
                 await Promise.resolve()
             }
-            viewRenderer.markDirty(hostRef, changeDetector)
+            viewRenderer.markDirty(hostRef.context, changeDetector)
         }
     }
 
     // Start event loop
     destroyObserver.add(
         scheduled.subscribe(changeNotifier),
-        rendered.pipe(take(1)).subscribe(runEffects),
+        rendered.subscribe(runEffects),
         changeNotifier.subscribe(detectChanges),
     )
 
     runEffects()
+    createMode = false
 }

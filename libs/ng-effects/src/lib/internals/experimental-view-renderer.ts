@@ -1,7 +1,6 @@
 import { Inject, Injectable, RendererFactory2 } from "@angular/core"
-import { ViewRenderer } from "./view-renderer"
+import { ViewRenderer } from "../view-renderer"
 import { DETECT_CHANGES, MARK_DIRTY } from "./providers"
-import { HostRef } from "./host-ref"
 
 @Injectable()
 export class ExperimentalIvyViewRenderer extends ViewRenderer {
@@ -12,12 +11,7 @@ export class ExperimentalIvyViewRenderer extends ViewRenderer {
     ) {
         super(rendererFactory)
 
-        this.detectChanges = function(hostRef: HostRef) {
-            detectChanges(hostRef.context)
-        }
-
-        this.markDirty = function(hostRef: HostRef) {
-            markDirty(hostRef.context)
-        }
+        this.detectChanges = detectChanges
+        this.markDirty = markDirty
     }
 }

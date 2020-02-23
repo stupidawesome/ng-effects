@@ -29,8 +29,8 @@ export interface EffectAdapter<TValue extends any, TOptions = DefaultEffectOptio
 }
 
 export interface DefaultEffectOptions {
-    detectChanges?: boolean
     whenRendered?: boolean
+    detectChanges?: boolean
     markDirty?: boolean
 }
 

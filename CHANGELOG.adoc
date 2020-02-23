@@ -1,5 +1,17 @@
 = Changelog
 
+== 9.0.0-rc.3
+
+- export missing tokens and tweak defaults
+
+The default value of `markDirty` will now be `true` if the effect configures a `bind` or `assign` option. This is a better default in most cases, and can be configured by setting `@Effect("prop", { markDirty: false })`.
+
+== 9.0.0-rc.2
+
+=== Features
+
+- expose experimental connect API
+
 == 9.0.0-rc.1
 
 === Features

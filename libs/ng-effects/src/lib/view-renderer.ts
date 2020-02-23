@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Injectable, OnDestroy, RendererFactory2 } from "@angular/core"
 import { Subject } from "rxjs"
-import { noop, unsubscribe } from "./utils"
-import { RenderApi } from "./interfaces"
+import { noop, unsubscribe } from "./internals/utils"
+import { RenderApi } from "./internals/interfaces"
 
 @Injectable({ providedIn: "root" })
 export class ViewRenderer implements RenderApi, OnDestroy {

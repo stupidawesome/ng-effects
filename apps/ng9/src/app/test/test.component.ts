@@ -99,7 +99,7 @@ export class TestEffects {
     /**
      * Property binding example
      */
-    @Effect("age", { markDirty: true })
+    @Effect("age")
     public age(state: State<TestState>) {
         return timer(1000).pipe(switchMapTo(state.age), increment(1), take(1), repeat())
     }
@@ -171,7 +171,7 @@ export class TestEffects {
         })
     }
 
-    @Effect("show", { markDirty: true })
+    @Effect("show")
     public toggleShow(state: State<TestComponent>) {
         const { show } = state
         return state.event.pipe(toggleSwitch(show))
