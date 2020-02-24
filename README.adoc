@@ -734,27 +734,3 @@ export class MyComponent {
 ----
 
 When the component is created in this example, `MyConnectedService` will be instantiated and have access to the `HostRef`.
-
-== Future API
-
-This library is designed with the future in mind. It is hoped that it will eventually become possible to declaratively `connect` components without extra wiring.
-
-[source,typescript]
-----
-// long term ideal, perhaps with Angular compiler integration.
-
-@Injectable()
-export class AppEffects {
-    @Effect("count")
-    incrementCount() {
-        // etc
-    }
-}
-
-@Component({
-    effects: [AppEffects]
-})
-export class AppComponent {
-    count = 0
-}
-----
