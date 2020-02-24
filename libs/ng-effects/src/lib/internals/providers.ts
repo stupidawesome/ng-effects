@@ -2,13 +2,11 @@ import {
     ChangeDetectorRef,
     InjectionToken,
     INJECTOR,
-    isDevMode,
     Optional,
     SkipSelf,
     ɵdetectChanges as detectChanges,
     ɵmarkDirty as markDirty,
 } from "@angular/core"
-import { mapState, proxyState } from "./utils"
 import { runEffects } from "./run-effects"
 import { EFFECTS } from "./constants"
 import { HostRef } from "../host-ref"
@@ -27,15 +25,11 @@ export const MARK_DIRTY = new InjectionToken("DETECT_CHANGES", {
     factory: () => markDirty,
 })
 
-export const STATE_FACTORY = new InjectionToken("STATE_FACTORY", {
-    providedIn: "root",
-    factory: () => (isDevMode() ? proxyState : mapState),
-})
 export const HOST_REF = {
     provide: HostRef,
     useFactory: createHostRef,
-    deps: [STATE_FACTORY],
 }
+
 export const RUN_EFFECTS = [
     {
         provide: runEffects,

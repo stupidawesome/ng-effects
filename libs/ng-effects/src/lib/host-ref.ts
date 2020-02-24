@@ -1,5 +1,5 @@
 import { Observable } from "rxjs"
-import { State } from "./interfaces"
+import { State } from "./decorators"
 
 export abstract class HostRef<T = any> {
     /**

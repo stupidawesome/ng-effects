@@ -5,6 +5,7 @@ import { globalDefaults } from "./constants"
 import { exploreEffects } from "./explore-effects"
 import { HostRef } from "./host-ref"
 import { HostEmitter } from "../host-emitter"
+import { isDevMode } from "@angular/core"
 
 export function throwMissingPropertyError(key: string, name: string) {
     throw new Error(`[ng-effects] Property "${key}" is not initialised in "${name}".`)
@@ -17,17 +18,10 @@ function selectKey(source: Observable<any>, key: PropertyKey) {
     )
 }
 
-export function proxyState<T>(source: Observable<T>, state: any, target: any = {}) {
+export function proxyState<T>(source: Observable<T>, target: any) {
     if (typeof Proxy !== "undefined") {
-        if (state) {
-            state.__setContext(target)
-            return state
-        }
         return new Proxy(target as any, {
-            get(_, key: PropertyKey) {
-                if (key === "__setContext") {
-                    return (value: any) => (target = value)
-                }
+            get(target, key: PropertyKey) {
                 try {
                     assertPropertyExists(key, target)
                 } catch (e) {
@@ -41,15 +35,17 @@ export function proxyState<T>(source: Observable<T>, state: any, target: any = {
                 }
             },
         })
-    } else {
-        console.warn(
-            "[ng-effects] This browser does not support Proxy objects. Dev mode diagnostics will be limited.",
-        )
-        return mapState(source, state || {}, target)
     }
+    if (isDevMode()) {
+        console.warn(
+            "[ng-effects] This browser does not support Proxy objects. Falling back to Object.getOwnPropertyNames. Dev mode diagnostics will be limited.",
+        )
+    }
+    return mapState(source, target)
 }
 
-export function mapState<T>(source: Observable<T>, state: any = {}, target: any = {}) {
+export function mapState<T>(source: Observable<T>, target: any) {
+    const state: any = {}
     const keys = Object.getOwnPropertyNames(target)
 
     for (const key of keys) {

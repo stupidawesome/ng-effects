@@ -7,26 +7,36 @@ import {
 import { MapSelect } from "./internals/interfaces"
 import { map, skip } from "rxjs/operators"
 import { Connect } from "./connect"
+import { HostEmitter } from "./host-emitter"
 
-function changesOperator<T>(source: Observable<T>) {
-    return source.pipe(skip(1))
-}
-
-export function changes<T>(source: Observable<T>): Observable<T>
 export function changes<T>(): MonoTypeOperatorFunction<T>
-export function changes<T>(source?: Observable<T>): any {
-    return source ? changesOperator(source) : changesOperator
+export function changes<T>(source: Observable<T>): Observable<T>
+export function changes<T>(source: MapSelect<T>): Observable<T>
+export function changes<T>(source?: Observable<T> | MapSelect<T>): any {
+    if (source) {
+        if (source instanceof Observable) {
+            return source.pipe(skip(1))
+        } else {
+            return allChanges(source)
+        }
+    } else {
+        return changes
+    }
 }
 
-export function latestFrom<T>(source: MapSelect<T>): Observable<T> {
-    const keys = Object.keys(source) as (keyof T)[]
-    return combineLatest(keys.map(key => source[key])).pipe(
-        map(values =>
-            values.reduce((acc, value, index) => {
-                acc[keys[index]] = value as any
+export function allChanges<T extends any>(source: MapSelect<T>): Observable<T> {
+    const keys = Object.getOwnPropertyNames(source).filter(
+        key => !(source[key] instanceof HostEmitter),
+    )
+    const sources = keys.map(key => source[key])
+    return combineLatest(sources).pipe(
+        changes(),
+        map(values => {
+            return values.reduce((acc, value, index) => {
+                acc[keys[index]] = value
                 return acc
-            }, {} as T),
-        ),
+            }, {} as T)
+        }),
     )
 }
 

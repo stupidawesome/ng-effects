@@ -1,5 +1,6 @@
 import {
     ChangeDetectionStrategy,
+    ChangeDetectorRef,
     Component,
     ElementRef,
     HostListener,
@@ -14,15 +15,17 @@ import { Observable, of, OperatorFunction, timer } from "rxjs"
 import {
     changes,
     connect,
+    Context,
     Effect,
+    EffectAdapter,
     effects,
     HostEmitter,
     HostRef,
-    latestFrom,
+    Observe,
     State,
 } from "@ng9/ng-effects"
 import { increment } from "../utils"
-import { map, mapTo, repeat, switchMapTo, take } from "rxjs/operators"
+import { distinctUntilChanged, map, repeat, switchMapTo, take } from "rxjs/operators"
 import { Dispatch } from "../dispatch-adapter"
 
 interface TestState {
@@ -51,7 +54,7 @@ export class TestEffects {
      * Injector example with special tokens
      * HostRef can be injected to get host context.
      */
-    constructor(private elementRef: ElementRef, hostRef: HostRef) {}
+    constructor(private elementRef: ElementRef, hostRef: HostRef, private cdr: ChangeDetectorRef) {}
 
     /**
      * Effect decorator with explicit binding example
@@ -66,17 +69,8 @@ export class TestEffects {
      * Assign example
      */
     @Effect({ assign: true })
-    public bindAll(state: State<TestState>) {
-        return latestFrom(state).pipe(mapTo({}))
-    }
-
-    /**
-     * Suppress binding type check when type cannot be inferred from arguments
-     * Bindings will still be checked at runtime
-     */
-    @Effect<any>("name")
-    public suppressTypeChecking() {
-        // do unsafe side effect
+    public bindAll(state: State<TestComponent>) {
+        return changes(state).pipe(take(1))
     }
 
     /**
@@ -87,11 +81,16 @@ export class TestEffects {
         // do side effect
     }
 
+    // noinspection JSUnusedLocalSymbols
     /**
      * Side effect with default options example
      */
-    @Effect({ whenRendered: true })
-    public withDefaultArgs() {
+    @Effect({ bind: "name", whenRendered: true })
+    public withDefaultArgs(
+        context: State<TestComponent>,
+        state: Context<TestComponent>,
+        observer: Observable<TestComponent>,
+    ) {
         // do side effect
         return of("")
     }
@@ -112,11 +111,16 @@ export class TestEffects {
         return changes(state.age).subscribe(state.ageChange)
     }
 
+    // noinspection JSUnusedLocalSymbols
     /**
      * Pure side effect example
      */
     @Effect()
-    public sideEffect(state: State<TestState>) {
+    public sideEffect(
+        state: State<TestState>,
+        context: Context<TestState>,
+        observer: Observable<TestState>,
+    ) {
         return changes(state.age).subscribe(() => {
             // do something here
         })
@@ -126,7 +130,7 @@ export class TestEffects {
      * Template event binding example
      */
     @Effect()
-    public clicked(_: State<TestState>) {
+    public clicked(@Context() context: Context<TestState>) {
         // return state.event.subscribe()
     }
 
@@ -178,6 +182,35 @@ export class TestEffects {
     }
 }
 
+export interface IShouldComponentUpdate {
+    shouldComponentUpdate(): boolean
+}
+
+@Injectable()
+export class ShouldComponentUpdate implements EffectAdapter<boolean> {
+    constructor(private cdr: ChangeDetectorRef) {
+        this.cdr.detach()
+    }
+
+    public next(value: boolean): void {
+        if (value) {
+            this.cdr.reattach()
+        } else {
+            this.cdr.detach()
+        }
+    }
+
+    @Effect(ShouldComponentUpdate)
+    shouldComponentUpdate(
+        @Observe() observer: Observable<any>,
+        @Context() context: Context<IShouldComponentUpdate>,
+    ): Observable<boolean> {
+        return observer.pipe(map(context.shouldComponentUpdate, context), distinctUntilChanged())
+    }
+}
+
+export const NONE = undefined
+
 @Component({
     selector: "app-test",
     template: `
@@ -191,9 +224,9 @@ export class TestEffects {
     `,
     styleUrls: ["./test.component.scss"],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    providers: [effects(TestEffects)],
+    providers: [effects([TestEffects, ShouldComponentUpdate])],
 })
-export class TestComponent implements TestState {
+export class TestComponent implements TestState, IShouldComponentUpdate {
     @Input()
     public name: string
 
@@ -204,10 +237,10 @@ export class TestComponent implements TestState {
     public ageChange: HostEmitter<number>
 
     @ViewChild("test")
-    public viewChild?: ElementRef
+    public viewChild?: ElementRef = NONE
 
     @ViewChildren("test")
-    public viewChildren?: QueryList<ElementRef>
+    public viewChildren?: QueryList<ElementRef> = NONE
 
     public show: boolean
 
@@ -222,5 +255,9 @@ export class TestComponent implements TestState {
         this.show = true
 
         connect(this)
+    }
+
+    shouldComponentUpdate() {
+        return this.age > 35
     }
 }

@@ -1,7 +1,7 @@
-import { DefaultEffectOptions, EffectFn, EffectMetadata } from "../interfaces"
+import { DefaultEffectOptions, EffectMetadata } from "../interfaces"
 import { InjectionToken } from "@angular/core"
 
-export const effectsMap = new WeakMap<EffectFn<any>, any>()
+export const effectsMap = new WeakMap()
 
 export const globalDefaults: DefaultEffectOptions = {
     whenRendered: false,

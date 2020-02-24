@@ -3,10 +3,6 @@
 Reactive extensions for Angular.
 
 ```typescript
-interface AppState {
-    count: number
-}
-
 @Component({
     selector: "app-root",
     template: `
@@ -14,12 +10,11 @@ interface AppState {
     `,
     providers: [HOST_EFFECTS],
 })
-export class AppComponent implements AppState {
-
+export class AppComponent{
     @Input()
     count: number = 0
 
-    constructor(connect: Connect) {
+    constructor() {
         connect(this)
     }
 
@@ -36,6 +31,8 @@ export class AppComponent implements AppState {
 ```
 
 ## Installation
+
+Install via NPM.
 
 ```bash
 npm install ng-effects

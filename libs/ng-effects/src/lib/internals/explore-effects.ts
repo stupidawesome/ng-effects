@@ -1,6 +1,8 @@
 import { DefaultEffectOptions, EffectMetadata, EffectOptions } from "../interfaces"
 import { Type } from "@angular/core"
 import { effectsMap } from "./constants"
+import { Context, Observe, State } from "../decorators"
+import { getMetadata } from "./metadata"
 
 const effectMetadata = new WeakMap<Type<any>, Generator<EffectMetadata>>()
 
@@ -41,12 +43,15 @@ export function* exploreEffect(
         if (maybeOptions) {
             const path = `${type.name} -> ${name}`
             const options: EffectOptions<any> = mergeOptions(defaults, maybeOptions)
-
+            const args = [State, Context, Observe].map((key) =>
+                getMetadata(key, type.prototype, name),
+            )
             const metadata = {
                 path,
                 type,
                 name,
                 options,
+                args,
             }
 
             yield metadata

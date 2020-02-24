@@ -1,10 +1,9 @@
 import { of } from "rxjs"
-import { State } from "../interfaces"
 import { createDirective } from "./test-utils"
 import { effects } from "../providers"
 import { Type } from "@angular/core"
 import { fakeAsync, tick } from "@angular/core/testing"
-import { Effect } from "../decorators"
+import { Effect, State } from "../decorators"
 import { Connect } from "../connect"
 import objectContaining = jasmine.objectContaining
 
@@ -48,7 +47,7 @@ describe("How to use effect bindCount using decorators", () => {
         given: {
             class MockAppEffects {
                 @Effect({ assign: true })
-                bindAll(_: State<{ count: number; name: string }>) {
+                bindAll(_: State<{ age: number; name: string }>) {
                     return of({ name: "stupidawesome", age: 1377 })
                 }
             }
@@ -127,7 +126,7 @@ describe("How to use effect bindCount using decorators", () => {
         given: {
             class MockAppEffects {
                 @Effect({ assign: true })
-                bindCount({}: State<{ name: string; count: number }>) {
+                bindCount({}: State<{ name: string; age: number }>) {
                     return of({ name, age })
                 }
             }

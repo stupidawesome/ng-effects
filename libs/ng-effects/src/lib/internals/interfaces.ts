@@ -1,7 +1,8 @@
 import { ChangeDetectorRef } from "@angular/core"
-import { Observable } from "rxjs"
-import { AnyEffectFn, EffectFn, EffectMetadata } from "../interfaces"
+import { Observable, TeardownLogic } from "rxjs"
+import { EffectMetadata } from "../interfaces"
 import { HostEmitter } from "../host-emitter"
+import { Context, State } from "../decorators"
 
 export interface RenderApi {
     detectChanges(componentOrView: any, changeDetector?: ChangeDetectorRef): void
@@ -11,7 +12,7 @@ export interface RenderApi {
 }
 
 export type MapSelect<T> = {
-    [key in keyof T]: T[key] extends HostEmitter<any> ? T[key] : Observable<T[key]>
+    [key in keyof T]-?: T[key] extends HostEmitter<any> ? T[key] : Observable<T[key]>
 }
 
 export type NextValue<T extends any> = T["next"] extends (value: infer R, ...args: any[]) => any
@@ -26,24 +27,109 @@ export type NextOptions<T extends any> = T["next"] extends (
     ? R
     : never
 
-export interface EffectDecorator<TKey> {
-    // tslint:disable-next-line:callable-types
-    <T extends object, V extends keyof T = TKey extends keyof T ? TKey : never>(
+export interface EffectFn<TReturn, T extends EffectArg<any>> {
+    (state: T): TReturn
+}
+
+export interface EffectFn2<TReturn, T extends EffectArg<any>, U extends EffectArg<any>> {
+    (state: T, context: U): EffectTarget<T> extends EffectTarget<U> ? TReturn : never
+}
+
+export interface EffectFn3<
+    TReturn,
+    T extends EffectArg<any>,
+    U extends EffectArg<any>,
+    V extends EffectArg<any>
+> {
+    (state: T, context: U, observer: V): EffectTarget<T> extends EffectTarget<U | V>
+        ? TReturn
+        : never
+}
+
+export interface EffectFn4<TReturn extends any> {
+    (): TReturn
+}
+
+export interface BindEffectFn<T extends any, TKey> {
+    (state: T): BindReturnType<EffectTarget<T>, TKey>
+}
+
+export interface BindEffectFn2<T extends any, U extends any, TKey> {
+    (state: T, context: U): BindReturnType<EffectTarget<T | U>, TKey>
+}
+
+export interface BindEffectFn3<T extends any, U extends any, V extends any, TKey> {
+    (state: T, context: U, observer: V): BindReturnType<EffectTarget<T | U | V>, TKey>
+}
+
+export interface AssignEffectFn<T extends any, U extends EffectArg<T>> {
+    (state: U): AssignReturnType<T | EffectTarget<U>>
+}
+
+export interface AssignEffectFn2<T extends any, U extends EffectArg<T>, V extends EffectArg<T>> {
+    (state: U, context: V): AssignReturnType<T | EffectTarget<U | V>>
+}
+
+export interface AssignEffectFn3<
+    T extends any,
+    U extends EffectArg<T>,
+    V extends EffectArg<T>,
+    W extends EffectArg<T>
+> {
+    (state: U, context: V, observer: W): AssignReturnType<T | EffectTarget<U | V | W>>
+}
+
+export interface AssignEffectFn4<T extends any, TForce> {
+    (): AssignReturnType<T | TForce>
+}
+
+export type EffectArg<T> = State<T> | Context<T> | Observable<T>
+export type EffectTarget<T> = T extends EffectArg<infer R> ? R : never
+export type BindReturnType<T, TKey> = TKey extends keyof T ? Observable<T[TKey]> : never
+export type AssignReturnType<T> = Observable<T>
+
+export interface DefaultEffectDecorator {
+    <U, V, W, T extends Observable<any> | TeardownLogic>(
         target: any,
         prop: PropertyKey,
-        propertyDescriptor: {
-            value?: EffectFn<T, unknown extends TKey ? any : true extends TKey ? Partial<T> : T[V]>
-        },
+        propertyDescriptor:
+            | TypedPropertyDescriptor<EffectFn<T, U>>
+            | TypedPropertyDescriptor<EffectFn2<T, U, V>>
+            | TypedPropertyDescriptor<EffectFn3<T, U, V, W>>
+            | TypedPropertyDescriptor<EffectFn4<T>>,
     ): void
 }
 
-export interface EffectAdapterDecorator<T> {
-    // tslint:disable-next-line:callable-types
-    (
+export interface AdapterEffectDecorator<T extends any> {
+    <U, V, W, X = Observable<T>>(
         target: any,
-        prop: any,
-        propertyDescriptor: {
-            value?: AnyEffectFn<any, T>
-        },
+        prop: PropertyKey,
+        propertyDescriptor:
+            | TypedPropertyDescriptor<EffectFn<X, U>>
+            | TypedPropertyDescriptor<EffectFn2<X, U, V>>
+            | TypedPropertyDescriptor<EffectFn3<X, U, V, W>>,
+    ): void
+}
+
+export interface BindEffectDecorator<TKey> {
+    <T extends object, U extends object, V extends object>(
+        target: any,
+        prop: PropertyKey,
+        propertyDescriptor:
+            | TypedPropertyDescriptor<BindEffectFn<T, TKey>>
+            | TypedPropertyDescriptor<BindEffectFn2<T, U, TKey>>
+            | TypedPropertyDescriptor<BindEffectFn3<T, U, V, TKey>>,
+    ): void
+}
+
+export interface AssignEffectDecorator<T extends object> {
+    <U extends any, V extends any, W extends any, X>(
+        target: any,
+        prop: PropertyKey,
+        propertyDescriptor:
+            | TypedPropertyDescriptor<AssignEffectFn<X, U>>
+            | TypedPropertyDescriptor<AssignEffectFn2<X, U, V>>
+            | TypedPropertyDescriptor<AssignEffectFn3<X, U, V, W>>
+            | TypedPropertyDescriptor<AssignEffectFn4<X, T>>,
     ): void
 }

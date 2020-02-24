@@ -1,5 +1,5 @@
-import { State } from "../interfaces"
 import { BehaviorSubject } from "rxjs"
+import { proxyState } from "./utils"
 
 function throwInitialisationError(): never {
     throw new Error(`[ng-effects] Cannot access HostRef context before it has been initialised.`)
@@ -20,18 +20,16 @@ export class HostRef<T = any> {
     /**
      * The observable state of the component or directive instance.
      */
-    readonly state: State<T>
+    get state() {
+        return proxyState(this.observer, this.context)
+    }
     /**
      * An observer that emits whenever change detection occurs.
      */
     readonly observer: BehaviorSubject<T>
 
-    readonly update: () => void
-
-    constructor(state: State<T>, observer: BehaviorSubject<T>, update: () => void) {
+    constructor(observer: BehaviorSubject<T>) {
         this.observer = observer
-        this.state = state
-        this.update = update
     }
 
     public setContext(value: any) {
@@ -40,7 +38,7 @@ export class HostRef<T = any> {
                 return value
             },
         })
-        this.update()
+        this.tick()
     }
 
     public tick() {
@@ -48,11 +46,6 @@ export class HostRef<T = any> {
     }
 }
 
-export function createHostRef(mapState: Function) {
-    const observer = new BehaviorSubject({})
-    const state = mapState(observer)
-    return new HostRef(state, observer, function update(this: HostRef) {
-        mapState(this.observer, this.state, this.context)
-        this.tick()
-    })
+export function createHostRef() {
+    return new HostRef(new BehaviorSubject({}))
 }

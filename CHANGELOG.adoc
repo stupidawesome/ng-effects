@@ -1,5 +1,25 @@
 = Changelog
 
+== 9.0.0-rc.4
+
+=== Features
+
+- add paramater decorators for `State`, `Context` and `Observe`
+- refactor effect types to make to support more use cases
+
+[source, typescript]
+----
+class AppEffects {
+    @Effect()
+    incrementCount(@Context() context: Context<AppState>) {}
+}
+----
+
+=== Misc
+
+- remove `latestFrom` and roll it into `changes`
+- use proxy in prod if supported
+
 == 9.0.0-rc.3
 
 - export missing tokens and tweak defaults
