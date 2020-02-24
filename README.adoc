@@ -622,8 +622,8 @@ Then use it in your components.
 export class AppComponent {
     count = 0
 
-    constructor(private cdr: ChangeDetectorRef) {
-        this.cdr.detach()
+    constructor(connect: Connect) {
+        connect(this)
     }
 
     @Effect(ShouldComponentUpdate)
