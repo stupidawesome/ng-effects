@@ -21,11 +21,10 @@ import {
     effects,
     HostEmitter,
     HostRef,
-    Observe,
     State,
 } from "@ng9/ng-effects"
 import { increment } from "../utils"
-import { distinctUntilChanged, map, repeat, switchMapTo, take } from "rxjs/operators"
+import { map, repeat, switchMapTo, take } from "rxjs/operators"
 import { Dispatch } from "../dispatch-adapter"
 
 interface TestState {
@@ -182,8 +181,8 @@ export class TestEffects {
     }
 }
 
-export interface IShouldComponentUpdate {
-    shouldComponentUpdate(): boolean
+export interface ShouldComponentUpdate {
+    ngShouldComponentUpdate(): boolean
 }
 
 @Injectable()
@@ -192,20 +191,12 @@ export class ShouldComponentUpdate implements EffectAdapter<boolean> {
         this.cdr.detach()
     }
 
-    public next(value: boolean): void {
-        if (value) {
+    next(shouldUpdate: boolean) {
+        if (shouldUpdate) {
             this.cdr.reattach()
         } else {
             this.cdr.detach()
         }
-    }
-
-    @Effect(ShouldComponentUpdate)
-    shouldComponentUpdate(
-        @Observe() observer: Observable<any>,
-        @Context() context: Context<IShouldComponentUpdate>,
-    ): Observable<boolean> {
-        return observer.pipe(map(context.shouldComponentUpdate, context), distinctUntilChanged())
     }
 }
 
@@ -215,6 +206,7 @@ export const NONE = undefined
     selector: "app-test",
     template: `
         <p (click)="event($event)">test works!</p>
+        <p>Location: {{ author.title }}</p>
         <p>Name: {{ name }}</p>
         <p>Age: {{ age }}</p>
         <div #test *ngIf="show">Showing</div>
@@ -226,12 +218,14 @@ export const NONE = undefined
     changeDetection: ChangeDetectionStrategy.OnPush,
     providers: [effects([TestEffects, ShouldComponentUpdate])],
 })
-export class TestComponent implements TestState, IShouldComponentUpdate {
+export class TestComponent implements TestState {
     @Input()
     public name: string
 
     @Input()
     public age: number
+
+    public author: any
 
     @Output()
     public ageChange: HostEmitter<number>
@@ -257,7 +251,8 @@ export class TestComponent implements TestState, IShouldComponentUpdate {
         connect(this)
     }
 
-    shouldComponentUpdate() {
-        return this.age > 35
+    @Effect(ShouldComponentUpdate)
+    shouldComponentUpdate(state: State<TestComponent>) {
+        return state.age.pipe(map(age => age > 36))
     }
 }

@@ -27,11 +27,11 @@ export type NextOptions<T extends any> = T["next"] extends (
     ? R
     : never
 
-export interface EffectFn<TReturn, T extends EffectArg<any>> {
-    (state: T): TReturn
+export interface EffectFn<TReturn, T extends EffectArg<any>, X extends TReturn> {
+    (state: T): X
 }
 
-export interface EffectFn2<TReturn, T extends EffectArg<any>, U extends EffectArg<any>> {
+export interface EffectFn2<TReturn, T extends EffectArg<any>, U extends EffectArg<any>, X extends TReturn> {
     (state: T, context: U): EffectTarget<T> extends EffectTarget<U> ? TReturn : never
 }
 
@@ -39,10 +39,10 @@ export interface EffectFn3<
     TReturn,
     T extends EffectArg<any>,
     U extends EffectArg<any>,
-    V extends EffectArg<any>
+    V extends EffectArg<any>, X extends TReturn
 > {
     (state: T, context: U, observer: V): EffectTarget<T> extends EffectTarget<U | V>
-        ? TReturn
+        ? X
         : never
 }
 
@@ -89,25 +89,25 @@ export type BindReturnType<T, TKey> = TKey extends keyof T ? Observable<T[TKey]>
 export type AssignReturnType<T> = Observable<T>
 
 export interface DefaultEffectDecorator {
-    <U, V, W, T extends Observable<any> | TeardownLogic>(
+    <U, V, W, T extends Observable<any> | TeardownLogic, X extends T>(
         target: any,
         prop: PropertyKey,
         propertyDescriptor:
-            | TypedPropertyDescriptor<EffectFn<T, U>>
-            | TypedPropertyDescriptor<EffectFn2<T, U, V>>
-            | TypedPropertyDescriptor<EffectFn3<T, U, V, W>>
+            | TypedPropertyDescriptor<EffectFn<T, U, X>>
+            | TypedPropertyDescriptor<EffectFn2<T, U, V, X>>
+            | TypedPropertyDescriptor<EffectFn3<T, U, V, W, X>>
             | TypedPropertyDescriptor<EffectFn4<T>>,
     ): void
 }
 
-export interface AdapterEffectDecorator<T extends any> {
-    <U, V, W, X = Observable<T>>(
+export interface AdapterEffectDecorator<T> {
+    <U, V, W, X extends T>(
         target: any,
         prop: PropertyKey,
         propertyDescriptor:
-            | TypedPropertyDescriptor<EffectFn<X, U>>
-            | TypedPropertyDescriptor<EffectFn2<X, U, V>>
-            | TypedPropertyDescriptor<EffectFn3<X, U, V, W>>,
+            | TypedPropertyDescriptor<EffectFn<T, U, X>>
+            | TypedPropertyDescriptor<EffectFn2<T, U, V, X>>
+            | TypedPropertyDescriptor<EffectFn3<T, U, V, W, X>>,
     ): void
 }
 

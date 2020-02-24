@@ -594,6 +594,49 @@ export class AppEffects {
 }
 ----
 
+=== Custom lifecycle hooks
+
+Effects can be used to implement your own lifecycle hooks, such as `shouldComponentUpdate`. With effect adapters it's just a few lines of code. First create the adapter.
+
+[source, typescript]
+----
+@Injectable()
+export class ShouldComponentUpdate implements EffectAdapter<boolean> {
+    constructor(private cdr: ChangeDetectorRef) {
+        this.cdr.detach()
+    }
+
+    next(shouldUpdate: boolean) {
+        shouldUpdate ? this.cdr.reattach() : this.cdr.detach()
+    }
+}
+----
+
+Then use it in your components.
+
+[source, typescript]
+----
+@Component({
+    providers: [effects(ShouldComponentUpdate)]
+})
+export class AppComponent {
+    count = 0
+
+    constructor(private cdr: ChangeDetectorRef) {
+        this.cdr.detach()
+    }
+
+    @Effect(ShouldComponentUpdate)
+    shouldComponentUpdate(state: State<AppComponent>) {
+        return state.pipe(
+            map(count => count > 30)
+        )
+    }
+}
+----
+
+Use this to defer components from rendering before data has loaded, optimise change detection performance, and more.
+
 === Bi-directional observable state
 
 Through provider mapping observable state can be accessed from parent to child or vice versa.
