@@ -317,25 +317,9 @@ export class AppComponent implements AppState {
 ----
 
 
-=== Unsafe bindings
-
-Effects with bindings are inferred from function arguments. Omitting these arguments will cause a type error. This error can be suppressed by passing `any` to the effect decorator.
-
-[source,typescript]
-----
-@Injectable()
-export class AppEffects {
-    @Effect<any>("name")
-    suppressTypeChecking() {
-        // do unsafe binding
-    }
-}
-
-----
-
 === Side effects
 
-Effects that do not bind a property, or return a subscription/teardown function, are treated as side effects.
+Effects that do not bind a property can return an observable or subscription/teardown function to perform side effects.
 
 [source,typescript]
 ----
