@@ -18,7 +18,7 @@ function effectRunner(
     let whenRendered = false
     const hostType = Object.getPrototypeOf(hostRef.context).constructor
     return function runEffects() {
-        hostRef.update()
+        hostRef.tick()
         for (const metadata of effectsMetadata) {
             if (metadata.options.whenRendered === whenRendered) {
                 runEffect(hostRef, hostType, metadata, observer, notifier, injector)
@@ -26,6 +26,20 @@ function effectRunner(
         }
         whenRendered = true
     }
+}
+
+function sortArguments(arr: number[], index: number[], n: number) {
+    const temp: number[] = Array.from({ length: 3 })
+    for (let i = 0; i < n; i++) {
+        temp[index[i]] = arr[i]
+    }
+    for (let i = 0; i < n; i++) {
+        if (temp[i] !== undefined) {
+            arr[i] = temp[i]
+        }
+        index[i] = i
+    }
+    return arr
 }
 
 function runEffect(
@@ -37,8 +51,10 @@ function runEffect(
     injector: Injector,
 ) {
     const { context, state, observer } = hostRef
-    const effect = metadata.type === hostType ? context : injector.get(metadata.type)
-    const returnValue = effect[metadata.name](state, context, observer)
+    const { args, type, name, options, path } = metadata
+    const sortedArgs = sortArguments([state, context, observer], args, 3)
+    const effect = type === hostType ? context : injector.get(type)
+    const returnValue = effect[name].apply(effect, sortedArgs)
 
     if (returnValue === undefined) {
         return
@@ -46,10 +62,10 @@ function runEffect(
         destroy.add(
             returnValue.subscribe({
                 next(value: any) {
-                    const { assign, bind } = metadata.options
+                    const { assign, bind } = options
 
-                    if (metadata.options.adapter) {
-                        const adapter = injector.get(metadata.options.adapter)
+                    if (options.adapter) {
+                        const adapter = injector.get(options.adapter)
                         adapter.next(value, metadata)
                     }
 
@@ -63,10 +79,10 @@ function runEffect(
                         context[bind] = value
                     }
 
-                    notifier.next(metadata.options)
+                    notifier.next(options)
                 },
                 error(error: any) {
-                    console.error(`[ng-effects] Uncaught error in effect: ${metadata.path}`)
+                    console.error(`[ng-effects] Uncaught error in effect: ${path}`)
                     console.error(error)
                 },
             }),

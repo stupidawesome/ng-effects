@@ -6,7 +6,7 @@ import {
     createSimpleComponent,
     createSimpleDirective,
 } from "./test-utils"
-import { globalDefaults, EFFECTS } from "../internals/constants"
+import { EFFECTS, globalDefaults } from "../internals/constants"
 import { EMPTY } from "rxjs"
 import { OnDestroy } from "@angular/core"
 import { Connect } from "../connect"

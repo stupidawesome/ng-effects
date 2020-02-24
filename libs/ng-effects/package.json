@@ -1,6 +1,6 @@
 {
     "name": "ng-effects",
-    "version": "9.0.0-rc.3",
+    "version": "9.0.0-rc.4",
     "peerDependencies": {
         "@angular/common": "^9.0.0",
         "@angular/core": "^9.0.0",
@@ -11,7 +11,8 @@
         "components",
         "state management",
         "rxjs",
-        "effects"
+        "effects",
+        "connect"
     ],
     "homepage": "https://github.com/stupidawesome/ng-effects",
     "license": "MIT"

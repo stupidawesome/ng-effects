@@ -1,11 +1,10 @@
 import { createDirective } from "./test-utils"
 import { HOST_EFFECTS } from "../providers"
-import { changes, latestFrom } from "../utils"
-import { State } from "../interfaces"
+import { changes } from "../utils"
 import { from } from "rxjs"
 import { mergeAll } from "rxjs/operators"
 import { Connect } from "../connect"
-import { Effect } from "../decorators"
+import { Effect, State } from "../decorators"
 import fn = jest.fn
 import Mock = jest.Mock
 
@@ -47,7 +46,7 @@ describe("Some use cases for the operators exported by this library", () => {
         })
     })
 
-    describe("How to use the `latestFrom` operator [ex]", () => {
+    describe("How to use the `changes` operator to observe entire state", () => {
         it("Should take a dictionary object of observable inputs and return an observable that combines the latest values", () => {
             let AppDirective, expected: any[][], spy: Mock
 
@@ -64,9 +63,7 @@ describe("Some use cases for the operators exported by this library", () => {
                     age = 0
                     @Effect({ assign: true })
                     emitChanges({ name, age }: State<any>) {
-                        latestFrom({ name, age })
-                            .pipe(changes)
-                            .subscribe(spy)
+                        changes({ name, age }).subscribe(spy)
                         return from(expected).pipe(mergeAll())
                     }
                     constructor(connect: Connect) {

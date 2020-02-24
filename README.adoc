@@ -38,16 +38,18 @@ export class AppComponent implements AppState {
 }
 ----
 
-toc::[]
-
 == Installation
 
-Install ng-effects via NPM
+Install via NPM.
 
 [source,bash]
 ----
 npm install ng-effects
 ----
+
+:toc-title: Table of Contents
+
+toc::[]
 
 == Usage
 
@@ -85,11 +87,11 @@ Effects can be configured through the decorator.
 
 |bind
 |string
-|When configured, maps values emitted by the effect to a property of the same name on the host context. This option is ignored if the effect does not return an observable.
+|When configured, maps values emitted by the effect to a property of the same name on the host context.
 
 |assign
 |boolean
-|When configured, assigns the properties of partial objects emitted by the effect to matching properties on the host context. This option is ignored if the effect does not return an observable.
+|When configured, assigns the properties of partial objects emitted by the effect to matching properties on the host context.
 
 |markDirty
 |boolean

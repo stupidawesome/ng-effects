@@ -1,27 +1,11 @@
-import { Observable, TeardownLogic } from "rxjs"
 import { Type } from "@angular/core"
-import { MapSelect } from "./internals/interfaces"
-
-export type State<T> = MapSelect<Required<T>>
-export type Context<T> = Readonly<T>
-
-export type AnyEffectFn<T, U = any> = (
-    state: MapSelect<T>,
-    context: Context<T>,
-    observer: Observable<T>,
-) => Observable<U> | TeardownLogic
-
-export type EffectFn<T, U = any> = (
-    state: State<T>,
-    context: Context<T>,
-    observer: Observable<T>,
-) => Observable<U> | TeardownLogic
 
 export interface EffectMetadata<T = any> {
     name: string
     path: string
     type: Type<any>
     options: EffectOptions<T>
+    args: number[]
 }
 
 export interface EffectAdapter<TValue extends any, TOptions = DefaultEffectOptions> {
