@@ -3,4 +3,4 @@ export interface Connect {
     <T>(context: T): void
 }
 
-export abstract class Connect {}
+export class Connect {}

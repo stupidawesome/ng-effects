@@ -1,7 +1,7 @@
-import { ChangeDetectorRef, Injector, NgZone, Type } from "@angular/core"
+import { ChangeDetectorRef, InjectFlags, Injector, NgZone } from "@angular/core"
 import { isObservable, Subject } from "rxjs"
 import { ViewRenderer } from "../view-renderer"
-import { EffectMetadata, EffectOptions } from "../interfaces"
+import { EffectAdapter, EffectMetadata, EffectOptions } from "../interfaces"
 import { take } from "rxjs/operators"
 import { assertPropertyExists, isTeardownLogic, throwBadReturnTypeError } from "./utils"
 import { DestroyObserver } from "./destroy-observer"
@@ -16,12 +16,20 @@ function effectRunner(
     injector: Injector,
 ) {
     let whenRendered = false
-    const hostType = Object.getPrototypeOf(hostRef.context).constructor
     return function runEffects() {
         hostRef.tick()
         for (const metadata of effectsMetadata) {
             if (metadata.options.whenRendered === whenRendered) {
-                runEffect(hostRef, hostType, metadata, observer, notifier, injector)
+                const maybeAdapter = metadata.options.adapter
+                const effect =
+                    hostRef.context instanceof metadata.type
+                        ? hostRef.context
+                        : injector.get(metadata.type, false, InjectFlags.Self)
+                const adapter =
+                    maybeAdapter && injector.get(maybeAdapter, undefined, InjectFlags.Self)
+                if (effect) {
+                    runEffect(hostRef, metadata, observer, notifier, effect, adapter)
+                }
             }
         }
         whenRendered = true
@@ -44,16 +52,15 @@ function sortArguments(arr: number[], index: number[], n: number) {
 
 function runEffect(
     hostRef: HostRef,
-    hostType: Type<any>,
     metadata: EffectMetadata,
     destroy: DestroyObserver,
     notifier: Subject<any>,
-    injector: Injector,
+    effect: any,
+    adapter?: EffectAdapter<any>,
 ) {
     const { context, state, observer } = hostRef
-    const { args, type, name, options, path } = metadata
+    const { args, name, options, path } = metadata
     const sortedArgs = sortArguments([state, context, observer], args, 3)
-    const effect = type === hostType ? context : injector.get(type)
     const returnValue = effect[name].apply(effect, sortedArgs)
 
     if (returnValue === undefined) {
@@ -64,8 +71,7 @@ function runEffect(
                 next(value: any) {
                     const { assign, bind } = options
 
-                    if (options.adapter) {
-                        const adapter = injector.get(options.adapter)
+                    if (adapter) {
                         adapter.next(value, metadata)
                     }
 

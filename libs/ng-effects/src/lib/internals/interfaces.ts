@@ -31,7 +31,12 @@ export interface EffectFn<TReturn, T extends EffectArg<any>, X extends TReturn> 
     (state: T): X
 }
 
-export interface EffectFn2<TReturn, T extends EffectArg<any>, U extends EffectArg<any>, X extends TReturn> {
+export interface EffectFn2<
+    TReturn,
+    T extends EffectArg<any>,
+    U extends EffectArg<any>,
+    X extends TReturn
+> {
     (state: T, context: U): EffectTarget<T> extends EffectTarget<U> ? TReturn : never
 }
 
@@ -39,11 +44,10 @@ export interface EffectFn3<
     TReturn,
     T extends EffectArg<any>,
     U extends EffectArg<any>,
-    V extends EffectArg<any>, X extends TReturn
+    V extends EffectArg<any>,
+    X extends TReturn
 > {
-    (state: T, context: U, observer: V): EffectTarget<T> extends EffectTarget<U | V>
-        ? X
-        : never
+    (state: T, context: U, observer: V): EffectTarget<T> extends EffectTarget<U | V> ? X : never
 }
 
 export interface EffectFn4<TReturn extends any> {
@@ -107,7 +111,8 @@ export interface AdapterEffectDecorator<T> {
         propertyDescriptor:
             | TypedPropertyDescriptor<EffectFn<T, U, X>>
             | TypedPropertyDescriptor<EffectFn2<T, U, V, X>>
-            | TypedPropertyDescriptor<EffectFn3<T, U, V, W, X>>,
+            | TypedPropertyDescriptor<EffectFn3<T, U, V, W, X>>
+            | TypedPropertyDescriptor<EffectFn4<X>>,
     ): void
 }
 

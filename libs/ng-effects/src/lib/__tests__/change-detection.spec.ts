@@ -1,4 +1,3 @@
-import { HOST_EFFECTS, USE_EXPERIMENTAL_RENDER_API } from "../providers"
 import { of } from "rxjs"
 import { createComponent, createDirective } from "./test-utils"
 import { delay } from "rxjs/operators"
@@ -7,6 +6,7 @@ import { ChangeDetectorRef } from "@angular/core"
 import { DETECT_CHANGES, MARK_DIRTY } from "../internals/providers"
 import { Connect } from "../connect"
 import { Effect, State } from "../decorators"
+import { effects, Effects, USE_EXPERIMENTAL_RENDER_API } from "../providers"
 import Mock = jest.Mock
 import fn = jest.fn
 
@@ -30,7 +30,7 @@ describe("How change detection works", () => {
             AppComponent = MockAppComponent
         }
 
-        when: createDirective(AppComponent, [Connect], HOST_EFFECTS)
+        when: createDirective(AppComponent, [Connect], [Effects, effects([AppComponent])])
 
         then: cdr = TestBed.inject(ChangeDetectorRef)
         then: expect(cdr.markForCheck).not.toHaveBeenCalled()
@@ -57,7 +57,7 @@ describe("How change detection works", () => {
             AppComponent = MockAppComponent
         }
 
-        when: createDirective(AppComponent, [Connect], HOST_EFFECTS)
+        when: createDirective(AppComponent, [Connect], [Effects, effects([AppComponent])])
 
         then: cdr = TestBed.inject(ChangeDetectorRef)
         then: expect(cdr.detectChanges).toHaveBeenCalledTimes(1)
@@ -86,7 +86,7 @@ describe("How change detection works", () => {
         when: fixture = createComponent({
             component: AppComponent,
             deps: [Connect],
-            providers: [HOST_EFFECTS],
+            providers: [[Effects, effects([AppComponent])]],
         })
 
         then: expect(spy).toHaveBeenCalledTimes(0)
@@ -119,7 +119,7 @@ describe("How change detection works [USE_EXPERIMENTAL_RENDER_API]", () => {
             AppComponent,
             [Connect],
             [
-                HOST_EFFECTS,
+                [Effects, effects([AppComponent])],
                 USE_EXPERIMENTAL_RENDER_API,
                 {
                     provide: MARK_DIRTY,
@@ -156,7 +156,7 @@ describe("How change detection works [USE_EXPERIMENTAL_RENDER_API]", () => {
             AppComponent,
             [Connect],
             [
-                HOST_EFFECTS,
+                [Effects, effects([AppComponent])],
                 USE_EXPERIMENTAL_RENDER_API,
                 {
                     provide: DETECT_CHANGES,
@@ -192,7 +192,7 @@ describe("How change detection works [USE_EXPERIMENTAL_RENDER_API]", () => {
         when: fixture = createComponent({
             component: AppComponent,
             deps: [Connect],
-            providers: [HOST_EFFECTS],
+            providers: [Effects, effects([AppComponent])],
             rootProviders: [USE_EXPERIMENTAL_RENDER_API],
         })
 

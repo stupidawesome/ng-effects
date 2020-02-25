@@ -15,6 +15,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing"
 import { Effect } from "../decorators"
 import { EffectOptions } from "../interfaces"
 import { Connect } from "../connect"
+import { effects } from "../providers"
 import fn = jest.fn
 
 export function createDirective(directive: Type<any>, deps?: any[], providers?: Provider[]) {
@@ -99,35 +100,33 @@ export function createSimpleDirective(providers: Provider[]) {
     }).inject(SimpleDirective)
 }
 
-export function createSimpleComponent(providers: Provider[]) {
+export function createSimpleComponent(providers: Provider[] = []): ComponentFixture<any> {
     // noinspection AngularMissingOrInvalidDeclarationInModule
     @Component({
         template: "",
-        providers: [],
+        providers,
         changeDetection: ChangeDetectionStrategy.OnPush,
     })
     class SimpleComponent {
+        spy = fn()
         constructor(connect: Connect) {
             connect(this)
         }
         @Effect()
-        public hostEffect() {}
+        public hostEffect() {
+            this.spy()
+        }
     }
 
     void TestBed.configureTestingModule({
         declarations: [SimpleComponent],
+        providers: [effects([SimpleComponent])],
         schemas: [NO_ERRORS_SCHEMA],
-    })
-        .overrideComponent(SimpleComponent, {
-            add: {
-                providers,
-            },
-        })
-        .compileComponents()
+    }).compileComponents()
     return TestBed.createComponent(SimpleComponent)
 }
 
-export function createEffectsClass(options?: EffectOptions) {
+export function createEffectsClass(options: EffectOptions = {}) {
     @Injectable()
     class VoidEffects {
         spy = fn()

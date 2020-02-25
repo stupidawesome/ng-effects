@@ -1,6 +1,6 @@
 import { createSimpleComponent } from "./test-utils"
 import { ElementRef, Injectable, Provider, Renderer2 } from "@angular/core"
-import { effects } from "../providers"
+import { Effects, effects } from "../providers"
 import { Effect } from "../decorators"
 import { HostRef } from "../host-ref"
 
@@ -16,7 +16,7 @@ describe("How to use injection tokens", () => {
     it("should inject special host tokens", () => {
         let providers: Provider[]
 
-        given: providers = effects(EffectsWithSpecialTokens)
+        given: providers = [Effects, effects([EffectsWithSpecialTokens])]
 
         then: expect(() => createSimpleComponent(providers)).not.toThrow()
     })
@@ -24,7 +24,7 @@ describe("How to use injection tokens", () => {
     it("should inject a host ref", () => {
         let fixture, hostRef, providers: Provider[]
 
-        given: providers = effects(EffectsWithSpecialTokens)
+        given: providers = [Effects, effects([EffectsWithSpecialTokens])]
 
         when: fixture = createSimpleComponent(providers)
 

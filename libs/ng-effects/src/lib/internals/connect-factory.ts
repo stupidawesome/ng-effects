@@ -1,9 +1,9 @@
-import { Injector } from "@angular/core"
-import { HostRef } from "./host-ref"
+import { InjectFlags, Injector } from "@angular/core"
+import { HostRef } from "../host-ref"
 
-export function connectFactory(initializers: any[], injector: Injector, hostRef: HostRef) {
+export function connectFactory(initializers: any[], injector: Injector) {
     return function connect(context: any) {
-        hostRef.setContext(context)
-        initializers.forEach(init => injector.get(init))
+        injector.get<any>(HostRef).setContext(context)
+        initializers.forEach(init => injector.get(init, undefined, InjectFlags.Self))
     }
 }

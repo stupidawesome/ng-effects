@@ -3,7 +3,6 @@ import { distinctUntilChanged, map } from "rxjs/operators"
 import { DefaultEffectOptions, EffectMetadata } from "../interfaces"
 import { globalDefaults } from "./constants"
 import { exploreEffects } from "./explore-effects"
-import { HostRef } from "./host-ref"
 import { HostEmitter } from "../host-emitter"
 import { isDevMode } from "@angular/core"
 
@@ -82,11 +81,9 @@ export function assertPropertyExists(key: any, obj: any) {
 }
 
 export function createEffectsFactory(effects: any | any[], options: DefaultEffectOptions = {}) {
-    return function injectEffects(hostRef: HostRef): EffectMetadata[] {
-        const hostType = Object.getPrototypeOf(hostRef.context).constructor
+    return function injectEffects(): EffectMetadata[] {
         const defaults = Object.assign({}, globalDefaults, options)
-
-        return [...exploreEffects(defaults, [hostType].concat(effects))]
+        return [...exploreEffects(defaults, effects)]
     }
 }
 

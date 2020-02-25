@@ -1,10 +1,10 @@
 import { createDirective } from "./test-utils"
-import { HOST_EFFECTS } from "../providers"
 import { changes } from "../utils"
 import { from } from "rxjs"
 import { mergeAll } from "rxjs/operators"
 import { Connect } from "../connect"
 import { Effect, State } from "../decorators"
+import { effects, Effects } from "../providers"
 import fn = jest.fn
 import Mock = jest.Mock
 
@@ -37,7 +37,7 @@ describe("Some use cases for the operators exported by this library", () => {
                 AppDirective = MockAppDirective
             }
 
-            when: createDirective(AppDirective, [Connect], HOST_EFFECTS)
+            when: createDirective(AppDirective, [Connect], [Effects, effects([AppDirective])])
 
             then: expect(spy1.mock.calls).toEqual(expected)
             then: expect(spy2.mock.calls).toEqual(expected)
@@ -73,7 +73,7 @@ describe("Some use cases for the operators exported by this library", () => {
                 AppDirective = MockAppDirective
             }
 
-            when: createDirective(AppDirective, [Connect], HOST_EFFECTS)
+            when: createDirective(AppDirective, [Connect], [Effects, effects([AppDirective])])
 
             then: expect(spy.mock.calls).toEqual(expected)
         })

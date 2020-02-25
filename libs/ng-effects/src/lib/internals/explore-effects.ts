@@ -43,7 +43,7 @@ export function* exploreEffect(
         if (maybeOptions) {
             const path = `${type.name} -> ${name}`
             const options: EffectOptions<any> = mergeOptions(defaults, maybeOptions)
-            const args = [State, Context, Observe].map((key) =>
+            const args = [State, Context, Observe].map(key =>
                 getMetadata(key, type.prototype, name),
             )
             const metadata = {

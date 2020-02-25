@@ -28,6 +28,7 @@ export const MARK_DIRTY = new InjectionToken("DETECT_CHANGES", {
 export const HOST_REF = {
     provide: HostRef,
     useFactory: createHostRef,
+    deps: [],
 }
 
 export const RUN_EFFECTS = [

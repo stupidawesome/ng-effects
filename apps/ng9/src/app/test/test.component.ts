@@ -11,10 +11,20 @@ import {
     ViewChild,
     ViewChildren,
 } from "@angular/core"
-import { Observable, of, OperatorFunction, timer } from "rxjs"
-import { changes, connect, Context, Effect, EffectAdapter, effects, HostEmitter, HostRef, State } from "@ng9/ng-effects"
+import { interval, MonoTypeOperatorFunction, Observable, of, OperatorFunction } from "rxjs"
+import {
+    changes,
+    connect,
+    Context,
+    Effect,
+    EffectAdapter,
+    Effects,
+    HostEmitter,
+    HostRef,
+    State,
+} from "@ng9/ng-effects"
 import { increment } from "../utils"
-import { map, mapTo, repeat, switchMapTo, take } from "rxjs/operators"
+import { map, mapTo, repeat, repeatWhen, switchMapTo, take } from "rxjs/operators"
 import { Dispatch } from "../dispatch-adapter"
 
 interface TestState {
@@ -34,6 +44,11 @@ function toggleSwitch(source: Observable<boolean>): OperatorFunction<any, boolea
             map(value => !value),
             repeat(),
         )
+}
+function repeatInterval<T>(time: number): MonoTypeOperatorFunction<T> {
+    return function(source) {
+        return source.pipe(repeatWhen(() => interval(time)))
+    }
 }
 
 @Injectable()
@@ -89,7 +104,7 @@ export class TestEffects {
      */
     @Effect("age")
     public age(state: State<TestState>) {
-        return timer(1000).pipe(switchMapTo(state.age), increment(1), take(1), repeat())
+        return state.age.pipe(take(1), increment(1), repeatInterval(1000))
     }
 
     /**
@@ -155,7 +170,7 @@ export class TestEffects {
      * Dispatch adapter example
      */
     @Effect(Dispatch, { whenRendered: true })
-    public dispatch(_: State<TestComponent>) {
+    public dispatch() {
         return of({
             type: "MY_ACTION",
             payload: {
@@ -188,6 +203,8 @@ export class ShouldComponentUpdate implements EffectAdapter<boolean> {
 
 export const NONE = undefined
 
+const EFFECTS = [Effects, TestEffects, ShouldComponentUpdate]
+
 @Component({
     selector: "app-test",
     template: `
@@ -201,7 +218,7 @@ export const NONE = undefined
     `,
     styleUrls: ["./test.component.scss"],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    providers: [effects([TestEffects, ShouldComponentUpdate])],
+    providers: [EFFECTS],
 })
 export class TestComponent implements TestState {
     @Input()

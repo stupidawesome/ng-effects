@@ -8,7 +8,7 @@ Reactive extensions for Angular.
     template: `
         <div>Count: {{ count }}</div>
     `,
-    providers: [HOST_EFFECTS],
+    providers: [Effects],
 })
 export class AppComponent{
     @Input()
@@ -18,13 +18,12 @@ export class AppComponent{
         connect(this)
     }
 
-    @Effect("count", { markDirty: true })
+    @Effect("count")
     incrementCount(state: State<AppState>) {
-        return timer(1000).pipe(
-            switchMapTo(state.count),
+        return state.count.pipe(
             take(1),
             increment(1),
-            repeat()
+            repeatInterval(1000)
         )
     }
 }

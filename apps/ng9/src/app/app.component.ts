@@ -1,16 +1,8 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ViewChild } from "@angular/core"
-import {
-    changes,
-    Connect,
-    Effect,
-    HOST_EFFECTS,
-    HostRef,
-    State,
-    ViewRenderer,
-} from "@ng9/ng-effects"
+import { changes, connect, Effect, Effects, HostRef, State, ViewRenderer } from "@ng9/ng-effects"
 import { interval } from "rxjs"
-import { distinctUntilChanged, map } from "rxjs/operators"
 import { TestComponent } from "./test/test.component"
+import { distinctUntilChanged, map } from "rxjs/operators"
 
 @Component({
     selector: "app-root",
@@ -20,7 +12,7 @@ import { TestComponent } from "./test/test.component"
         </app-test>
     `,
     styleUrls: ["./app.component.scss"],
-    providers: [HOST_EFFECTS],
+    providers: [Effects],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent {
@@ -29,9 +21,9 @@ export class AppComponent {
     age: number
 
     @ViewChild(TestComponent, { read: HostRef })
-    ref?: HostRef<any>
+    ref?: HostRef
 
-    constructor(connect: Connect, cdr: ChangeDetectorRef, viewRenderer: ViewRenderer) {
+    constructor(cdr: ChangeDetectorRef, viewRenderer: ViewRenderer) {
         this.show = false
         this.age = 31
 
@@ -49,7 +41,7 @@ export class AppComponent {
      * Inline effect example
      */
 
-    @Effect("show", { markDirty: true })
+    @Effect("show", { whenRendered: true })
     public toggleShow(state: State<AppComponent>) {
         return changes(state.age).pipe(
             map(age => age > 35),

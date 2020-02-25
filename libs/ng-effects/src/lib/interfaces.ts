@@ -4,7 +4,7 @@ export interface EffectMetadata<T = any> {
     name: string
     path: string
     type: Type<any>
-    options: EffectOptions<T>
+    options: EffectOptions & T
     args: number[]
 }
 

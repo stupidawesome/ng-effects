@@ -1,5 +1,5 @@
 import { TestBed } from "@angular/core/testing"
-import { effects, HOST_EFFECTS } from "../providers"
+import { Effects, effects } from "../providers"
 import {
     createDirective,
     createEffectsClass,
@@ -8,7 +8,6 @@ import {
 } from "./test-utils"
 import { EFFECTS, globalDefaults } from "../internals/constants"
 import { EMPTY } from "rxjs"
-import { OnDestroy } from "@angular/core"
 import { Connect } from "../connect"
 import { runEffects } from "../internals/run-effects"
 import { EffectMetadata } from "../interfaces"
@@ -22,7 +21,7 @@ describe("How to init effects", () => {
 
         given: effectsClass = createEffectsClass()
 
-        when: createSimpleDirective(effects(effectsClass))
+        when: createSimpleDirective([Effects, effectsClass, effects([effectsClass])])
 
         then: effect = TestBed.inject(effectsClass)
         then: expect(effect.spy).toHaveBeenCalledTimes(1)
@@ -33,7 +32,7 @@ describe("How to init effects", () => {
 
         given: effectsClass = createEffectsClass()
 
-        when: component = createSimpleComponent(effects(effectsClass))
+        when: component = createSimpleComponent([Effects, effectsClass, effects([effectsClass])])
 
         then: effect = component.debugElement.injector.get(effectsClass)
         then: expect(effect.spy).toHaveBeenCalledTimes(1)
@@ -44,7 +43,7 @@ describe("How to init effects", () => {
 
         given: effectsClassList = [createEffectsClass(), createEffectsClass()]
 
-        when: createSimpleDirective(effects(effectsClassList))
+        when: createSimpleDirective([Effects, effectsClassList, effects(effectsClassList)])
 
         then: for (effectsClass of effectsClassList) {
             effect = TestBed.inject(effectsClass)
@@ -64,7 +63,9 @@ describe("How to init effects", () => {
         }
 
         when: createSimpleDirective([
-            effects(effectsClass),
+            Effects,
+            effectsClass,
+            effects([effectsClass]),
             {
                 provide: runEffects,
                 useClass: MockInitEffects,
@@ -95,7 +96,9 @@ describe("How to init effects", () => {
         }
 
         when: createSimpleDirective([
-            effects(effectsClass),
+            Effects,
+            effectsClass,
+            effects([effectsClass]),
             {
                 provide: runEffects,
                 useClass: MockInitEffects,
@@ -120,7 +123,9 @@ describe("How to init effects", () => {
         }
 
         when: createSimpleDirective([
-            effects(effectsClass, options),
+            Effects,
+            effectsClass,
+            effects([effectsClass], options),
             {
                 provide: runEffects,
                 useClass: MockInitEffects,
@@ -146,7 +151,9 @@ describe("How to init effects", () => {
         }
 
         when: createSimpleDirective([
-            effects(effectsClass, localDefaults),
+            Effects,
+            effectsClass,
+            effects([effectsClass], localDefaults),
             {
                 provide: runEffects,
                 useClass: MockInitEffects,
@@ -158,26 +165,11 @@ describe("How to init effects", () => {
     })
 
     it("should init with host effects", function() {
-        let spy: Mock, MockInitEffects
+        let fixture
 
-        given: spy = fn()
-        given: MockInitEffects = class implements OnDestroy {
-            constructor(effectMetadata: EffectMetadata[]) {
-                spy(effectMetadata.length)
-            }
-            ngOnDestroy() {}
-        }
+        when: fixture = createSimpleComponent([Effects])
 
-        when: createSimpleComponent([
-            HOST_EFFECTS,
-            {
-                provide: runEffects,
-                useClass: MockInitEffects,
-                deps: [EFFECTS],
-            },
-        ])
-
-        then: expect(spy).toHaveBeenCalledWith(1)
+        then: expect(fixture.componentInstance.spy).toHaveBeenCalled()
     })
 
     it("should accept effects that return observables, teardown logic, or void", () => {
@@ -209,7 +201,9 @@ describe("How to init effects", () => {
             AppDirective = MockAppDirective
         }
 
-        then: expect(() => createDirective(AppDirective, [Connect], HOST_EFFECTS)).not.toThrow()
+        then: expect(() =>
+            createDirective(AppDirective, [Connect], [Effects, effects([AppDirective])]),
+        ).not.toThrow()
     })
 
     it("should throw an error when an effect returns an unexpected value", () => {
@@ -228,7 +222,9 @@ describe("How to init effects", () => {
             AppDirective = MockAppDirective
         }
 
-        then: expect(() => createDirective(AppDirective, [Connect], HOST_EFFECTS)).toThrowError(
+        then: expect(() =>
+            createDirective(AppDirective, [Connect], [Effects, effects([AppDirective])]),
+        ).toThrowError(
             "[ng-effects] Effects must either return an observable, subscription, or void",
         )
     })
