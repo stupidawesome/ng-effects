@@ -12,19 +12,9 @@ import {
     ViewChildren,
 } from "@angular/core"
 import { Observable, of, OperatorFunction, timer } from "rxjs"
-import {
-    changes,
-    connect,
-    Context,
-    Effect,
-    EffectAdapter,
-    effects,
-    HostEmitter,
-    HostRef,
-    State,
-} from "@ng9/ng-effects"
+import { changes, connect, Context, Effect, EffectAdapter, effects, HostEmitter, HostRef, State } from "@ng9/ng-effects"
 import { increment } from "../utils"
-import { map, repeat, switchMapTo, take } from "rxjs/operators"
+import { map, mapTo, repeat, switchMapTo, take } from "rxjs/operators"
 import { Dispatch } from "../dispatch-adapter"
 
 interface TestState {
@@ -69,7 +59,7 @@ export class TestEffects {
      */
     @Effect({ assign: true })
     public bindAll(state: State<TestComponent>) {
-        return changes(state).pipe(take(1))
+        return changes(state).pipe(mapTo({}))
     }
 
     /**
@@ -84,7 +74,7 @@ export class TestEffects {
     /**
      * Side effect with default options example
      */
-    @Effect({ bind: "name", whenRendered: true })
+    @Effect({ whenRendered: true })
     public withDefaultArgs(
         context: State<TestComponent>,
         state: Context<TestComponent>,
@@ -181,10 +171,6 @@ export class TestEffects {
     }
 }
 
-export interface ShouldComponentUpdate {
-    ngShouldComponentUpdate(): boolean
-}
-
 @Injectable()
 export class ShouldComponentUpdate implements EffectAdapter<boolean> {
     constructor(private cdr: ChangeDetectorRef) {
@@ -206,7 +192,6 @@ export const NONE = undefined
     selector: "app-test",
     template: `
         <p (click)="event($event)">test works!</p>
-        <p>Location: {{ author.title }}</p>
         <p>Name: {{ name }}</p>
         <p>Age: {{ age }}</p>
         <div #test *ngIf="show">Showing</div>
@@ -224,8 +209,6 @@ export class TestComponent implements TestState {
 
     @Input()
     public age: number
-
-    public author: any
 
     @Output()
     public ageChange: HostEmitter<number>
@@ -253,6 +236,6 @@ export class TestComponent implements TestState {
 
     @Effect(ShouldComponentUpdate)
     shouldComponentUpdate(state: State<TestComponent>) {
-        return state.age.pipe(map(age => age > 36))
+        return state.age.pipe(mapTo(true))
     }
 }

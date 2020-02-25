@@ -396,7 +396,7 @@ export class AppComponent {
 
 === Host listener bindings
 
-Use `HostEmitter` to bind `HostListener` properties. `HostEmitter` is a special subject that can also be invoked as a function. It's value is also unwrapped inside `State` so it can be used directly.
+Use `HostEmitter` to bind `HostListener` properties. `HostEmitter` is a special subject that can be invoked as a function. It's value stays unwrapped in `State` for convenient access.
 
 [source,typescript]
 ----
@@ -406,7 +406,7 @@ Use `HostEmitter` to bind `HostListener` properties. `HostEmitter` is a special 
 })
 export class AppComponent {
     @HostListener("click", ["$event"])
-    clicked: MouseEvent
+    clicked = new HostEmitter<MouseEvent>()
 
     constructor(connect: Connect) {
         connect(this)
