@@ -6,19 +6,14 @@ Reactive extensions for Angular.
 
 [source,typescript]
 ----
-interface AppState {
-    count: number
-}
-
 @Component({
     selector: "app-root",
     template: `
         <div>Count: {{count}}</div>
     `,
-    providers: [HOST_EFFECTS],
+    providers: [Effects],
 })
-export class AppComponent implements AppState {
-
+export class AppComponent {
     @Input()
     count: number = 0
 
@@ -28,11 +23,10 @@ export class AppComponent implements AppState {
 
     @Effect("count", { markDirty: true })
     incrementCount(state: State<AppState>) {
-        return timer(1000).pipe(
-            switchMapTo(state.count),
+        return state.count.pipe(
             take(1),
             increment(1),
-            repeat()
+            repeatInterval(1000)
         )
     }
 }
@@ -47,7 +41,9 @@ Install via NPM.
 npm install ng-effects
 ----
 
-:toc-title: Table of Contents
+== Table of contents
+
+:toc-title:
 
 toc::[]
 
@@ -55,43 +51,41 @@ toc::[]
 
 === Initialize effects
 
-Effects are initialized through a `Connect` service. Inject `Connect` into your component or directive and call it from the constructor. `Connect` can only be injected when `HOST_EFFECTS` or `effects()` are provided.
+First add `Effects` to providers, then inject `Connect` and call it from the constructor. To avoid errors, ensure that properties are intialized before calling `connect()`. Declare your effects by decorating them with `@Effect()`
 
 [source,typescript]
 ----
 @Component({
-    providers: [HOST_EFFECTS]
+    providers: [Effects]
 })
 export class AppComponent {
-    count: number
-    name: string
+    count = 0
 
     constructor(connect: Connect) {
-        this.count = 0
         connect(this) // Should always be called in the constructor
     }
 
     @Effect(options)
-    someEffect() {
-        // etc...
+    myAwesomeEffect() {
+        // Return an observable, subscription or teardown function
     }
 }
 ----
 
 === Effect options
 
-Effects can be configured through the decorator.
+Effects are configured through the decorator with a number of options.
 
 |===
 |Option |Type |Description
 
 |bind
 |string
-|When configured, maps values emitted by the effect to a property of the same name on the host context.
+|When configured, maps values emitted by the effect to a property of the same name on the host context. Throws an error when trying to bind to an uninitialised property.
 
 |assign
 |boolean
-|When configured, assigns the properties of partial objects emitted by the effect to matching properties on the host context.
+|When configured, assigns the properties of partial objects emitted by the effect to matching properties on the host context. Throws an error when trying to bind to any uninitialised properties.
 
 |markDirty
 |boolean
@@ -105,7 +99,7 @@ Default: `true` if `bind` or `apply` is set.
 
 |whenRendered
 |boolean
-|When set to true, the effect is not initialised until the host element has been mounted to the DOM.
+|When set to true, the effect deferred until the host element has been mounted to the DOM.
 
 Default: `false`
 
@@ -116,33 +110,35 @@ Default: `false`
 
 ==== Default options
 
-Default behaviour can be configured in the `effect()` provider
+Default options can be configured with the `effect()` provider
 
 [source,typescript]
 ----
-@Component({
+@NgModule({
     providers: [
-        effects([AppEffects], { markDirty: true })
+        effects({
+            markDirty: true,
+            whenRendered: true,
+            detectChanges: false
+        })
     ]
 })
-export class AppComponent {}
+export class AppModule {}
 ----
 
 === Host effects
 
-In simple cases, effects can be provided directly on the host. If no other effects need to be provided, you only have to pass in `HOST_EFFECTS` to the host provider.
+Effects declared directly on a component or directive are host effects. For effects to run, add `Effects` to your providers array. This token must be provided separetely in every component or directive that has effects.
 
 [source,typescript]
 ----
 @Component({
-    providers: [HOST_EFFECTS]
+    providers: [Effects]
 })
 export class AppComponent implements AppState {
-
-    count: number
+    count = 0
 
     constructor(connect: Connect) {
-        this.count = 0
         connect(this)
     }
 
@@ -155,23 +151,18 @@ export class AppComponent implements AppState {
 
 === Effect services
 
-Effects can be extracted into injectable services. These must be provided in the local `providers` (or `viewProviders`) array. Effects can be reused this way.
+Effects can be extracted and reused through injectable services. These must be provided in each component that uses them. Effects are not inherited from parents.
 
 [source,typescript]
 ----
-interface AppState {
-    count: number
-}
-
 @Injectable()
 export class AppEffects {
     @Effect("count")
     incrementCount(state: State<AppState>) {
-        return timer(1000).pipe(
-            switchMapTo(state.count),
+        return state.count.pipe(
             take(1),
             increment(1),
-            repeat()
+            repeatInterval(1000)
         )
     }
 }
@@ -186,15 +177,12 @@ export class OtherEffects {
     template: `
         <div>Count: {{count}}</div>
     `,
-    providers: [effects([AppEffects, OtherEffects])],
+    providers: [Effects, AppEffects, OtherEffects],
 })
 export class AppComponent implements AppState {
-
-    count: number
+    count = 0
 
     constructor(connect: Connect) {
-        this.count = 0
-
         connect(this)
     }
 }
@@ -216,7 +204,7 @@ export class AppEffects {
 
 ==== HostRef
 
-A reference to the host context can be injected using the `HostRef<T>` token.
+A reference to the host component or directive can be injected using the `HostRef<T>` token. Each effect is passed arguments with the same values as this token.
 
 [source,typescript]
 ----
@@ -252,25 +240,22 @@ A reference to the component or directive instance.
 A reference to the _observable state_ of the component or directive. Properties on this object are not populated unless they have been initialised in the host context constructor before calling `connect()`. Deferred properties such as view children are attached  after the component has rendered.
 
 ===== observer
-Similar to `DoCheck`, except observable. Emits very frequently. Useful for custom change detection strategies or debugging.
+Analagous to `DoCheck`, except observable. Emits very frequently. Useful for custom change detection strategies or debugging.
 
 === Property bindings
 
-Effects can be bound a named property on the host context by setting the `bind` property. This property is updated whenever the effect emits a new value. Throws an error if the property does not exist.
+Effects can be bound a named property on the host by setting the `bind` property. This property is updated whenever the effect emits a new value. Throws an error if the bound property is not initialized.
 
 [source,typescript]
 ----
 @Injectable()
 export class AppEffects {
-//  Alternatively:
-//  @Effect({ bind: count, markDirty: true }
-    @Effect("count", { markDirty: true })
-    count(state: State<AppState>) {
-        return timer(1000).pipe(
-            switchMapTo(state.count),
-            increment(1),
+    @Effect("count")
+    incrementCount(state: State<AppState>) {
+        return state.count.pipe(
             take(1),
-            repeat()
+            increment(1),
+            repeatInterval(1000)
         )
     }
 }
@@ -286,12 +271,12 @@ Multiple effects can be bound to the same property.
 export class AppComponent implements AppState {
     count: number
 
-    @Effect("count", { markDirty: true })
+    @Effect("count")
     incrementCount(state: State<AppState>) {
         // implementation
     }
 
-    @Effect("count", { markDirty: true })
+    @Effect("count")
     multiplyCount(state: State<AppState>) {
         // implementation
     }
@@ -300,7 +285,7 @@ export class AppComponent implements AppState {
 
 === Partial bindings
 
-If the effect should update multiple properties on the host context at the same time, use the `assign` option.
+If the effect should update multiple properties on the host context at the same time, use the `assign` option. Throws an error if any emitted properties are not initialised on the host.
 
 [source,typescript]
 ----
@@ -315,7 +300,6 @@ export class AppComponent implements AppState {
     }
 }
 ----
-
 
 === Side effects
 
@@ -349,34 +333,35 @@ export class AppEffects {
 
 === Output bindings
 
-Effects can be easily connected to host outputs.
+Effects can be connected to host outputs.
 
 [source,typescript]
 ----
-interface TestState {
+@Component({
+    providers: [Effects]
+})
+export class AppComponent {
     count: number
-    countChange: HostEmitter<number>
-}
 
-@Injectable()
-export class AppEffects {
+    @Output()
+    countChange: EventEmitter<number>
+
     @Effect()
-    countChange(state: State<TestState>) {
-        return changes(state.count).subscribe(state.countChange)
+    onCountChange(state: State<AppComponent>, context: Context<AppComponent>) {
+        return changes(state.count).subscribe(context.countChange)
     }
 }
 ----
 
 === Template event bindings
 
-Use an event emitter to ensure template events are properly propagated to trigger effects.
+Use event emitters to capture template events and make them observable. `HostEmitter` is a special subject that can be invoked as a function. It's value also stays unwrapped in `State` for convenience.
 
 [source,typescript]
 ----
 @Component({
-    selector: "app-root",
     template: `<div (click)="clicked($event)">Click me<div>`,
-    providers: [HOST_EFFECTS]
+    providers: [Effects]
 })
 export class AppComponent {
     clicked = new HostEmitter<MouseEvent>()
@@ -396,13 +381,12 @@ export class AppComponent {
 
 === Host listener bindings
 
-Use `HostEmitter` to bind `HostListener` properties. `HostEmitter` is a special subject that can be invoked as a function. It's value stays unwrapped in `State` for convenient access.
+Use `HostEmitter` to bind `HostListener` properties. `HostEmitter` is a special subject that can be invoked as a function. It's value also stays unwrapped in `State` for convenience.
 
 [source,typescript]
 ----
 @Component({
-    selector: "app-root",
-    providers: [HOST_EFFECTS],
+    providers: [Effects],
 })
 export class AppComponent {
     @HostListener("click", ["$event"])
@@ -423,64 +407,30 @@ export class AppComponent {
 
 === Query bindings
 
-All component queries (`ViewChild`, `ViewChildren`, `ContentChild`, `ContentChildren`) can be observed from `State`.
+All component queries (`ViewChild`, `ViewChildren`, `ContentChild`, `ContentChildren`) can be observed from `State`. Defer effects that use these values with `whenRendered: true` for best results.
 
 [source,typescript]
 ----
-@Injectable()
-export class ChildEffects {
-    @Effect({ whenRendered: true })
-    withContentChild(state: State<ChildComponent>) {
-        return state.contentChild.subscribe(
-            contentChild => console.log(contentChild)
-        )
-    }
-
-    @Effect({ whenRendered: true })
-    withContentChildren(state: State<ChildComponent>) {
-        return state.contentChildren.subscribe(
-            contentChildren => console.log(contentChildren)
-        )
-    }
-
-    @Effect({ whenRendered: true })
-    withViewChild(state: State<ChildComponent>) {
-        return state.viewChild.subscribe(
-            viewChild => console.log(viewChild)
-        )
-    }
-
-    @Effect({ whenRendered: true })
-    withViewChildren(state: State<ChildComponent>) {
-        return state.viewChildren.subscribe(
-            viewChildren => console.log(viewChildren)
-        )
-    }
-}
-
 @Component({
     selector: "app-child",
     template: `
         <app-child>Projected</app-child>
-        <ng-content>Content</ng-content>
     `,
-    providers: [effects(ChildEffects)],
+    providers: [Effects, ChildEffects],
 })
 export class ChildComponent {
-    @ContentChild(ChildComponent)
-    contentChild: ChildComponent
-
-    @ContentChildren(ChildComponent)
-    contentChildren: QueryList<ChildComponent>
-
     @ViewChild(ChildComponent)
     viewChild: ChildComponent
 
-    @ViewChildren(ChildComponent)
-    viewChildren: QueryList<ChildComponent>
-
     constructor(connect: Connect) {
         connect(this)
+    }
+
+    @Effect({ whenRendered: true })
+    withViewChild(state: State<ChildComponent>) {
+        return state.viewChild.subscribe(viewChild => {
+            console.log(viewChild)
+        })
     }
 }
 ----
@@ -558,19 +508,19 @@ export class AppComponent {
 
 === Effect adapters
 
-An effect adapter can be passed in to do additional processing after the observable has emitted a value. This can be useful for adding a dispatcher to automatically dispatch actions to a global state store.
+An effect adapter can be passed in to do additional processing after the observable has emitted a value. This can be useful for adding a dispatcher to automatically dispatch actions to a global state store such as NgRx.
 
 [source,typescript]
 ----
-interface Options {
+interface DispatchOptions {
     customOption: boolean
 }
 
 @Injectable({ providedIn: "root" })
-export class Dispatch implements EffectAdapter<Action, Options> {
+export class Dispatch implements EffectAdapter<Action, DispatchOptions> {
     constructor(private store: Store<any>) {}
 
-    next(action: Action, metadata: EffectMetadata<Options>) {
+    next(action: Action, metadata: EffectMetadata<DispatchOptions>) {
         if (metadata.options.customOption) {
             this.store.dispatch(action)
         }
@@ -617,7 +567,7 @@ Then use it in your components.
 [source, typescript]
 ----
 @Component({
-    providers: [effects(ShouldComponentUpdate)]
+    providers: [Effects, ShouldComponentUpdate]
 })
 export class AppComponent {
     count = 0
@@ -647,7 +597,7 @@ Through provider mapping observable state can be accessed from parent to child o
     providers: [{
         provide: ParentRef,
         useExisting: HostRef
-    }, HOST_EFFECTS]
+    }, Effects]
 })
 export class ParentComponent {
     @Input()
@@ -673,7 +623,7 @@ export class ParentComponent {
     providers: [{
         provide: ChildRef,
         useExisting: HostRef
-    }, HOST_EFFECTS],
+    }, Effects],
 })
 export class ChildComponent {
     @Input()
@@ -725,11 +675,11 @@ Global hooks are a new feature in Angular 9.0.0. By using some private APIs we d
 [source,typescript]
 ----
 @Component({
-    providers: [HOST_EFFECTS]
+    providers: [Effects]
 })
 export class AppComponent {
     count = 0
-    // no need to inject `Connect`
+    // can omit `Connect`
     constructor() {
         connect(this)
     }

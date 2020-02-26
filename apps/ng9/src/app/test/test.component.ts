@@ -146,7 +146,12 @@ export class TestEffects {
      */
     @Effect({ whenRendered: true })
     public viewChild(state: State<TestState>) {
-        return state.viewChild.subscribe()
+        changes(state).subscribe((s) => {
+            console.log('before', s.viewChild)
+        })
+        return state.viewChild.subscribe(s => {
+            console.log('after', s)
+        })
     }
 
     /**

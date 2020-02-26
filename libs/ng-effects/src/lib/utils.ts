@@ -17,20 +17,19 @@ export function changes<T>(source?: Observable<T> | MapSelect<T>): any {
         if (source instanceof Observable) {
             return source.pipe(skip(1))
         } else {
-            return allChanges(source)
+            return latest(source).pipe(skip(1))
         }
     } else {
         return changes
     }
 }
 
-export function allChanges<T extends any>(source: MapSelect<T>): Observable<T> {
+export function latest<T extends any>(source: MapSelect<T>): Observable<T> {
     const keys = Object.getOwnPropertyNames(source).filter(
         key => !(source[key] instanceof HostEmitter),
     )
     const sources = keys.map(key => source[key])
     return combineLatest(sources).pipe(
-        changes(),
         map(values => {
             return values.reduce((acc, value, index) => {
                 acc[keys[index]] = value
