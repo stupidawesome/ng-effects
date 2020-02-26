@@ -110,7 +110,7 @@ Default: `false`
 
 ==== Default options
 
-Default options can be configured with the `effect()` provider
+Default options can be configured with the `effects()` provider.
 
 [source,typescript]
 ----
