@@ -4,7 +4,8 @@
 
 === Features
 
-- rework `effects()` so that it no longer provides tokens it was passed to the injector
+- effects no longer need to be provided with `effects()`
+- rework `effects()` as an optional provider to configure defaults
 - remove `HOST_EFFECTS` provider
 - add `Effects` provider as a replacement for `effects()` and `HOST_EFFECTS`
 
@@ -12,20 +13,25 @@
 
 - fix typed metadata in effect adapters
 - enforce return types when using effect adapters
+- workaround for `InjectFlags.Self` (https://github.com/stupidawesome/ng-effects/issues/3)[#3])
+
+=== Misc
+
+- refactor effect explorer
 
 === BREAKING CHANGES
 
-`effects()` now only registers effect types with the `EFFECTS` provider. For effects to run, you must now provide the `Effects` token in addition to any effects to be run in your components and directives providers array.
+`effects()` is now only used to optionally configure default options. To run effects, provide the `Effects` token along with any other effect providers. Host effects only need the `Effects` token to run.
 
 *Before*
 
 [source, typescript]
 ----
 @Component({
-    providers: [effects([MyEffects])]
+    providers: [effects([MyEffects, ...etc]), MyAdapter] // or [HOST_EFFECTS]
 })
 export class AppComponent {
-    @Effect()
+    @Effect(MyAdapter)
     hostEffect() {}
 
     constructor(connect: Connect) {
@@ -36,26 +42,13 @@ export class AppComponent {
 
 *After*
 
-Effects can now be registered in modules. If components or directives have host effects, add them here as well.
-
-[source, typescript]
-----
-@NgModule({
-    declarations: [AppComponent],
-    providers: [effects([MyEffects, AppComponent])]
-})
-export class AppModule {}
-----
-
-Add effects that should be run to the component or directive providers array. Host effects only need to be registered as shown in the previous step. Other effects will only run when provided along with the `Effects` provider.
-
 [source, typescript]
 ----
 @Component({
-    providers: [Effects, MyEffects]
+    providers: [Effects, MyEffects, MyAdapter, ...etc] // or [Effects]
 })
 export class AppComponent {
-    @Effect()
+    @Effect(MyAdapter)
     hostEffect() {}
 
     constructor(connect: Connect) {
@@ -64,7 +57,7 @@ export class AppComponent {
 }
 ----
 
-This change simplifies the mental model and wiring of effects, which can now be treated like any other provider.
+Only effects provided at the same level as the component or directive will be executed. Effects are not inherited from parent injectors and must be provided in every component that uses it.
 
 == 9.0.0-rc.4
 
