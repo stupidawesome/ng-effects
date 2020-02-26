@@ -61,18 +61,18 @@ export type Context<T> = Readonly<T>
 
 export function Context(): ParameterDecorator {
     return function(target, propertyKey, parameterIndex) {
-        defineMetadata(Context, parameterIndex, target, propertyKey)
+        defineMetadata(Context, parameterIndex, target.constructor, propertyKey)
     }
 }
 
 export function State(): ParameterDecorator {
     return function(target, propertyKey, parameterIndex) {
-        defineMetadata(State, parameterIndex, target, propertyKey)
+        defineMetadata(State, parameterIndex, target.constructor, propertyKey)
     }
 }
 
 export function Observe(): ParameterDecorator {
     return function(target, propertyKey, parameterIndex) {
-        defineMetadata(Observe, parameterIndex, target, propertyKey)
+        defineMetadata(Observe, parameterIndex, target.constructor, propertyKey)
     }
 }

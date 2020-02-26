@@ -18,6 +18,7 @@
 === Misc
 
 - refactor effect explorer
+- add tests for effect parameters
 
 === BREAKING CHANGES
 

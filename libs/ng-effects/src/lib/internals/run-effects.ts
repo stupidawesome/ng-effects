@@ -63,7 +63,6 @@ function sortArguments(arr: number[], index: number[], n: number) {
         if (temp[i] !== undefined) {
             arr[i] = temp[i]
         }
-        index[i] = i
     }
     return arr
 }
@@ -144,9 +143,9 @@ export function runEffects(
 
     const detectChanges = async function(opts: EffectOptions = globalDefaults) {
         hostRef.tick()
-        // if (parentRef) {
-        //     parentRef.tick()
-        // }
+        if (parentRef) {
+            parentRef.tick()
+        }
         if (opts.detectChanges) {
             viewRenderer.detectChanges(hostRef.context, changeDetector)
         } else if (opts.markDirty) {

@@ -20,7 +20,7 @@ import {
     EffectAdapter,
     Effects,
     HostEmitter,
-    HostRef,
+    HostRef, Observe,
     State,
 } from "@ng9/ng-effects"
 import { increment } from "../utils"
@@ -134,7 +134,10 @@ export class TestEffects {
      * Template event binding example
      */
     @Effect()
-    public clicked(@Context() context: Context<TestState>) {
+    public clicked(@Context() context: Context<TestState>, @Observe() host: Observable<any>, @State() state: State<any>) {
+        // console.log('context', context)
+        // console.log('state', state)
+        // console.log('host', host)
         // return state.event.subscribe()
     }
 

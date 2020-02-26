@@ -20,7 +20,7 @@ export function exploreEffects(defaults: DefaultEffectOptions): Generator<Effect
             const path = `${type.name} -> ${name}`
             const options = mergeOptions(defaults, locals)
             const args = [State, Context, Observe].map(key =>
-                getMetadata(key, type.prototype, name),
+                getMetadata(key, type, name),
             )
             const metadata = {
                 path,
