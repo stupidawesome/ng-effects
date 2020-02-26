@@ -51,7 +51,7 @@ toc::[]
 
 === Initialize effects
 
-First add `Effects` to providers, then inject `Connect` and call it from the constructor. To avoid errors, ensure that properties are intialized before calling `connect()`. Declare your effects by decorating them with `@Effect()`
+First add `Effects` to providers, then inject `Connect` and call it from the constructor. To avoid errors, ensure that properties are initialized before calling `connect()`. Declare your effects by decorating them with `@Effect()`
 
 [source,typescript]
 ----
@@ -237,7 +237,7 @@ export class ChildEffects {
 A reference to the component or directive instance.
 
 ===== state
-A reference to the _observable state_ of the component or directive. Properties on this object are not populated unless they have been initialised in the host context constructor before calling `connect()`. Deferred properties such as view children are attached  after the component has rendered.
+A reference to the _observable state_ of the component or directive. Properties on this object are not populated unless they have been initialized in the host context constructor before calling `connect()`. Deferred properties such as view children are attached  after the component has rendered.
 
 ===== observer
 Analagous to `DoCheck`, except observable. Emits very frequently. Useful for custom change detection strategies or debugging.

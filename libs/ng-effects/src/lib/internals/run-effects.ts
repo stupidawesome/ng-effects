@@ -30,14 +30,14 @@ function effectRunner(
                 // component, so it should be skipped.
                 try {
                     maybeParent = parentInjector && parentInjector.get(type, null)
-                    maybeEffect = injector.get(type, null)
-
-                    effect = maybeParent !== maybeEffect && maybeEffect
                 } catch (e) {
                     throw new Error(
-                        `[ng-effects] ${type.name} ${type.name} cannot be created because it was provided in a parent injector and threw an error. See https://github.com/stupidawesome/ng-effects/issues/3 for more details.`,
+                        `[ng-effects] ${type.name} cannot be created because of a dangling provider in a parent injector. See https://github.com/stupidawesome/ng-effects/issues/3 for more details.`,
                     )
                 }
+                maybeEffect = injector.get(type, null)
+
+                effect = maybeParent !== maybeEffect && maybeEffect
             }
 
             if (effect) {
