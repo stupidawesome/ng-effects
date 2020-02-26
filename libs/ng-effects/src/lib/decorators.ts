@@ -1,4 +1,3 @@
-import { effectsMap } from "./internals/constants"
 import {
     AssignEffectOptions,
     BindEffectOptions,
@@ -44,16 +43,16 @@ export function Effect<T extends string>(
 export function Effect<T extends string>(options: BindEffectOptions<T>): BindEffectDecorator<T>
 
 export function Effect(): any {
-    let opts: EffectOptions
+    let options: EffectOptions
     if (typeof arguments[0] === "string") {
-        opts = { bind: arguments[0], ...arguments[1] }
+        options = { bind: arguments[0], ...arguments[1] }
     } else if (typeof arguments[0] === "function") {
-        opts = { adapter: arguments[0], ...arguments[1] }
+        options = { adapter: arguments[0], ...arguments[1] }
     } else {
-        opts = arguments[0]
+        options = arguments[0]
     }
-    return function(target: any, prop: any, propertyDescriptor: any) {
-        effectsMap.set(propertyDescriptor.value, opts || {})
+    return function(target: any, prop: any) {
+        defineMetadata(Effect, options, target.constructor, prop)
     }
 }
 

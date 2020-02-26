@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, InjectFlags, Injector, NgZone } from "@angular/core"
+import { ChangeDetectorRef, Injector, NgZone, ViewContainerRef } from "@angular/core"
 import { isObservable, Subject } from "rxjs"
 import { ViewRenderer } from "../view-renderer"
 import { EffectAdapter, EffectMetadata, EffectOptions } from "../interfaces"
@@ -7,28 +7,46 @@ import { assertPropertyExists, isTeardownLogic, throwBadReturnTypeError } from "
 import { DestroyObserver } from "./destroy-observer"
 import { HostRef } from "./host-ref"
 import { globalDefaults } from "./constants"
+import { effectMetadata } from "./explore-effects"
 
 function effectRunner(
-    effectsMetadata: EffectMetadata[],
     hostRef: HostRef,
     observer: DestroyObserver,
     notifier: Subject<any>,
     injector: Injector,
+    parentInjector?: Injector,
 ) {
     let whenRendered = false
     return function runEffects() {
         hostRef.tick()
-        for (const metadata of effectsMetadata) {
-            if (metadata.options.whenRendered === whenRendered) {
-                const maybeAdapter = metadata.options.adapter
-                const effect =
-                    hostRef.context instanceof metadata.type
-                        ? hostRef.context
-                        : injector.get(metadata.type, false, InjectFlags.Self)
-                const adapter =
-                    maybeAdapter && injector.get(maybeAdapter, undefined, InjectFlags.Self)
-                if (effect) {
-                    runEffect(hostRef, metadata, observer, notifier, effect, adapter)
+        for (const [type, effects] of effectMetadata) {
+            let effect, maybeParent, maybeEffect
+            if (hostRef.context instanceof type) {
+                effect = hostRef.context
+            } else {
+                // Workaround for (#3), if the same effect instance is
+                // present in both the current and parent injectors
+                // then it the service was not provided in the current
+                // component, so it should be skipped.
+                try {
+                    maybeParent = parentInjector && parentInjector.get(type, null)
+                    maybeEffect = injector.get(type, null)
+
+                    effect = maybeParent !== maybeEffect && maybeEffect
+                } catch (e) {
+                    throw new Error(
+                        `[ng-effects] ${type.name} ${type.name} cannot be created because it was provided in a parent injector and threw an error. See https://github.com/stupidawesome/ng-effects/issues/3 for more details.`,
+                    )
+                }
+            }
+
+            if (effect) {
+                for (const metadata of effects) {
+                    if (metadata.options.whenRendered === whenRendered) {
+                        const maybeAdapter = metadata.options.adapter
+                        const adapter = maybeAdapter && injector.get(maybeAdapter)
+                        runEffect(hostRef, metadata, observer, notifier, effect, adapter)
+                    }
                 }
             }
         }
@@ -106,26 +124,29 @@ export function runEffects(
     changeDetector: ChangeDetectorRef,
     destroyObserver: DestroyObserver,
     viewRenderer: ViewRenderer,
-    injector: Injector,
     parentRef: HostRef,
+    injector: Injector,
+    viewContainerRef?: ViewContainerRef,
 ) {
     let createMode = true
     const changeNotifier = new Subject<any>()
     const rendered = viewRenderer.whenRendered().pipe(take(1))
     const scheduled = viewRenderer.whenScheduled()
+
+    // noinspection JSDeprecatedSymbols
     const runEffects = effectRunner(
-        effectsMetadata,
         hostRef,
         destroyObserver,
         changeNotifier,
         injector,
+        viewContainerRef && viewContainerRef.parentInjector,
     )
 
     const detectChanges = async function(opts: EffectOptions = globalDefaults) {
         hostRef.tick()
-        if (parentRef) {
-            parentRef.tick()
-        }
+        // if (parentRef) {
+        //     parentRef.tick()
+        // }
         if (opts.detectChanges) {
             viewRenderer.detectChanges(hostRef.context, changeDetector)
         } else if (opts.markDirty) {

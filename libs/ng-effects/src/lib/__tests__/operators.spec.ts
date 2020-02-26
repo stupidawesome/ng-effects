@@ -4,7 +4,8 @@ import { from } from "rxjs"
 import { mergeAll } from "rxjs/operators"
 import { Connect } from "../connect"
 import { Effect, State } from "../decorators"
-import { effects, Effects } from "../providers"
+import { Effects } from "../providers"
+import { Directive } from "@angular/core"
 import fn = jest.fn
 import Mock = jest.Mock
 
@@ -19,6 +20,7 @@ describe("Some use cases for the operators exported by this library", () => {
             given: spy4 = fn()
             given: expected = [[1], [2], [3], [4], [5]]
             given: {
+                @Directive()
                 class MockAppDirective {
                     count = 0
                     @Effect({ bind: "count" })
@@ -37,7 +39,7 @@ describe("Some use cases for the operators exported by this library", () => {
                 AppDirective = MockAppDirective
             }
 
-            when: createDirective(AppDirective, [Connect], [Effects, effects([AppDirective])])
+            when: createDirective(AppDirective, [Connect], [Effects])
 
             then: expect(spy1.mock.calls).toEqual(expected)
             then: expect(spy2.mock.calls).toEqual(expected)
@@ -58,6 +60,7 @@ describe("Some use cases for the operators exported by this library", () => {
                 [{ name: "Julia", age: 26 }],
             ]
             given: {
+                @Directive()
                 class MockAppDirective {
                     name = ""
                     age = 0
@@ -73,7 +76,7 @@ describe("Some use cases for the operators exported by this library", () => {
                 AppDirective = MockAppDirective
             }
 
-            when: createDirective(AppDirective, [Connect], [Effects, effects([AppDirective])])
+            when: createDirective(AppDirective, [Connect], [Effects])
 
             then: expect(spy.mock.calls).toEqual(expected)
         })

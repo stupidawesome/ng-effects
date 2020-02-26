@@ -203,8 +203,6 @@ export class ShouldComponentUpdate implements EffectAdapter<boolean> {
 
 export const NONE = undefined
 
-const EFFECTS = [Effects, TestEffects, ShouldComponentUpdate]
-
 @Component({
     selector: "app-test",
     template: `
@@ -218,7 +216,7 @@ const EFFECTS = [Effects, TestEffects, ShouldComponentUpdate]
     `,
     styleUrls: ["./test.component.scss"],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    providers: [EFFECTS],
+    providers: [Effects, TestEffects, ShouldComponentUpdate],
 })
 export class TestComponent implements TestState {
     @Input()

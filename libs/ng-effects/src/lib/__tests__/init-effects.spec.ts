@@ -6,14 +6,12 @@ import {
     createSimpleComponent,
     createSimpleDirective,
 } from "./test-utils"
-import { EFFECTS, globalDefaults } from "../internals/constants"
+import { globalDefaults } from "../internals/constants"
 import { EMPTY } from "rxjs"
 import { Connect } from "../connect"
-import { runEffects } from "../internals/run-effects"
-import { EffectMetadata } from "../interfaces"
 import { Effect } from "../decorators"
-import fn = jest.fn
-import Mock = jest.Mock
+import { Directive } from "@angular/core"
+import { effectMetadata } from "../internals/explore-effects"
 
 describe("How to init effects", () => {
     it("should instantiate one effect on directives", () => {
@@ -21,7 +19,7 @@ describe("How to init effects", () => {
 
         given: effectsClass = createEffectsClass()
 
-        when: createSimpleDirective([Effects, effectsClass, effects([effectsClass])])
+        when: createSimpleDirective([Effects, effectsClass])
 
         then: effect = TestBed.inject(effectsClass)
         then: expect(effect.spy).toHaveBeenCalledTimes(1)
@@ -32,7 +30,7 @@ describe("How to init effects", () => {
 
         given: effectsClass = createEffectsClass()
 
-        when: component = createSimpleComponent([Effects, effectsClass, effects([effectsClass])])
+        when: component = createSimpleComponent([Effects, effectsClass])
 
         then: effect = component.debugElement.injector.get(effectsClass)
         then: expect(effect.spy).toHaveBeenCalledTimes(1)
@@ -43,7 +41,7 @@ describe("How to init effects", () => {
 
         given: effectsClassList = [createEffectsClass(), createEffectsClass()]
 
-        when: createSimpleDirective([Effects, effectsClassList, effects(effectsClassList)])
+        when: createSimpleDirective([Effects, effectsClassList])
 
         then: for (effectsClass of effectsClassList) {
             effect = TestBed.inject(effectsClass)
@@ -52,122 +50,62 @@ describe("How to init effects", () => {
     })
 
     it("should configure default options", () => {
-        let effectsClass, spy: Mock, MockInitEffects
+        let effectsClass, options
 
         given: effectsClass = createEffectsClass()
-        given: spy = fn()
-        given: MockInitEffects = class {
-            constructor(effectMetadata: EffectMetadata[]) {
-                effectMetadata.forEach(meta => spy(meta.options))
-            }
-        }
 
-        when: createSimpleDirective([
-            Effects,
-            effectsClass,
-            effects([effectsClass]),
-            {
-                provide: runEffects,
-                useClass: MockInitEffects,
-                deps: [EFFECTS],
-            },
-        ])
+        when: createSimpleDirective([Effects, effectsClass])
 
-        then: expect(spy).toHaveBeenCalledWith(globalDefaults)
+        then: [{ options }] = effectMetadata.get(effectsClass) as any
+        then: expect(options).toEqual(globalDefaults)
     })
 
     it("should configure effect options", () => {
-        let options, effectsClass, spy: Mock, MockInitEffects
+        let options, expected, effectsClass
 
-        given: options = {
-            bind: undefined,
+        given: expected = {
             markDirty: undefined,
-            adapter: undefined,
-            assign: undefined,
             detectChanges: undefined,
             whenRendered: undefined,
         }
-        given: effectsClass = createEffectsClass(options)
-        given: spy = fn()
-        given: MockInitEffects = class {
-            constructor(effectMetadata: EffectMetadata[]) {
-                effectMetadata.forEach(meta => spy(meta.options))
-            }
-        }
+        given: effectsClass = createEffectsClass(expected)
 
-        when: createSimpleDirective([
-            Effects,
-            effectsClass,
-            effects([effectsClass]),
-            {
-                provide: runEffects,
-                useClass: MockInitEffects,
-                deps: [EFFECTS],
-            },
-        ])
+        when: createSimpleDirective([Effects, effectsClass, effects(expected)])
 
-        then: expect(spy).toHaveBeenCalledWith(options)
+        then: [{ options }] = effectMetadata.get(effectsClass) as any
+        then: expect(options).toEqual(expected)
     })
 
     it("should override default effect options", () => {
-        let options, effectsClass, spy: Mock, result, MockInitEffects
+        let effectOptions, options, effectsClass, expected
 
-        given: options = { markDirty: !globalDefaults.markDirty }
-        given: result = Object.assign({}, globalDefaults, options)
+        given: effectOptions = { markDirty: !globalDefaults.markDirty }
+        given: expected = Object.assign({}, globalDefaults, effectOptions)
         given: effectsClass = createEffectsClass()
-        given: spy = fn()
-        given: MockInitEffects = class {
-            constructor(effectMetadata: EffectMetadata[]) {
-                effectMetadata.forEach(meta => spy(meta.options))
-            }
-        }
+        when: createSimpleDirective([Effects, effectsClass, effects(effectOptions)])
 
-        when: createSimpleDirective([
-            Effects,
-            effectsClass,
-            effects([effectsClass], options),
-            {
-                provide: runEffects,
-                useClass: MockInitEffects,
-                deps: [EFFECTS],
-            },
-        ])
-
-        then: expect(spy).toHaveBeenCalledWith(result)
+        then: [{ options }] = effectMetadata.get(effectsClass) as any
+        then: expect(options).toEqual(expected)
     })
 
     it("should apply options, in ascending order of precedence: global defaults < local defaults < effect options", () => {
-        let effectOptions, localDefaults, result, effectsClass, spy: Mock, MockInitEffects
+        let effectOptions, localDefaults, expected, effectsClass: any, options
 
         given: effectOptions = { assign: true, whenRendered: false }
         given: localDefaults = { markDirty: !globalDefaults.markDirty, whenRendered: true }
-        given: result = Object.assign({}, globalDefaults, localDefaults, effectOptions)
+        given: expected = Object.assign({}, globalDefaults, localDefaults, effectOptions)
         given: effectsClass = createEffectsClass(effectOptions)
-        given: spy = fn()
-        given: MockInitEffects = class {
-            constructor(effectMetadata: EffectMetadata[]) {
-                effectMetadata.forEach(meta => spy(meta.options))
-            }
-        }
 
-        when: createSimpleDirective([
-            Effects,
-            effectsClass,
-            effects([effectsClass], localDefaults),
-            {
-                provide: runEffects,
-                useClass: MockInitEffects,
-                deps: [EFFECTS],
-            },
-        ])
+        when: createSimpleDirective([Effects, effectsClass, effects(localDefaults)])
 
-        then: expect(spy).toHaveBeenCalledWith(result)
+        then: [{ options }] = effectMetadata.get(effectsClass) as any
+        then: expect(options).toEqual(expected)
     })
 
     it("should init with host effects", function() {
         let fixture
 
-        when: fixture = createSimpleComponent([Effects])
+        when: fixture = createSimpleComponent([Effects, effects()])
 
         then: expect(fixture.componentInstance.spy).toHaveBeenCalled()
     })
@@ -176,6 +114,7 @@ describe("How to init effects", () => {
         let AppDirective: any
 
         given: {
+            @Directive()
             class MockAppDirective {
                 @Effect()
                 observableEffect() {
@@ -201,15 +140,14 @@ describe("How to init effects", () => {
             AppDirective = MockAppDirective
         }
 
-        then: expect(() =>
-            createDirective(AppDirective, [Connect], [Effects, effects([AppDirective])]),
-        ).not.toThrow()
+        then: expect(() => createDirective(AppDirective, [Connect], [Effects])).not.toThrow()
     })
 
     it("should throw an error when an effect returns an unexpected value", () => {
         let AppDirective: any
 
         given: {
+            @Directive()
             class MockAppDirective {
                 @Effect()
                 badReturnType() {
@@ -222,9 +160,7 @@ describe("How to init effects", () => {
             AppDirective = MockAppDirective
         }
 
-        then: expect(() =>
-            createDirective(AppDirective, [Connect], [Effects, effects([AppDirective])]),
-        ).toThrowError(
+        then: expect(() => createDirective(AppDirective, [Connect], [Effects])).toThrowError(
             "[ng-effects] Effects must either return an observable, subscription, or void",
         )
     })

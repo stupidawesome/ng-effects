@@ -1,6 +1,6 @@
 import { NEVER, Observable, TeardownLogic } from "rxjs"
 import { distinctUntilChanged, map } from "rxjs/operators"
-import { DefaultEffectOptions, EffectMetadata } from "../interfaces"
+import { DefaultEffectOptions } from "../interfaces"
 import { globalDefaults } from "./constants"
 import { exploreEffects } from "./explore-effects"
 import { HostEmitter } from "../host-emitter"
@@ -80,10 +80,10 @@ export function assertPropertyExists(key: any, obj: any) {
     }
 }
 
-export function createEffectsFactory(effects: any | any[], options: DefaultEffectOptions = {}) {
-    return function injectEffects(): EffectMetadata[] {
+export function createEffectsFactory(options?: DefaultEffectOptions) {
+    return function() {
         const defaults = Object.assign({}, globalDefaults, options)
-        return [...exploreEffects(defaults, effects)]
+        return [...exploreEffects(defaults)]
     }
 }
 

@@ -1,22 +1,27 @@
 import { Effect } from "../decorators"
 import { Injectable } from "@angular/core"
-import { effectsMap } from "../internals/constants"
+import { getMetadata } from "../internals/metadata"
 
 describe("How to create effects", () => {
     it("should create an effects using the effect decorator", () => {
-        let defineEffects, effects
+        let defineEffects, effects, expectedEffects, expectedOptions: any, options: any
+
+        given: expectedOptions = {}
 
         given: defineEffects = () => {
             @Injectable()
             class TestEffects {
-                @Effect()
+                @Effect(expectedOptions)
                 decoratedEffect() {}
             }
             return TestEffects
         }
 
-        when: effects = defineEffects()
+        when: expectedEffects = defineEffects()
 
-        then: expect(effectsMap.has(effects.prototype.decoratedEffect)).toBe(true)
+        then: [[effects, [[, options]]]] = getMetadata(Effect)
+
+        then: expect(effects).toBe(expectedEffects)
+        then: expect(options).toBe(expectedOptions)
     })
 })

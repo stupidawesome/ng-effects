@@ -1,48 +1,24 @@
 import { DefaultEffectOptions, EffectMetadata, EffectOptions } from "../interfaces"
 import { Type } from "@angular/core"
-import { effectsMap } from "./constants"
-import { Context, Observe, State } from "../decorators"
+import { Context, Effect, Observe, State } from "../decorators"
 import { getMetadata } from "./metadata"
 
-const effectMetadata = new WeakMap<Type<any>, Generator<EffectMetadata>>()
+export const effectMetadata = new Map<Type<any>, Set<EffectMetadata>>()
 
-export function* exploreEffects(
-    defaults: DefaultEffectOptions,
-    effects: Type<any>[],
-): Generator<EffectMetadata> {
-    for (const type of effects) {
-        let metadata = effectMetadata.get(type)
-        if (metadata) {
-            yield* metadata
+export function exploreEffects(defaults: DefaultEffectOptions): Generator<EffectMetadata> {
+    const metadata = getMetadata(Effect)
+    for (const [type, effects] of metadata) {
+        if (effectMetadata.has(type)) {
             continue
         }
-        metadata = exploreEffect(defaults, type)
-        effectMetadata.set(type, yield* metadata)
-        yield* metadata
-    }
-}
 
-export function mergeOptions(defaults: DefaultEffectOptions, options: EffectOptions<any>) {
-    // default to `markDirty: true` for bound effects unless explicitly set
-    const merged = Object.assign({}, defaults, options)
-    if (merged.markDirty === undefined && Boolean(options.bind || options.assign)) {
-        merged.markDirty = true
-    }
-    return merged
-}
+        const effect = new Set<EffectMetadata>()
 
-export function* exploreEffect(
-    defaults: EffectOptions,
-    type: Type<any>,
-): Generator<EffectMetadata> {
-    const props = Object.getOwnPropertyNames(type.prototype)
-    for (const name of props) {
-        const method = type.prototype[name]
-        const maybeOptions = effectsMap.get(method)
+        effectMetadata.set(type, effect)
 
-        if (maybeOptions) {
+        for (const [name, locals] of effects) {
             const path = `${type.name} -> ${name}`
-            const options: EffectOptions<any> = mergeOptions(defaults, maybeOptions)
+            const options = mergeOptions(defaults, locals)
             const args = [State, Context, Observe].map(key =>
                 getMetadata(key, type.prototype, name),
             )
@@ -54,7 +30,17 @@ export function* exploreEffect(
                 args,
             }
 
-            yield metadata
+            effect.add(metadata)
         }
     }
+    return metadata
+}
+
+export function mergeOptions(defaults: DefaultEffectOptions, options: EffectOptions<any> = {}) {
+    // default to `markDirty: true` for bound effects unless explicitly set
+    const merged = Object.assign({}, defaults, options)
+    if (merged.markDirty === undefined && Boolean(options.bind || options.assign)) {
+        merged.markDirty = true
+    }
+    return merged
 }

@@ -1,6 +1,6 @@
 import { of } from "rxjs"
 import { createDirective } from "./test-utils"
-import { Effects, effects } from "../providers"
+import { Effects } from "../providers"
 import { Type } from "@angular/core"
 import { fakeAsync, tick } from "@angular/core/testing"
 import { Effect, State } from "../decorators"
@@ -27,7 +27,7 @@ describe("How to use effect bindCount using decorators", () => {
             AppEffects = MockAppEffects
         }
 
-        when: createDirective(AppDirective, [Connect], [Effects, AppEffects, effects([AppEffects])])
+        when: createDirective(AppDirective, [Connect], [Effects, AppEffects])
 
         then: expect(tick).toThrowError(
             `[ng-effects] Property "count" is not initialised in "AppDirective".`,
@@ -54,7 +54,7 @@ describe("How to use effect bindCount using decorators", () => {
             AppEffects = MockAppEffects
         }
 
-        when: createDirective(AppDirective, [Connect], [Effects, AppEffects, effects([AppEffects])])
+        when: createDirective(AppDirective, [Connect], [Effects, AppEffects])
 
         then: expect(tick).toThrowError(
             `[ng-effects] Property "name" is not initialised in "AppDirective".`,
@@ -81,11 +81,7 @@ describe("How to use effect bindCount using decorators", () => {
             AppEffects = MockAppEffects
         }
 
-        when: result = createDirective(
-            AppDirective,
-            [Connect],
-            [Effects, AppEffects, effects([AppEffects])],
-        )
+        when: result = createDirective(AppDirective, [Connect], [Effects, AppEffects])
 
         then: expect(result.count).toBe(expected)
     })
@@ -110,11 +106,7 @@ describe("How to use effect bindCount using decorators", () => {
             AppEffects = MockAppEffects
         }
 
-        when: result = createDirective(
-            AppDirective,
-            [Connect],
-            [Effects, AppEffects, effects([AppEffects])],
-        )
+        when: result = createDirective(AppDirective, [Connect], [Effects, AppEffects])
 
         then: expect(result.count).toBe(expected)
     })
@@ -141,11 +133,7 @@ describe("How to use effect bindCount using decorators", () => {
             AppEffects = MockAppEffects
         }
 
-        when: result = createDirective(
-            AppDirective,
-            [Connect],
-            [Effects, AppEffects, effects([AppEffects])],
-        )
+        when: result = createDirective(AppDirective, [Connect], [Effects, AppEffects])
 
         then: expect(result).toEqual(objectContaining({ name, age }))
     })

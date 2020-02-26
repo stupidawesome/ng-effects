@@ -2,11 +2,11 @@ import { of } from "rxjs"
 import { createComponent, createDirective } from "./test-utils"
 import { delay } from "rxjs/operators"
 import { fakeAsync, TestBed, tick } from "@angular/core/testing"
-import { ChangeDetectorRef } from "@angular/core"
+import { ChangeDetectorRef, Directive } from "@angular/core"
 import { DETECT_CHANGES, MARK_DIRTY } from "../internals/providers"
 import { Connect } from "../connect"
 import { Effect, State } from "../decorators"
-import { effects, Effects, USE_EXPERIMENTAL_RENDER_API } from "../providers"
+import { Effects, USE_EXPERIMENTAL_RENDER_API } from "../providers"
 import Mock = jest.Mock
 import fn = jest.fn
 
@@ -16,6 +16,7 @@ describe("How change detection works", () => {
 
         given: fakeDelay = 1000
         given: {
+            @Directive()
             class MockAppComponent {
                 count = 0
                 // noinspection JSUnusedGlobalSymbols
@@ -30,7 +31,7 @@ describe("How change detection works", () => {
             AppComponent = MockAppComponent
         }
 
-        when: createDirective(AppComponent, [Connect], [Effects, effects([AppComponent])])
+        when: createDirective(AppComponent, [Connect], [Effects])
 
         then: cdr = TestBed.inject(ChangeDetectorRef)
         then: expect(cdr.markForCheck).not.toHaveBeenCalled()
@@ -43,6 +44,7 @@ describe("How change detection works", () => {
 
         given: fakeDelay = 1000
         given: {
+            @Directive()
             class MockAppComponent {
                 count = 0
                 // noinspection JSUnusedGlobalSymbols
@@ -57,7 +59,7 @@ describe("How change detection works", () => {
             AppComponent = MockAppComponent
         }
 
-        when: createDirective(AppComponent, [Connect], [Effects, effects([AppComponent])])
+        when: createDirective(AppComponent, [Connect], [Effects])
 
         then: cdr = TestBed.inject(ChangeDetectorRef)
         then: expect(cdr.detectChanges).toHaveBeenCalledTimes(1)
@@ -70,6 +72,7 @@ describe("How change detection works", () => {
 
         given: spy = fn()
         given: {
+            @Directive()
             class MockAppComponent {
                 count = 0
                 @Effect({ whenRendered: true })
@@ -86,7 +89,7 @@ describe("How change detection works", () => {
         when: fixture = createComponent({
             component: AppComponent,
             deps: [Connect],
-            providers: [[Effects, effects([AppComponent])]],
+            providers: [[Effects]],
         })
 
         then: expect(spy).toHaveBeenCalledTimes(0)
@@ -102,6 +105,7 @@ describe("How change detection works [USE_EXPERIMENTAL_RENDER_API]", () => {
         given: spy = fn()
         given: fakeDelay = 1000
         given: {
+            @Directive()
             class MockAppComponent {
                 count = 0
                 @Effect({ bind: "count", markDirty: true })
@@ -119,7 +123,7 @@ describe("How change detection works [USE_EXPERIMENTAL_RENDER_API]", () => {
             AppComponent,
             [Connect],
             [
-                [Effects, effects([AppComponent])],
+                [Effects],
                 USE_EXPERIMENTAL_RENDER_API,
                 {
                     provide: MARK_DIRTY,
@@ -139,6 +143,7 @@ describe("How change detection works [USE_EXPERIMENTAL_RENDER_API]", () => {
         given: spy = fn()
         given: fakeDelay = 1000
         given: {
+            @Directive()
             class MockAppComponent {
                 count = 0
                 @Effect({ bind: "count", detectChanges: true })
@@ -156,7 +161,7 @@ describe("How change detection works [USE_EXPERIMENTAL_RENDER_API]", () => {
             AppComponent,
             [Connect],
             [
-                [Effects, effects([AppComponent])],
+                [Effects],
                 USE_EXPERIMENTAL_RENDER_API,
                 {
                     provide: DETECT_CHANGES,
@@ -175,6 +180,7 @@ describe("How change detection works [USE_EXPERIMENTAL_RENDER_API]", () => {
 
         given: spy = fn()
         given: {
+            @Directive()
             class MockAppComponent {
                 count = 0
                 @Effect({ whenRendered: true })
@@ -192,7 +198,7 @@ describe("How change detection works [USE_EXPERIMENTAL_RENDER_API]", () => {
         when: fixture = createComponent({
             component: AppComponent,
             deps: [Connect],
-            providers: [Effects, effects([AppComponent])],
+            providers: [Effects],
             rootProviders: [USE_EXPERIMENTAL_RENDER_API],
         })
 

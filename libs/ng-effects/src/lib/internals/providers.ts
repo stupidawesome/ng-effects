@@ -4,16 +4,18 @@ import {
     INJECTOR,
     Optional,
     SkipSelf,
+    ViewContainerRef,
     ɵdetectChanges as detectChanges,
     ɵmarkDirty as markDirty,
 } from "@angular/core"
 import { runEffects } from "./run-effects"
-import { EFFECTS } from "./constants"
 import { HostRef } from "../host-ref"
 import { DestroyObserver } from "./destroy-observer"
 import { ViewRenderer } from "../view-renderer"
 import { createHostRef } from "./host-ref"
 import { HOST_INITIALIZER } from "../constants"
+import { EffectMetadata } from "../interfaces"
+import { createEffectsFactory } from "./utils"
 
 export const DETECT_CHANGES = new InjectionToken("DETECT_CHANGES", {
     providedIn: "root",
@@ -31,6 +33,11 @@ export const HOST_REF = {
     deps: [],
 }
 
+export const EFFECTS = new InjectionToken<EffectMetadata[]>("EFFECTS", {
+    providedIn: "any",
+    factory: createEffectsFactory(),
+})
+
 export const RUN_EFFECTS = [
     {
         provide: runEffects,
@@ -41,8 +48,9 @@ export const RUN_EFFECTS = [
             ChangeDetectorRef,
             DestroyObserver,
             ViewRenderer,
+            [new SkipSelf(), new Optional(), HostRef],
             INJECTOR,
-            [HostRef, new SkipSelf(), new Optional()],
+            [new Optional(), ViewContainerRef],
         ],
     },
 ]

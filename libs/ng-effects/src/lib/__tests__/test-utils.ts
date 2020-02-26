@@ -15,7 +15,6 @@ import { ComponentFixture, TestBed } from "@angular/core/testing"
 import { Effect } from "../decorators"
 import { EffectOptions } from "../interfaces"
 import { Connect } from "../connect"
-import { effects } from "../providers"
 import fn = jest.fn
 
 export function createDirective(directive: Type<any>, deps?: any[], providers?: Provider[]) {
@@ -120,7 +119,7 @@ export function createSimpleComponent(providers: Provider[] = []): ComponentFixt
 
     void TestBed.configureTestingModule({
         declarations: [SimpleComponent],
-        providers: [effects([SimpleComponent])],
+        providers: [],
         schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents()
     return TestBed.createComponent(SimpleComponent)

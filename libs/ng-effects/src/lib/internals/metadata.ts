@@ -10,21 +10,25 @@ const metadata = new WeakMap<any, Map<any, any>>()
 const defaultKey = {}
 
 export function defineMetadata(key: any, value: any, target: any, propertyKey?: PropertyKey) {
-    const targetStore = createIfNotExists(target, metadata, () => new Map())
-    const keyStore = createIfNotExists(key, targetStore, () => new Map())
+    const keyStore = createIfNotExists(key, metadata, () => new Map())
+    const targetStore = createIfNotExists(target, keyStore, () => new Map())
     if (propertyKey) {
-        keyStore.set(propertyKey, value)
+        targetStore.set(propertyKey, value)
     } else {
-        keyStore.set(defaultKey, value)
+        targetStore.set(defaultKey, value)
     }
 }
 
-export function getMetadata(key: any, target: any, propertyKey?: PropertyKey) {
-    const targetStore = metadata.get(target)
-    if (targetStore) {
-        const keyStore = targetStore.get(key)
-        if (keyStore) {
-            return propertyKey ? keyStore.get(propertyKey) : keyStore.get(defaultKey)
+export function getMetadata(key: any, target?: any, propertyKey?: PropertyKey) {
+    const keyStore = metadata.get(key)
+    if (keyStore && target) {
+        const targetStore = keyStore.get(target)
+        if (targetStore && propertyKey) {
+            return targetStore.get(propertyKey)
+        } else {
+            return targetStore
         }
+    } else {
+        return keyStore
     }
 }

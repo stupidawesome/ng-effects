@@ -1,5 +1,4 @@
-import { DefaultEffectOptions, EffectMetadata } from "../interfaces"
-import { InjectionToken } from "@angular/core"
+import { DefaultEffectOptions } from "../interfaces"
 
 export const effectsMap = new WeakMap()
 
@@ -8,5 +7,3 @@ export const globalDefaults: DefaultEffectOptions = {
     markDirty: undefined,
     detectChanges: undefined,
 }
-
-export const EFFECTS = new InjectionToken<EffectMetadata[]>("EFFECTS")
