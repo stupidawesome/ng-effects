@@ -21,7 +21,7 @@ export class AppComponent {
         connect(this)
     }
 
-    @Effect("count", { markDirty: true })
+    @Effect("count")
     incrementCount(state: State<AppState>) {
         return state.count.pipe(
             take(1),
@@ -465,7 +465,7 @@ Observable services can be injected, then composed. For example, compose http se
 export class AppEffects {
     constructor(private http: HttpClient, private store: Store<any>) {}
 
-    @Effect("activeUser", { markDirty: true })
+    @Effect("activeUser")
     selectActiveUser(state: State<AppComponent>) {
         return this.store.pipe(
             select(store => store.activeUser)
