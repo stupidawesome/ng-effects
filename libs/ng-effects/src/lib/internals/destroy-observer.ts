@@ -4,6 +4,7 @@ import { unsubscribe } from "./utils"
 
 @Injectable()
 export class DestroyObserver implements OnDestroy {
+    public isDestroyed = false
     public destroyed = new Subject<void>()
     public subs: any[] = [this.destroyed]
 
@@ -12,6 +13,7 @@ export class DestroyObserver implements OnDestroy {
     }
 
     public ngOnDestroy() {
+        this.isDestroyed = true
         unsubscribe(this.subs)
     }
 }

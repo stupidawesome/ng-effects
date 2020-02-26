@@ -153,7 +153,9 @@ export function runEffects(
             if (createMode || !NgZone.isInAngularZone()) {
                 await Promise.resolve()
             }
-            viewRenderer.markDirty(hostRef.context, changeDetector)
+            if (!destroyObserver.isDestroyed) {
+                viewRenderer.markDirty(hostRef.context, changeDetector)
+            }
         }
     }
 

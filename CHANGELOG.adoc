@@ -14,6 +14,7 @@
 - fix typed metadata in effect adapters
 - enforce return types when using effect adapters
 - workaround for `InjectFlags.Self` (https://github.com/stupidawesome/ng-effects/issues/3)[#3])
+- check if view destroyed before marking view dirty
 
 === Misc
 
