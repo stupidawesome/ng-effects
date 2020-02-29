@@ -161,7 +161,7 @@ describe("How to init effects", () => {
         }
 
         then: expect(() => createDirective(AppDirective, [Connect], [Effects])).toThrowError(
-            "[ng-effects] Effects must either return an observable, subscription, or void",
+            "[ng-effects] MockAppDirective -> badReturnType must either return an observable, subscription, or void",
         )
     })
 })

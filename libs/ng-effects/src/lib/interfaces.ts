@@ -1,4 +1,5 @@
 import { Type } from "@angular/core"
+import { Observable, TeardownLogic } from "rxjs"
 
 export interface EffectMetadata<T = any> {
     name: string
@@ -8,8 +9,19 @@ export interface EffectMetadata<T = any> {
     args: number[]
 }
 
-export interface EffectAdapter<TValue extends any, TOptions = DefaultEffectOptions> {
-    next(value: TValue, metadata: EffectMetadata<TOptions & DefaultEffectOptions>): void
+export type EffectAdapter<TValue extends any, TOptions = unknown> = CreateEffectAdapter<
+    TValue,
+    TOptions
+> &
+    NextEffectAdapter<TValue, TOptions>
+
+export interface CreateEffectAdapter<TValue extends any, TOptions = unknown> {
+    create?(value: TValue, metadata: EffectMetadata<TOptions>): Observable<any> | TeardownLogic
+    next?(value: any, metadata: EffectMetadata<TOptions>): void
+}
+
+export interface NextEffectAdapter<TValue extends any, TOptions = unknown> {
+    next?(value: TValue, metadata: EffectMetadata<TOptions>): void
 }
 
 export interface DefaultEffectOptions {
@@ -28,7 +40,7 @@ export interface AssignEffectOptions extends DefaultEffectOptions {
 }
 
 export interface AdapterEffectOptions extends DefaultEffectOptions {
-    adapter?: Type<EffectAdapter<any, any>>
+    adapter?: Type<NextEffectAdapter<any, any>>
 }
 
 export interface EffectOptions<TKey extends PropertyKey | unknown = unknown>

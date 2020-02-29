@@ -45,11 +45,11 @@ export const RUN_EFFECTS = [
         deps: [
             EFFECTS,
             HostRef,
-            ChangeDetectorRef,
             DestroyObserver,
             ViewRenderer,
             [new SkipSelf(), new Optional(), HostRef],
             INJECTOR,
+            [new Optional(), ChangeDetectorRef],
             [new Optional(), ViewContainerRef],
         ],
     },

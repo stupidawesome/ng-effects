@@ -11,21 +11,32 @@ import {
     ViewChild,
     ViewChildren,
 } from "@angular/core"
-import { interval, MonoTypeOperatorFunction, Observable, of, OperatorFunction } from "rxjs"
+import { interval, merge, MonoTypeOperatorFunction, Observable, of, OperatorFunction } from "rxjs"
 import {
     changes,
     connect,
     Context,
     Effect,
     EffectAdapter,
+    EffectMetadata,
     Effects,
     HostEmitter,
-    HostRef, Observe,
+    HostRef,
+    Observe,
     State,
 } from "@ng9/ng-effects"
 import { increment } from "../utils"
-import { map, mapTo, repeat, repeatWhen, switchMapTo, take } from "rxjs/operators"
+import {
+    distinctUntilChanged,
+    map,
+    mapTo,
+    repeat,
+    repeatWhen,
+    switchMapTo,
+    take,
+} from "rxjs/operators"
 import { Dispatch } from "../dispatch-adapter"
+import { Store } from "../store"
 
 interface TestState {
     name: string
@@ -49,6 +60,42 @@ function repeatInterval<T>(time: number): MonoTypeOperatorFunction<T> {
     return function(source) {
         return source.pipe(repeatWhen(() => interval(time)))
     }
+}
+
+export function select<T, U>(selector: (state: T) => U): OperatorFunction<T, U> {
+    return function(source) {
+        return source.pipe(map(selector), distinctUntilChanged())
+    }
+}
+
+type MapStateToProps<T, U> = {
+    [key in keyof U]?: (state: T) => U[key]
+}
+
+@Injectable({ providedIn: "root" })
+export class Select implements EffectAdapter<MapStateToProps<any, any>> {
+    constructor(private store: Store<any>) {}
+
+    public create(mapState: MapStateToProps<any, any>, metadata: EffectMetadata) {
+        metadata.options.assign = true
+
+        const sources = Object.entries(mapState).map(([prop, selector]) =>
+            this.store.pipe(
+                select(selector!),
+                map(value => ({ [prop]: value })),
+            ),
+        )
+
+        return merge(...sources)
+    }
+}
+
+export interface AppState {
+    age: number
+}
+
+export const selectAge = (state: AppState) => {
+    return state.age || 0
 }
 
 @Injectable()
@@ -78,11 +125,21 @@ export class TestEffects {
     }
 
     /**
-     * Void effect example
+     * Select adapter example
      */
-    @Effect()
+    @Effect(Select)
+    public mapStateToProps(): MapStateToProps<AppState, TestComponent> {
+        return {
+            age: selectAge,
+        }
+    }
+
+    /**
+     * Unsafe bind example
+     */
+    @Effect("age")
     public withNoArgs() {
-        // do side effect
+        // return 3
     }
 
     // noinspection JSUnusedLocalSymbols
@@ -110,9 +167,9 @@ export class TestEffects {
     /**
      * Output binding example
      */
-    @Effect({ whenRendered: true })
+    @Effect("ageChange")
     public ageChange(state: State<TestState>) {
-        return changes(state.age).subscribe(state.ageChange)
+        return state.age
     }
 
     // noinspection JSUnusedLocalSymbols
@@ -134,7 +191,11 @@ export class TestEffects {
      * Template event binding example
      */
     @Effect()
-    public clicked(@Context() context: Context<TestState>, @Observe() host: Observable<any>, @State() state: State<any>) {
+    public clicked(
+        @Context() context: Context<TestState>,
+        @Observe() host: Observable<any>,
+        @State() state: State<any>,
+    ) {
         // console.log('context', context)
         // console.log('state', state)
         // console.log('host', host)
@@ -146,12 +207,7 @@ export class TestEffects {
      */
     @Effect({ whenRendered: true })
     public viewChild(state: State<TestState>) {
-        changes(state).subscribe((s) => {
-            console.log('before', s.viewChild)
-        })
-        return state.viewChild.subscribe(s => {
-            console.log('after', s)
-        })
+        return state.viewChild.subscribe()
     }
 
     /**
@@ -250,7 +306,7 @@ export class TestComponent implements TestState {
     constructor() {
         this.name = "abc"
         this.age = 0
-        this.ageChange = new HostEmitter()
+        this.ageChange = new HostEmitter(true)
         this.event = new HostEmitter()
         this.show = true
 

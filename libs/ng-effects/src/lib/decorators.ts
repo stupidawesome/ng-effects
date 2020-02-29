@@ -1,8 +1,9 @@
 import {
     AssignEffectOptions,
     BindEffectOptions,
+    CreateEffectAdapter,
     DefaultEffectOptions,
-    EffectAdapter,
+    NextEffectAdapter,
     EffectOptions,
 } from "./interfaces"
 import {
@@ -11,29 +12,14 @@ import {
     BindEffectDecorator,
     DefaultEffectDecorator,
     MapSelect,
-    NextOptions,
-    NextValue,
 } from "./internals/interfaces"
 import { defineMetadata } from "./internals/metadata"
 import { Type } from "@angular/core"
 import { Observable } from "rxjs"
 
-export function Effect<T extends EffectAdapter<any, any>>(
-    adapter: Type<T>,
-    options?: NextOptions<T> & DefaultEffectOptions,
-): AdapterEffectDecorator<Observable<NextValue<T>>>
-
-export function Effect<
-    T extends Type<EffectAdapter<any, any>>,
-    TOptions = NextOptions<InstanceType<T>>,
-    TValue = NextValue<InstanceType<T>>
->(options: { adapter: T } & TOptions & DefaultEffectOptions): AdapterEffectDecorator<TValue>
-
 export function Effect(): DefaultEffectDecorator
-//
+
 export function Effect(options: DefaultEffectOptions): DefaultEffectDecorator
-//
-export function Effect<T extends object>(options: AssignEffectOptions): AssignEffectDecorator<T>
 
 export function Effect<T extends string>(
     target: T,
@@ -41,6 +27,26 @@ export function Effect<T extends string>(
 ): BindEffectDecorator<T>
 
 export function Effect<T extends string>(options: BindEffectOptions<T>): BindEffectDecorator<T>
+
+export function Effect<T extends object>(options: AssignEffectOptions): AssignEffectDecorator<T>
+
+export function Effect<T, U>(
+    adapter: Type<NextEffectAdapter<T, U>>,
+    options?: U & DefaultEffectOptions,
+): AdapterEffectDecorator<Observable<T>>
+
+export function Effect<T, U>(
+    adapter: Type<CreateEffectAdapter<T, U>>,
+    options?: U & DefaultEffectOptions,
+): AdapterEffectDecorator<T>
+
+export function Effect<T, U>(
+    options: { adapter: Type<NextEffectAdapter<T, U>> } & U & DefaultEffectOptions,
+): AdapterEffectDecorator<Observable<T>>
+
+export function Effect<T, U>(
+    options: { adapter: Type<CreateEffectAdapter<T, U>> } & U & DefaultEffectOptions,
+): AdapterEffectDecorator<Observable<T>>
 
 export function Effect(): any {
     let options: EffectOptions

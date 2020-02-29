@@ -19,9 +19,7 @@ export function exploreEffects(defaults: DefaultEffectOptions): Generator<Effect
         for (const [name, locals] of effects) {
             const path = `${type.name} -> ${name}`
             const options = mergeOptions(defaults, locals)
-            const args = [State, Context, Observe].map(key =>
-                getMetadata(key, type, name),
-            )
+            const args = [State, Context, Observe].map(key => getMetadata(key, type, name))
             const metadata = {
                 path,
                 type,

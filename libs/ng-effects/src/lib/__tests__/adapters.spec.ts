@@ -1,6 +1,6 @@
 import Mock = jest.Mock
 import fn = jest.fn
-import { EffectAdapter, EffectMetadata } from "../interfaces"
+import { NextEffectAdapter, EffectMetadata } from "../interfaces"
 import { Directive, Type } from "@angular/core"
 import { of } from "rxjs"
 import { createDirective } from "./test-utils"
@@ -10,10 +10,10 @@ import { Effects } from "../providers"
 
 describe("How to use Adapters to hook into effects", () => {
     it("should observe values emitted by effects", () => {
-        let LogAdapter: Type<EffectAdapter<any, { prefix: string }>>, AppDirective, spy: Mock
+        let LogAdapter: Type<NextEffectAdapter<any, { prefix: string }>>, AppDirective, spy: Mock
 
         given: spy = fn()
-        given: LogAdapter = class implements EffectAdapter<any, { prefix: string }> {
+        given: LogAdapter = class implements NextEffectAdapter<any, { prefix: string }> {
             next(value: string, metadata: EffectMetadata<{ prefix: string }>): void {
                 spy(`${metadata.options.prefix}: ${value}`)
             }

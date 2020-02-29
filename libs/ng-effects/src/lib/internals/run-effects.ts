@@ -1,13 +1,19 @@
 import { ChangeDetectorRef, Injector, NgZone, ViewContainerRef } from "@angular/core"
 import { isObservable, Subject } from "rxjs"
 import { ViewRenderer } from "../view-renderer"
-import { EffectAdapter, EffectMetadata, EffectOptions } from "../interfaces"
+import {
+    CreateEffectAdapter,
+    NextEffectAdapter,
+    EffectMetadata,
+    EffectOptions,
+} from "../interfaces"
 import { take } from "rxjs/operators"
 import { assertPropertyExists, isTeardownLogic, throwBadReturnTypeError } from "./utils"
 import { DestroyObserver } from "./destroy-observer"
 import { HostRef } from "./host-ref"
 import { globalDefaults } from "./constants"
 import { effectMetadata } from "./explore-effects"
+import { HostEmitter } from "../host-emitter"
 
 function effectRunner(
     hostRef: HostRef,
@@ -36,7 +42,6 @@ function effectRunner(
                     )
                 }
                 maybeEffect = injector.get(type, null)
-
                 effect = maybeParent !== maybeEffect && maybeEffect
             }
 
@@ -73,22 +78,33 @@ function runEffect(
     destroy: DestroyObserver,
     notifier: Subject<any>,
     effect: any,
-    adapter?: EffectAdapter<any>,
+    adapter?: NextEffectAdapter<any> & CreateEffectAdapter<any>,
 ) {
     const { context, state, observer } = hostRef
     const { args, name, options, path } = metadata
     const sortedArgs = sortArguments([state, context, observer], args, 3)
-    const returnValue = effect[name].apply(effect, sortedArgs)
+    let returnValue = effect[name].apply(effect, sortedArgs)
+
+    if (adapter && adapter.create) {
+        returnValue = adapter.create(returnValue, metadata)
+    }
 
     if (returnValue === undefined) {
         return
-    } else if (isObservable(returnValue)) {
+    }
+
+    if (hostRef.context[metadata.options.bind] instanceof HostEmitter) {
+        destroy.add(returnValue.subscribe(hostRef.context[metadata.options.bind]))
+        return
+    }
+
+    if (isObservable(returnValue)) {
         destroy.add(
             returnValue.subscribe({
                 next(value: any) {
                     const { assign, bind } = options
 
-                    if (adapter) {
+                    if (adapter && adapter.next) {
                         adapter.next(value, metadata)
                     }
 
@@ -113,18 +129,18 @@ function runEffect(
     } else if (isTeardownLogic(returnValue)) {
         destroy.add(returnValue)
     } else {
-        throwBadReturnTypeError()
+        throwBadReturnTypeError(metadata.path)
     }
 }
 
 export function runEffects(
     effectsMetadata: EffectMetadata[],
     hostRef: HostRef,
-    changeDetector: ChangeDetectorRef,
     destroyObserver: DestroyObserver,
     viewRenderer: ViewRenderer,
     parentRef: HostRef,
     injector: Injector,
+    changeDetector?: ChangeDetectorRef,
     viewContainerRef?: ViewContainerRef,
 ) {
     let createMode = true
@@ -145,6 +161,9 @@ export function runEffects(
         hostRef.tick()
         if (parentRef) {
             parentRef.tick()
+        }
+        if (!changeDetector) {
+            return
         }
         if (opts.detectChanges) {
             viewRenderer.detectChanges(hostRef.context, changeDetector)

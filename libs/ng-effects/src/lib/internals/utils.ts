@@ -63,8 +63,8 @@ export function mapState<T>(source: Observable<T>, target: any) {
 
 export function noop() {}
 
-export function throwBadReturnTypeError() {
-    throw new Error("[ng-effects] Effects must either return an observable, subscription, or void")
+export function throwBadReturnTypeError(path: string) {
+    throw new Error(`[ng-effects] ${path} must either return an observable, subscription, or void`)
 }
 
 export function isTeardownLogic(value: any): value is TeardownLogic {

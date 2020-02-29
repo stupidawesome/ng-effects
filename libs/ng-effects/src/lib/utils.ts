@@ -46,5 +46,8 @@ export function latest<T extends any>(source: MapSelect<T>): Observable<T> {
  * @param context The component or directive instance
  */
 export function connect(context: any) {
-    injectViewContainerRef(ViewContainerRef, ElementRef).injector.get(Connect)(context)
+    const connect = injectViewContainerRef(ViewContainerRef, ElementRef).injector.get(Connect)
+    if (connect) {
+        connect(context)
+    }
 }

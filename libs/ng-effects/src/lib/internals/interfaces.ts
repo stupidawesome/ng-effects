@@ -1,6 +1,5 @@
 import { ChangeDetectorRef } from "@angular/core"
 import { Observable, TeardownLogic } from "rxjs"
-import { EffectMetadata } from "../interfaces"
 import { HostEmitter } from "../host-emitter"
 import { Context, State } from "../decorators"
 
@@ -14,18 +13,6 @@ export interface RenderApi {
 export type MapSelect<T> = {
     [key in keyof T]-?: T[key] extends HostEmitter<any> ? T[key] : Observable<T[key]>
 }
-
-export type NextValue<T extends any> = T["next"] extends (value: infer R, ...args: any[]) => any
-    ? R
-    : never
-
-export type NextOptions<T extends any> = T["next"] extends (
-    value: any,
-    options: EffectMetadata<infer R>,
-    ...args: any[]
-) => any
-    ? R
-    : never
 
 export interface EffectFn<TReturn, T extends EffectArg<any>, X extends TReturn> {
     (state: T): X
@@ -66,6 +53,10 @@ export interface BindEffectFn3<T extends any, U extends any, V extends any, TKey
     (state: T, context: U, observer: V): BindReturnType<EffectTarget<T | U | V>, TKey>
 }
 
+export interface BindEffectFn4 {
+    (): any
+}
+
 export interface AssignEffectFn<T extends any, U extends EffectArg<T>> {
     (state: U): AssignReturnType<T | EffectTarget<U>>
 }
@@ -87,9 +78,13 @@ export interface AssignEffectFn4<T extends any, TForce> {
     (): AssignReturnType<T | TForce>
 }
 
-export type EffectArg<T> = State<T> | Context<T> | Observable<T>
+export type EffectArg<T = any> = State<T> | Context<T> | Observable<T>
 export type EffectTarget<T> = T extends EffectArg<infer R> ? R : never
-export type BindReturnType<T, TKey> = TKey extends keyof T ? Observable<T[TKey]> : never
+export type BindReturnType<T, TKey> = TKey extends keyof T
+    ? T[TKey] extends HostEmitter<infer R>
+        ? Observable<unknown extends R ? any : R>
+        : Observable<T[TKey]>
+    : never
 export type AssignReturnType<T> = Observable<T>
 
 export interface DefaultEffectDecorator {
@@ -117,13 +112,14 @@ export interface AdapterEffectDecorator<T> {
 }
 
 export interface BindEffectDecorator<TKey> {
-    <T extends object, U extends object, V extends object>(
+    <T extends any, U extends any, V extends any>(
         target: any,
         prop: PropertyKey,
         propertyDescriptor:
             | TypedPropertyDescriptor<BindEffectFn<T, TKey>>
             | TypedPropertyDescriptor<BindEffectFn2<T, U, TKey>>
-            | TypedPropertyDescriptor<BindEffectFn3<T, U, V, TKey>>,
+            | TypedPropertyDescriptor<BindEffectFn3<T, U, V, TKey>>
+            | TypedPropertyDescriptor<BindEffectFn4>,
     ): void
 }
 

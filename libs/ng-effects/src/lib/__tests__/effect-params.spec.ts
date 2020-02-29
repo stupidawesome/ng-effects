@@ -8,7 +8,7 @@ import Mock = jest.Mock
 import fn = jest.fn
 
 describe("How to use decorators to select effect parameters", () => {
-    it ("should have default parameters", () => {
+    it("should have default parameters", () => {
         let AppDirective: any, spy: Mock, expected
 
         given: spy = fn()
@@ -135,7 +135,11 @@ describe("How to use decorators to select effect parameters", () => {
                 name = "stupidawesome"
 
                 @Effect()
-                anyEffect(@Observe() observe: Observable<any>, @State() state: State<any>, @Context() context: Context<any>) {
+                anyEffect(
+                    @Observe() observe: Observable<any>,
+                    @State() state: State<any>,
+                    @Context() context: Context<any>,
+                ) {
                     observe.subscribe(spy).unsubscribe()
                     state.count.subscribe(spy).unsubscribe()
                     spy(context.name)

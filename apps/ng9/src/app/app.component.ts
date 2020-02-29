@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ViewChild } from "@angular/core"
 import { changes, connect, Effect, Effects, HostRef, State, ViewRenderer } from "@ng9/ng-effects"
 import { interval } from "rxjs"
-import { TestComponent } from "./test/test.component"
 import { distinctUntilChanged, map } from "rxjs/operators"
 
 @Component({
@@ -20,7 +19,7 @@ export class AppComponent {
     show: boolean
     age: number
 
-    @ViewChild(TestComponent, { read: HostRef })
+    @ViewChild(HostRef)
     ref?: HostRef
 
     constructor(cdr: ChangeDetectorRef, viewRenderer: ViewRenderer) {
