@@ -3,7 +3,7 @@
 
 image::https://i.imgur.com/A1924dn.png[Angular Effects]
 
-= Angular Effects
+== Angular Effects
 
 Reactive extensions for Angular.
 
@@ -34,6 +34,10 @@ export class AppComponent {
     }
 }
 ----
+
+=== Links
+
+link:./docs/announcement.adoc[Read the announcement]
 
 == Installation
 
