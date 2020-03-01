@@ -581,12 +581,20 @@ This adapter takes a map of selector functions which can be used like this. Ther
 
 [source,typescript]
 ----
-@Injectable()
-export class AppEffects {
+interface AppState {
+    count: number
+}
+
+const selectCount = (state: AppState) => state.count
+
+@Component()
+export class AppComponent {
+    count = 0
+
     @Effect(Select)
-    public mapStateToProps(): MapStateToProps<AppState, TestComponent> {
+    public mapStateToProps(): MapStateToProps<AppState, AppComponent> {
         return {
-            age: selectAge,
+            count: selectSelect,
         }
     }
 }
