@@ -598,7 +598,7 @@ export class AppComponent {
     @Effect(Select)
     public mapStateToProps(): MapStateToProps<AppState, AppComponent> {
         return {
-            count: selectSelect,
+            count: selectCount,
         }
     }
 }
