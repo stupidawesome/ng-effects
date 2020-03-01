@@ -1,4 +1,6 @@
-= ng-effects
+image::https://i.imgur.com/A1924dn.png[Angular Effects]
+
+= Angular Effects
 :toc:
 :toc-placement!:
 
@@ -544,9 +546,54 @@ export class AppEffects {
 }
 ----
 
+=== Map global state
+
+We can write effect adapters that hook into global state to make selecting values easier.
+
+[source, typescript]
+----
+type MapStateToProps<T, U> = {
+    [key in keyof U]?: (state: T) => U[key]
+}
+
+@Injectable({ providedIn: "root" })
+export class Select implements EffectAdapter<MapStateToProps<any, any>> {
+    constructor(private store: Store<any>) {}
+
+    public create(mapState: MapStateToProps<any, any>, metadata: EffectMetadata) {
+        metadata.options.assign = true
+
+        const sources = Object.entries(mapState).map(([prop, selector]) =>
+            this.store.pipe(
+                select(selector!),
+                map(value => ({ [prop]: value })),
+            ),
+        )
+
+        return merge(...sources)
+    }
+}
+
+----
+
+This adapter takes a map of selector functions which can be used like this. There's a difference from the previous example; we are transforming the effect instead of observing it.
+
+[source,typescript]
+----
+@Injectable()
+export class AppEffects {
+    @Effect(Select)
+    public mapStateToProps(): MapStateToProps<AppState, TestComponent> {
+        return {
+            age: selectAge,
+        }
+    }
+}
+----
+
 === Custom lifecycle hooks
 
-Effects can be used to implement your own lifecycle hooks, such as `shouldComponentUpdate`. With effect adapters it's just a few lines of code. First create the adapter.
+Effect adapters can be used to implement your own lifecycle hooks, such as `shouldComponentUpdate`. First create the adapter.
 
 [source, typescript]
 ----

@@ -1,5 +1,5 @@
 import { ChangeDetectorRef, Injector, NgZone, ViewContainerRef } from "@angular/core"
-import { isObservable, Subject } from "rxjs"
+import { isObservable, Observable, Subject } from "rxjs"
 import { ViewRenderer } from "../view-renderer"
 import {
     CreateEffectAdapter,
@@ -14,10 +14,11 @@ import { HostRef } from "./host-ref"
 import { globalDefaults } from "./constants"
 import { effectMetadata } from "./explore-effects"
 import { HostEmitter } from "../host-emitter"
+import { State } from "../decorators"
 
 function effectRunner(
     hostRef: HostRef,
-    observer: DestroyObserver,
+    destroy: DestroyObserver,
     notifier: Subject<any>,
     injector: Injector,
     parentInjector?: Injector,
@@ -25,10 +26,11 @@ function effectRunner(
     let whenRendered = false
     return function runEffects() {
         hostRef.tick()
+        const { context, state, observer } = hostRef
         for (const [type, effects] of effectMetadata) {
             let effect, maybeParent, maybeEffect
-            if (hostRef.context instanceof type) {
-                effect = hostRef.context
+            if (context instanceof type) {
+                effect = context
             } else {
                 // Workaround for (#3), if the same effect instance is
                 // present in both the current and parent injectors
@@ -50,7 +52,7 @@ function effectRunner(
                     if (metadata.options.whenRendered === whenRendered) {
                         const maybeAdapter = metadata.options.adapter
                         const adapter = maybeAdapter && injector.get(maybeAdapter)
-                        runEffect(hostRef, metadata, observer, notifier, effect, adapter)
+                        runEffect(state, context, observer, metadata, destroy, notifier, effect, adapter)
                     }
                 }
             }
@@ -73,14 +75,15 @@ function sortArguments(arr: number[], index: number[], n: number) {
 }
 
 function runEffect(
-    hostRef: HostRef,
+    state: State<any>,
+    context: any,
+    observer: Observable<any>,
     metadata: EffectMetadata,
     destroy: DestroyObserver,
     notifier: Subject<any>,
     effect: any,
     adapter?: NextEffectAdapter<any> & CreateEffectAdapter<any>,
 ) {
-    const { context, state, observer } = hostRef
     const { args, name, options, path } = metadata
     const sortedArgs = sortArguments([state, context, observer], args, 3)
     let returnValue = effect[name].apply(effect, sortedArgs)
@@ -89,12 +92,14 @@ function runEffect(
         returnValue = adapter.create(returnValue, metadata)
     }
 
+    const { assign, bind } = options
+
     if (returnValue === undefined) {
         return
     }
 
-    if (hostRef.context[metadata.options.bind] instanceof HostEmitter) {
-        destroy.add(returnValue.subscribe(hostRef.context[metadata.options.bind]))
+    if (context[bind] instanceof HostEmitter) {
+        destroy.add(returnValue.subscribe(context[bind]))
         return
     }
 
@@ -102,8 +107,6 @@ function runEffect(
         destroy.add(
             returnValue.subscribe({
                 next(value: any) {
-                    const { assign, bind } = options
-
                     if (adapter && adapter.next) {
                         adapter.next(value, metadata)
                     }

@@ -1,4 +1,6 @@
-# ng-effects
+![Angular Effects](https://i.imgur.com/A1924dn.png)
+
+# Angular Effects
 
 Reactive extensions for Angular.
 
@@ -39,4 +41,4 @@ npm install ng-effects
 
 ## Usage
 
-[Read the docs](https://github.com/stupidawesome/ng-effects)
+[Read the docs](https://ngfx.io)

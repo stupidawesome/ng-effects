@@ -1,5 +1,22 @@
 = Changelog
 
+== 9.0.0-rc.6
+
+=== Features
+
+- allow effects to run in modules
+- allow adapters to transform effects
+- allow effects to bind host emitters
+- query hostRef outside of effects loop
+
+=== Bug fixes
+
+- don't obfuscate errors in local effect providers
+
+=== Misc
+
+- add `MapPropsToState` example
+
 == 9.0.0-rc.5
 
 === Features
