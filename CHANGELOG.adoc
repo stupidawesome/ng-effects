@@ -15,7 +15,7 @@
 
 === Misc
 
-- add `MapPropsToState` example
+- add `MapStateToProps` example
 
 == 9.0.0-rc.5
 

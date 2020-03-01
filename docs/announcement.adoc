@@ -56,7 +56,7 @@ This library is a set of reactive primitives that fills in the missing blanks in
 * Change detection "just works", and you can fine tune it
 * No components are harmed when using this library (composition over inheritance)
 
-== Why should you use Angular Effects?
+== Why you should use Angular Effects
 
 .The Angular Effects Lifecycle
 image:https://dev-to-uploads.s3.amazonaws.com/i/jc8obk5q885dt8nhqtsy.png[]
@@ -130,7 +130,7 @@ When this component is rendered, two http calls are made, one for each subscript
 
 [source,html]
 ----
-<ng-container *ngIf="count$ | async as count"></ng-container>
+<ng-container *ngIf="count$ | async as count">
     <button>{{ count }}</button>
     <a>{{ count }}</a>
 </ng-container>
@@ -282,7 +282,7 @@ Purpose: To wait for view children to be initialized before doing any logic with
 
 We can observe both `@ViewChild()` and `@ViewChildren()` since they are just properties on the component. For imperative DOM manipulation, effects can be deferred until the component has rendered. We can discard this hook.
 
-==== NgOnDestroy
+==== OnDestroy
 
 Purpose: To clean up variables for garbage collection after the component is destroyed and prevent memory leaks.
 
