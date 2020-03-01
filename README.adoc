@@ -1,8 +1,9 @@
+:toc:
+:toc-placement!:
+
 image::https://i.imgur.com/A1924dn.png[Angular Effects]
 
 = Angular Effects
-:toc:
-:toc-placement!:
 
 Reactive extensions for Angular.
 
