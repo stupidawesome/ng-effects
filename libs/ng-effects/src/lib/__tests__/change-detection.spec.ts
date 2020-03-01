@@ -1,4 +1,4 @@
-import { of } from "rxjs"
+import { asapScheduler, of, scheduled } from "rxjs"
 import { createComponent, createDirective } from "./test-utils"
 import { delay } from "rxjs/operators"
 import { fakeAsync, TestBed, tick } from "@angular/core/testing"
@@ -11,17 +11,21 @@ import Mock = jest.Mock
 import fn = jest.fn
 
 describe("How change detection works", () => {
-    it("should mark the view dirty asynchronously when an effect emits", fakeAsync(() => {
-        let AppComponent, fakeDelay: number, cdr
+    it("should not mark the view dirty or detect changes when effects emit synchronously during init", fakeAsync(() => {
+        let AppComponent, cdr
 
-        given: fakeDelay = 1000
         given: {
             @Directive()
             class MockAppComponent {
                 count = 0
                 // noinspection JSUnusedGlobalSymbols
-                @Effect({ bind: "count", markDirty: true })
-                bindCount({}: State<any>) {
+                @Effect({ bind: "count" })
+                markDirty() {
+                    return of(1337)
+                }
+                // noinspection JSUnusedGlobalSymbols
+                @Effect({ bind: "count", detectChanges: true })
+                detectChanges() {
                     return of(1337)
                 }
                 constructor(connect: Connect) {
@@ -34,12 +38,38 @@ describe("How change detection works", () => {
         when: createDirective(AppComponent, [Connect], [Effects])
 
         then: cdr = TestBed.inject(ChangeDetectorRef)
-        then: expect(cdr.markForCheck).not.toHaveBeenCalled()
+        then: expect(cdr.markForCheck).toHaveBeenCalledTimes(0)
+        then: expect(cdr.markForCheck).toHaveBeenCalledTimes(0)
+    }))
+
+    it("should mark the view dirty when an effect emits", fakeAsync(() => {
+        let AppComponent, fakeDelay: number, cdr
+
+        given: fakeDelay = 1000
+        given: {
+            @Directive()
+            class MockAppComponent {
+                count = 0
+                // noinspection JSUnusedGlobalSymbols
+                @Effect({ bind: "count" })
+                bindCount({}: State<any>) {
+                    return of(1337).pipe(delay(fakeDelay))
+                }
+                constructor(connect: Connect) {
+                    connect(this)
+                }
+            }
+            AppComponent = MockAppComponent
+        }
+
+        when: createDirective(AppComponent, [Connect], [Effects])
+
+        then: cdr = TestBed.inject(ChangeDetectorRef)
         then: tick(fakeDelay)
         then: expect(cdr.markForCheck).toHaveBeenCalledTimes(1)
     }))
 
-    it("should detect changes synchronously when an effect emits", fakeAsync(() => {
+    it("should detect changes when an effect emits", fakeAsync(() => {
         let AppComponent, fakeDelay: number, cdr
 
         given: fakeDelay = 1000
@@ -50,7 +80,7 @@ describe("How change detection works", () => {
                 // noinspection JSUnusedGlobalSymbols
                 @Effect({ bind: "count", detectChanges: true })
                 bindCount({}: State<any>) {
-                    return of(1337)
+                    return scheduled(of(1337), asapScheduler)
                 }
                 constructor(connect: Connect) {
                     connect(this)
@@ -62,7 +92,6 @@ describe("How change detection works", () => {
         when: createDirective(AppComponent, [Connect], [Effects])
 
         then: cdr = TestBed.inject(ChangeDetectorRef)
-        then: expect(cdr.detectChanges).toHaveBeenCalledTimes(1)
         then: tick(fakeDelay)
         then: expect(cdr.detectChanges).toHaveBeenCalledTimes(1)
     }))
@@ -99,7 +128,49 @@ describe("How change detection works", () => {
 })
 
 describe("How change detection works [USE_EXPERIMENTAL_RENDER_API]", () => {
-    it("should mark the view dirty asynchronously when an effect emits", fakeAsync(() => {
+    it("should not mark the view dirty or detect changes when effects emit synchronously during init", fakeAsync(() => {
+        let AppComponent, spy
+
+        given: spy = fn()
+        given: {
+            @Directive()
+            class MockAppComponent {
+                count = 0
+                @Effect({ bind: "count" })
+                markDirty() {
+                    return of(1337)
+                }
+                @Effect({ bind: "count", detectChanges: true })
+                detectChanges() {
+                    return of(1337)
+                }
+                constructor(connect: Connect) {
+                    connect(this)
+                }
+            }
+            AppComponent = MockAppComponent
+        }
+
+        when: createDirective(
+            AppComponent,
+            [Connect],
+            [
+                [Effects],
+                USE_EXPERIMENTAL_RENDER_API,
+                {
+                    provide: MARK_DIRTY,
+                    useValue: spy,
+                },
+                {
+                    provide: DETECT_CHANGES,
+                    useValue: spy,
+                },
+            ],
+        )
+
+        then: expect(spy).toHaveBeenCalledTimes(0)
+    }))
+    it("should mark the view dirty when an effect emits", fakeAsync(() => {
         let AppComponent, fakeDelay: number, spy
 
         given: spy = fn()
@@ -108,7 +179,7 @@ describe("How change detection works [USE_EXPERIMENTAL_RENDER_API]", () => {
             @Directive()
             class MockAppComponent {
                 count = 0
-                @Effect({ bind: "count", markDirty: true })
+                @Effect({ bind: "count" })
                 bindCount({}: State<any>) {
                     return of(1337).pipe(delay(fakeDelay))
                 }
@@ -132,7 +203,6 @@ describe("How change detection works [USE_EXPERIMENTAL_RENDER_API]", () => {
             ],
         )
 
-        then: expect(spy).not.toHaveBeenCalled()
         then: tick(fakeDelay)
         then: expect(spy).toHaveBeenCalledTimes(1)
     }))
@@ -148,7 +218,7 @@ describe("How change detection works [USE_EXPERIMENTAL_RENDER_API]", () => {
                 count = 0
                 @Effect({ bind: "count", detectChanges: true })
                 bindCount({}: State<any>) {
-                    return of(1337)
+                    return of(1337).pipe(delay(fakeDelay))
                 }
                 constructor(connect: Connect) {
                     connect(this)
@@ -170,7 +240,6 @@ describe("How change detection works [USE_EXPERIMENTAL_RENDER_API]", () => {
             ],
         )
 
-        then: expect(spy).toHaveBeenCalledTimes(1)
         then: tick(fakeDelay)
         then: expect(spy).toHaveBeenCalledTimes(1)
     }))

@@ -303,6 +303,11 @@ export class TestComponent implements TestState {
     @HostListener("ageChange")
     public event: HostEmitter<MouseEvent | undefined>
 
+    @Effect(ShouldComponentUpdate)
+    shouldComponentUpdate(state: State<TestComponent>) {
+        return state.age.pipe(mapTo(true))
+    }
+
     constructor() {
         this.name = "abc"
         this.age = 0
@@ -311,10 +316,5 @@ export class TestComponent implements TestState {
         this.show = true
 
         connect(this)
-    }
-
-    @Effect(ShouldComponentUpdate)
-    shouldComponentUpdate(state: State<TestComponent>) {
-        return state.age.pipe(mapTo(true))
     }
 }

@@ -3,15 +3,14 @@ import { isObservable, Observable, Subject } from "rxjs"
 import { ViewRenderer } from "../view-renderer"
 import {
     CreateEffectAdapter,
-    NextEffectAdapter,
     EffectMetadata,
     EffectOptions,
+    NextEffectAdapter,
 } from "../interfaces"
 import { take } from "rxjs/operators"
 import { assertPropertyExists, isTeardownLogic, throwBadReturnTypeError } from "./utils"
 import { DestroyObserver } from "./destroy-observer"
 import { HostRef } from "./host-ref"
-import { globalDefaults } from "./constants"
 import { effectMetadata } from "./explore-effects"
 import { HostEmitter } from "../host-emitter"
 import { State } from "../decorators"
@@ -52,7 +51,16 @@ function effectRunner(
                     if (metadata.options.whenRendered === whenRendered) {
                         const maybeAdapter = metadata.options.adapter
                         const adapter = maybeAdapter && injector.get(maybeAdapter)
-                        runEffect(state, context, observer, metadata, destroy, notifier, effect, adapter)
+                        runEffect(
+                            state,
+                            context,
+                            observer,
+                            metadata,
+                            destroy,
+                            notifier,
+                            effect,
+                            adapter,
+                        )
                     }
                 }
             }
@@ -147,9 +155,10 @@ export function runEffects(
     viewContainerRef?: ViewContainerRef,
 ) {
     let createMode = true
-    const changeNotifier = new Subject<any>()
+    const changeNotifier = new Subject<EffectOptions | void>()
     const rendered = viewRenderer.whenRendered().pipe(take(1))
     const scheduled = viewRenderer.whenScheduled()
+    const noopZone = !NgZone.isInAngularZone()
 
     // noinspection JSDeprecatedSymbols
     const runEffects = effectRunner(
@@ -160,19 +169,22 @@ export function runEffects(
         viewContainerRef && viewContainerRef.parentInjector,
     )
 
-    const detectChanges = async function(opts: EffectOptions = globalDefaults) {
+    const detectChanges = async function(opts: EffectOptions | void) {
         hostRef.tick()
+        if (!opts) {
+            return
+        }
         if (parentRef) {
             parentRef.tick()
         }
-        if (!changeDetector) {
+        if (createMode || !changeDetector) {
             return
         }
         if (opts.detectChanges) {
             viewRenderer.detectChanges(hostRef.context, changeDetector)
         } else if (opts.markDirty) {
             // async workaround for "noop" zone
-            if (createMode || !NgZone.isInAngularZone()) {
+            if (noopZone) {
                 await Promise.resolve()
             }
             if (!destroyObserver.isDestroyed) {

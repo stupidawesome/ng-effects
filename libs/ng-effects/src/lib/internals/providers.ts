@@ -22,7 +22,7 @@ export const DETECT_CHANGES = new InjectionToken("DETECT_CHANGES", {
     factory: () => detectChanges,
 })
 
-export const MARK_DIRTY = new InjectionToken("DETECT_CHANGES", {
+export const MARK_DIRTY = new InjectionToken("MARK_DIRTY", {
     providedIn: "root",
     factory: () => markDirty,
 })
