@@ -35,19 +35,10 @@ export class AppComponent {
 }
 ----
 
-=== Links
+== Links
 
 - link:./docs/announcement.adoc[Read the announcement]
 - link:./docs/getting-started.adoc[Getting started]
-
-== Installation
-
-Install via NPM.
-
-[source,bash]
-----
-npm install ng-effects
-----
 
 == Table of contents
 
