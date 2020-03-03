@@ -1,0 +1,381 @@
+= Getting started with Angular Effects
+
+Angular Effects is a reactive state management solution for Angular. This article explains the initial setup and basic process for adding effects to your application.
+
+== Installation
+
+Angular Effects is https://www.npmjs.com/package/ng-effects[available on NPM].
+
+[source, bash]
+----
+npm install ng-effects
+----
+
+Alternatively, you can https://github.com/stupidawesome/ng-effects[download the source] from Github.
+
+=== Peer Dependencies
+
+Angular Effects is compatible with Angular 9.0.0+ and RxJS 6.5+.
+
+== Usage
+
+Effects are defined by annotating component methods with the `@Effect()` decorator.
+
+[source, typescript]
+----
+@Component()
+export class AppComponent {
+    @Effect()
+    myAwesomeEffect() {
+        // Return an observable, subscription or teardown logic
+    }
+}
+----
+
+The example above is the minimum code necessary for a valid effect, but it won't do anything until we connect it.
+
+=== Host effects and effect services
+
+You can define effects on any component, directive or module. For brevity I will refer to these collectively as components. Effects can also be defined in injectable services.
+
+[source, typescript]
+----
+@Injectable()
+export class AppEffects {
+    @Effect()
+    myAwesomeEffect() {
+        // Return an observable, subscription or teardown logic
+    }
+}
+----
+
+Effects defined directly on components are referred to as "host" effects, whereas services that provide effects are referred to as "effect services". This distinction is important when connecting effects.
+
+=== Connecting effects
+
+For every component we want to run effects on, there is some wiring involved.
+
+First we must provide the `Effects` token in the `providers` array for each component that has effects.
+
+[source, typescript]
+----
+@Component({
+    providers: [Effects]
+})
+----
+
+By providing this token the component can now be "connected". Also add any effect services that should be connected.
+
+[source, typescript]
+----
+@Component({
+    providers: [Effects, AppEffects]
+})
+----
+
+The next step is to inject the `Connect` function and call it from the constructor of the component.
+
+[source, typescript]
+----
+@Component({
+    providers: [Effects, AppEffects]
+})
+export class AppComponent {
+    author?: Author
+    books: Book[]
+
+    constructor(connect: Connect) {
+        this.books = []          // Should initialize variables
+        this.author = undefined  // even if they are undefined.
+
+        connect(this)            // Must always be called in the constructor
+    }
+
+    @Effect()
+    myAwesomeEffect() {
+        // Return an observable, subscription or teardown logic
+    }
+}
+----
+
+NOTE: `connect()` should be called after initializing class fields with default values.
+
+As seen here, components can utilise both host effects and effect services at the same time. Mix and match as you see fit.
+
+== Anatomy of an effect
+
+Now that we know how to create and initialize effects in our components, it's time to explore what goes inside. Each effect method is a factory that is only called once, each time the component is created. What we do inside each effect should therefore take into account the entire lifecycle of a component.
+
+ Depending on the configuration, the effect will either run:
+
+ - the moment `connect()` is called; OR
+ - immediately after the first change detection cycle (ie. when it has rendered).
+
+The behaviour of each effect depends on its configuration and return value.
+
+=== Arguments
+
+For convenience, each effect receives three arguments. The same values can also be obtained by injecting `HostRef<T>` through the constructor.
+
+|===
+|Argument |Type |Description
+
+|state
+|`State<T>`
+|An object map of observable fields from the connected component.
+|===
+
+The `state` object is the mechanism by which we can observe when a property on the component changes. There are two behaviors that should be observed before using it.
+
+[source, typescript]
+----
+@Component()
+export class AppComponent {
+    count = 0
+
+    @Effect()
+    myAwesomeEffect(state: State<AppComponent>) {
+        return state.count.subscribe(value => console.log(value))
+    }
+}
+----
+
+----
+Output:
+> 0
+----
+
+When subscribing to a property, the current state is emitted immediately. The value is derived from a `BehaviorSubject`, and is read only.
+
+[source, typescript]
+----
+@Component()
+export class AppComponent {
+    count = 0
+
+    @Effect()
+    myAwesomeEffect(state: State<AppComponent>) {
+        return state.count.subscribe(value => console.log(value))
+    }
+
+    @Effect("count")
+    setCount() {
+        return from([0, 0, 0, 10, 20])
+    }
+}
+----
+
+----
+Output:
+> 0
+> 10
+> 20
+----
+
+You might expect `0` to be logged several times, but here it's only logged once as `state` only emits distinct values.
+
+Keep this in mind when writing effects. Helpful error messages will be shown when trying to access properties that cannot be observed (ie. they are missing an initializer or are not enumerable).
+
+|===
+|Argument |Type |Description
+
+|context
+|`Context<T>`
+|A reference to the component or directive instance.
+|===
+
+The second argument is the component instance itself. There are times when we want to simply read the current value of a property, invoke a method or subscribe to a value without unwrapping it from `state` first.
+
+[source, typescript]
+----
+interface AppComponent {
+    formData: FormGroup
+    formChange: EventEmitter
+}
+
+@Injectable()
+export class AppEffects {
+    @Effect()
+    myAwesomeEffect(state: State<AppComponent>, context: Context<AppComponent>) {
+        return context
+            .formData
+            .valueChanges
+            .subscribe(context.formChange)
+    }
+}
+----
+
+Effects can be used in a variety of ways, from a variety of sources. Angular Effects lets us compose them as we see fit.
+
+|===
+|Argument |Type |Description
+
+|observer
+|`Observable<T>`
+|An observable that is similar to `DoCheck`
+|===
+
+The last argument is one that should rarely be needed, if ever. It emits once per change detection cycle, as well as whenever an effect in the current context emits a value. Use this observable to perform custom change detection logic, or debug the application.
+
+=== Return values
+
+Unless modified by an adapter, each effect must return either an observable, a subscription, a teardown function, or void. The return value dictates the behavior and semantics of the effects we write.
+
+- Effect -> Observable
+
+When we want to bind the emissions of an effect to one or more properties on the connected component, we do so by returning an observable stream.
+
+[source, typescript]
+----
+@Component()
+export class AppComponent {
+    count = 0
+
+    @Effect("count")
+    incrementCount(state: State<AppComponent>) {
+        return state.count.pipe(
+            take(1),
+            increment(1),
+            repeatInterval(1000)
+        )
+    }
+}
+----
+
+We can return observables for other reasons too, such as scheduling change detection independent of values changing, or when using adapters.
+
+- Effect -> Subscription
+
+The semantics of returning a subscription is to perform side effects that do not affect the state of the component. For example, dispatching an action.
+
+[source, typescript]
+----
+@Component()
+export class AppComponent {
+    count = 0
+
+    @Effect()
+    dispatchCount(state: State<AppComponent>) {
+        return state.count.subscribe(count => {
+            this.store.dispatch({
+                type: "COUNT_CHANGED",
+                payload: count
+            })
+        })
+    }
+
+    constructor(private store: Store<AppState>) {}
+}
+----
+
+TIP: While good enough to illustrate this particular example, later we will see better ways to integrate global state patterns using effect adapters.
+
+- Effect -> Teardown function
+
+Angular Effects can be written in imperative style as well. This is particularly useful when doing DOM manipulation.
+
+[source, typescript]
+----
+@Component()
+export class AppComponent {
+    @Effect({ whenRendered: true })
+    mountDOM(state: State<AppComponent>) {
+        const instance = new MyAwesomeDOMLib(this.elementRef.nativeElement)
+
+        return () => {
+            instance.destroy()
+        }
+    }
+
+    constructor(private elementRef: ElementRef) {}
+}
+----
+
+- Effect -> void
+
+If nothing is returned, it is assumed we are performing a one time side effect that does not require any cleanup.
+
+=== Configuration
+
+The last part of the effect definition is the metadata passed to the decorator.
+
+[source, typescript]
+----
+@Component()
+export class AppComponent {
+    @Effect({
+        bind: undefined,
+        assign: undefined,
+        markDirty: undefined,
+        detectChanges: undefined,
+        whenRendered: false,
+        adapter: undefined
+    })
+    myAwesomeEffect() {}
+}
+----
+
+Each option is described in the table below.
+
+|===
+|Option |Type |Description
+
+|bind
+|string
+|When configured, maps values emitted by the effect to a property of the same name on the host context. Throws an error when trying to bind to an uninitialised property.
+
+Default: `undefined`
+
+|assign
+|boolean
+|When configured, assigns the properties of partial objects emitted by the effect to matching properties on the host context. Throws an error when trying to bind to any uninitialised properties.
+
+Default: `undefined`
+
+|markDirty
+|boolean
+|When set to true, schedule change detection to run whenever a bound effect emits a value.
+
+Default: `true` if bind or apply is set.
+
+Otherwise `undefined`
+
+|detectChanges
+|boolean
+|When set to true, detect changes immediately whenever a bound effect emits a value. Takes precendence over `markDirty`.
+
+Default: `undefined`
+
+|whenRendered
+|boolean
+|When set to true, the effect deferred until the host element has been mounted to the DOM.
+
+Default: `false`
+
+|adapter
+|Type<EffectAdapter>
+|Hook into effects with a custom link:#effect_adapters[effect adapter]. For example, dispatching actions to NgRx or other global state stores.
+
+Default: `undefined`
+|===
+
+We'll explore these options and more in future articles.
+
+== You already know how to write effects
+
+If you're using observables and connecting them to async pipes in your template, then you already know how to use this library. Angular Effects are easier to write, and even easier to use. It's type safe. It's self managed. It lets components focus on the things they are good at: rendering views and dispatching events.
+
+TIP: Angular Effects can also be used to compose global effects with component scope (including route components). Don't forget that it works with modules and directives too.
+
+Next time we'll look at how some common Angular APIs can be adapted to work with Angular Effects for fun and for profit.
+
+Thanks for reading!
+
+=== Next in this series
+
+* link:announcement.adoc[Part I: Introducing Angular Effects]
+* Part II: Getting started with Angular Effects **(You are here)**
+* Part III: Thinking reactive with Angular Effects
+* Part IV: Extending Angular Effects with effect adapters
+* Part V: Exploring the Angular Effects API
+* Part VI: Deep dive into Angular Effects

@@ -1,6 +1,6 @@
-image:https://i.imgur.com/A1924dn.png[Angular Effects]
-
 = Reactive Adventures in Angular: Introducing Angular Effects
+
+image:https://i.imgur.com/A1924dn.png[Angular Effects]
 
 Angular is a powerful framework. It has observables, it has TypeScript, it has dependency injection. Great! But how do I manage state? We are left to figure this out for ourselves.
 
@@ -460,7 +460,8 @@ I couldn't have made this library without the https://github.com/ngrx/platform/i
 
 === Next in this series
 
-* Part II: Getting started with Angular Effects
+* Part I: Introducing Angular Effects **(You are here)**
+* link:getting-started.adoc[Part II: Getting started with Angular Effects]
 * Part III: Thinking reactive with Angular Effects
 * Part IV: Extending Angular Effects with effect adapters
 * Part V: Exploring the Angular Effects API
