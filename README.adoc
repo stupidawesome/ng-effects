@@ -37,8 +37,9 @@ export class AppComponent {
 
 == Links
 
-- link:./docs/announcement.adoc[Read the announcement]
+- link:./docs/announcement.adoc[Introduction]
 - link:./docs/getting-started.adoc[Getting started]
+- link:./docs/thinking-reactively.adoc[Basics]
 
 == Table of contents
 
@@ -47,6 +48,8 @@ export class AppComponent {
 toc::[]
 
 == Examples
+
+NOTE: Docs are currently being moved to /docs. See <<Links>>
 
 === Special injection tokens
 
@@ -155,160 +158,6 @@ export class AppComponent implements AppState {
             prop1: "value1",
             prop2: "value2"
         })
-    }
-}
-----
-
-=== Side effects
-
-Effects that do not bind a property can return an observable or subscription/teardown function to perform side effects.
-
-[source,typescript]
-----
-@Injectable()
-export class AppEffects {
-    @Effect()
-    logCountWithObservable(state: State<AppState>) {
-        return state.count.pipe(
-            tap(count => console.log(count))
-        )
-    }
-
-    @Effect()
-    logCountWithSubscription(state: State<AppState>) {
-        return state.count.subscribe(count => console.log(count))
-    }
-
-    @Effect()
-    logCountWithTeardown(state: State<AppState>) {
-        const sub = state.count.subscribe(count => console.log(count))
-        return function () {
-            sub.unsubscribe()
-        }
-    }
-}
-----
-
-=== Output bindings
-
-Effects can be connected to host outputs.
-
-[source,typescript]
-----
-@Component({
-    providers: [Effects]
-})
-export class AppComponent {
-    count: number
-
-    @Output()
-    countChange: EventEmitter<number>
-
-    @Effect()
-    onCountChange(state: State<AppComponent>, context: Context<AppComponent>) {
-        return changes(state.count).subscribe(context.countChange)
-    }
-}
-----
-
-=== Template event bindings
-
-Use event emitters to capture template events and make them observable. `HostEmitter` is a special subject that can be invoked as a function. It's value also stays unwrapped in `State` for convenience.
-
-[source,typescript]
-----
-@Component({
-    template: `<div (click)="clicked($event)">Click me<div>`,
-    providers: [Effects]
-})
-export class AppComponent {
-    clicked = new HostEmitter<MouseEvent>()
-
-    constructor(connect: Connect) {
-        connect(this)
-    }
-
-    @Effect()
-    handleTemplateClick(state: State<AppComponent>) {
-        return state.clicked.subscribe(
-            event => console.log(`click:`, event)
-        )
-    }
-}
-----
-
-=== Host listener bindings
-
-Use `HostEmitter` to bind `HostListener` properties. `HostEmitter` is a special subject that can be invoked as a function. It's value also stays unwrapped in `State` for convenience.
-
-[source,typescript]
-----
-@Component({
-    providers: [Effects],
-})
-export class AppComponent {
-    @HostListener("click", ["$event"])
-    clicked = new HostEmitter<MouseEvent>()
-
-    constructor(connect: Connect) {
-        connect(this)
-    }
-
-    @Effect()
-    handleClick(state: State<AppComponent>) {
-        return state.clicked.subscribe((event) => {
-            console.log("clicked", event)
-        })
-    }
-}
-----
-
-=== Query bindings
-
-All component queries (`ViewChild`, `ViewChildren`, `ContentChild`, `ContentChildren`) can be observed from `State`. Defer effects that use these values with `whenRendered: true` for best results.
-
-[source,typescript]
-----
-@Component({
-    selector: "app-child",
-    template: `
-        <app-child>Projected</app-child>
-    `,
-    providers: [Effects, ChildEffects],
-})
-export class ChildComponent {
-    @ViewChild(ChildComponent)
-    viewChild: ChildComponent
-
-    constructor(connect: Connect) {
-        connect(this)
-    }
-
-    @Effect({ whenRendered: true })
-    withViewChild(state: State<ChildComponent>) {
-        return state.viewChild.subscribe(viewChild => {
-            console.log(viewChild)
-        })
-    }
-}
-----
-
-=== DOM manipulation
-
-Effects can be deferred until after the component has been rendered to the DOM tree. Combine with teardown logic to perform any DOM cleanup when the host is destroyed.
-
-[source,typescript]
-----
-@Injectable()
-export class AppEffects {
-    constructor(private elementRef: ElementRef) {}
-
-    @Effect({ whenRendered: true })
-    mounted(state: State<AppComponent>, context: Context<AppComponent>) {
-        const instance = thirdPartyLib.mount(this.elementRef.nativeElement)
-        return function () {
-            // cleanup logic
-        }
     }
 }
 ----
