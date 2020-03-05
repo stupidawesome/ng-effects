@@ -1,0 +1,335 @@
+= Extending Angular Effects with effect adapters
+
+So far we have seen how link:https://ngfx.io[Angular Effects] empowers developers to write more reactive applications by removing a lot of the friction involved in wiring components. Effect adapters takes this concept a step further by extracting behavior to write more concise and descriptive effects. At a glance we should be able to infer the behavior of an effect without reading its implementation. This article walks you through several examples to help you understand and write your own effect adapters.
+
+Effects can be extended by writing an effect adapter. Adapters are injectable services that implement the `EffectAdapter` interface. Let's start with a basic logger.
+
+[source, typescript]
+----
+@Component()
+export class CountComponent {
+    count = 0
+
+    @Effect()
+    logCount(state: State<CountComponent>) {
+        return state.count.subscribe(count => console.log(count))
+    }
+}
+----
+
+Here's an effect that logs the count without using adapters. Let's write an effect adapter that does this for us.
+
+[source, typescript]
+----
+@Injectable({ providedIn: "root" })
+export class Log implements EffectAdapter<any> {
+    next(value: any) {
+        console.log(value)
+    }
+}
+----
+
+TIP: For better readability, effect adapters should be named with a verb.
+
+Here we have a very simple effect adapter. If you're familiar with observers, you'll see how this works in a moment. Before using an effect effect adapter, we have to provide it in our app. In this case we have added it to the "root" provider.
+
+TIP: Where we provide the adapter matters, as this will affect the context of any injected dependencies.
+
+Now the adapter can be used in any of our effects.
+
+[source, typescript]
+----
+@Component()
+export class CountComponent {
+    count = 0
+
+    @Effect(Log)
+    logCount(state: State<CountComponent>): Observable<number> {
+        return state.count
+    }
+}
+----
+----
+Output:
+> 0
+----
+
+Notice that the effect now returns an observable. The `Log` adapter subscribes to it, logging its emitted values.
+
+Effect adapters can also specify options to be passed through the `@Effect()` decorator, as well as the effect return type. Adding to the previous example:
+
+[source, typescript]
+----
+export interface LogOptions {
+    prefix: string
+}
+
+@Injectable({ providedIn: "root" })
+export class Log implements EffectAdapter<string, LogOptions> {
+    next(value: string, metadata: EffectMetadata<string>) {
+        console.log(`${metadata.options.prefix} ${value}`)
+    }
+}
+----
+
+[source, typescript]
+----
+@Component()
+export class CountComponent {
+    count = 0
+
+    @Effect(Log, { prefix: "count:" })
+    logCount(state: State<CountComponent>) {
+        return state.count.pipe(
+            map(String)
+        )
+    }
+}
+----
+----
+Output:
+> "count: 0"
+----
+
+One last thing effect adapters can do is _transform_ effects, modifying the return value before it is processed. Effects can then return arbitrary values.
+
+[source, typescript]
+----
+@Injectable({ providedIn: "root" })
+export class LogState implements EffectAdapter<State<any>> {
+    create(state: State<any>) {
+        return latest(state)
+    }
+
+    next(values: {[key: string]: any}) {
+        console.log(values)
+    }
+}
+----
+[source, typescript]
+----
+@Component()
+export class CountComponent {
+    count = 0
+
+    @Effect(LogState)
+    logState(state: State<CountComponent>) {
+        return state
+    }
+}
+----
+----
+Output:
+> { count: 0 }
+----
+
+That's everything you need to know to get started writing your own adapters. Let's look at a more practical example.
+
+== Integrating Angular Effects with `@ngrx/store`
+
+With Angular Effects, mapping global state to our components has never been easier. Consider the following example:
+
+[source, typescript]
+----
+interface AppState {
+    count: number
+}
+
+export const selectCount = (state: AppState) => state.count
+
+@Component({
+    template: `
+        <p *ngIf="count$ | async as count">
+            {{ count }}
+        </p>
+        <button (click)="incrementCount()"></button>
+    `
+})
+export class AppComponent {
+    count$ = this.store.select(selectCount).pipe(
+        startWith(0)
+    )
+
+    incrementCount() {
+        this.store.dispatch({
+            type: "INCREMENT_COUNT"
+        })
+    }
+
+    constructor(private store: Store<AppState>) {}
+}
+----
+
+Here we have a component that maps global `count` state to a local `count` variable inside the template of a component. We're already familiar with the problems that come with this approach, and we've two more.
+
+First, the store is now strongly coupled to the component. This is more difficult to test since we have to set up additional mocks that set up global state. The ceremony of connecting and dispatching state quickly adds up to create cluttered components that are difficult to read. The current best practice with NgRx recommends using facade classes, but this introduces another layer of indirection when the redux pattern is already complicated enough as it is.
+
+The second problem is that there's no obvious way to read the current state of the component in the dispatch method. What if we wanted to pass the current count value as a payload argument? There are ways, but it's not easy.
+
+Let's see how Angular Effects elegantly solves both of these problems:
+
+[source, typescript]
+----
+@Component({
+    template: `
+        <p>{{ count }}</p>
+        <button (click)="incrementCount(count)"></button>
+    `
+})
+export class AppComponent {
+    count = 0
+
+    @Effect("count")
+    selectCount() {
+        return this.store.select(selectCount)
+    }
+
+    incrementCount(count) {
+        this.store.dispatch({
+            type: "INCREMENT_COUNT",
+            payload: count
+        })
+    }
+
+    constructor(private store: Store<AppState>) {}
+}
+----
+
+By moving async out of the template, we can now read the current state at any time and pass this to our dispatched action. However we still haven't decoupled the store dependency. This is where we can leverage Effect adapters.
+
+[source, typescript]
+----
+@Component({
+    template: `
+        <p>{{ count }}</p>
+        <button (click)="increment(count)"></button>
+    `
+})
+export class AppComponent {
+    count = 0
+    increment = new HostEmitter<number>()
+
+    @Effect(Select)
+    mapStateToProps(): MapStateToProps<AppState, AppComponent> {
+        return {
+            count: selectCount
+        }
+    }
+
+    @Effect(Dispatch, "INCREMENT_COUNT")
+    incrementCount(state: State<AppComponent>) {
+        return state.increment
+    }
+}
+----
+
+Note the semantics of the effect adapters utilized here. The `Select` effect selects state. The `Dispatch` effect dispatches actions. By naming effect adapters correctly we can improve the readability of code on top of the added functionality.
+
+Angular Effects doesn't provide any adapters out of the box, so here are sample implementations to help you write your own. These demonstrate the use case for both types of effect adapters:
+
+[source, typescript]
+----
+@Injectable({ providedIn: "root" })
+export class Dispatch implements EffectAdapter<any, string> {
+    constructor(private store: Store) {}
+
+    public next(payload: any, metadata: EffectMetadata<string>): void {
+        this.store.dispatch({
+            type: metadata.options,
+            payload
+        })
+    }
+}
+----
+
+[source, typescript]
+----
+export type MapStateToProps<T, U> = {
+    [key in keyof U]?: (state: T) => U[key]
+}
+
+@Injectable({ providedIn: "root" })
+export class Select implements EffectAdapter<MapStateToProps<any, any>> {
+    constructor(private store: Store<any>) {}
+
+    public create(mapState: MapStateToProps<any, any>, metadata: EffectMetadata) {
+        metadata.options.assign = true
+
+        const sources = Object.entries(mapState).map(([prop, selector]) =>
+            this.store.pipe(
+                select(selector!),
+                map(value => ({ [prop]: value })),
+            ),
+        )
+
+        return merge(...sources)
+    }
+}
+----
+
+We have managed to decouple the store and make the component completely reactive. The result is a component that is easier to test, easier to to read and easier to write. If we wanted we could even go one step further and extract the effects into a separate effects service. Components are then reduced to simple state containers and event emitters with a template attached to them.
+
+== Implementing a `shouldComponentUpdate` lifecycle hook
+
+For this example, we'll implement an effect adapter that stops the component from being rendered until it meets a certain condition.
+
+[source, typescript]
+----
+@Component({
+    template: `{{ count }}`,
+    providers: [Effects, ShouldComponentUpdate]
+})
+export class CountComponent {
+    @Input()
+    count = 0
+
+    @Effect(ShouldComponentUpdate)
+    shouldComponentUpdate(state: State<CountComponent>): Observable<boolean> {
+        return state.count.pipe(
+            map(count => count > 10)
+        )
+    }
+
+    constructor(connect: Connect) {
+        connect(this)
+    }
+}
+----
+
+Here we have written an effect, `shouldComponentUpdate` that returns a boolean observable. We'll use this boolean value to attach or detach the view from change detection.
+
+NOTE: Notice how we provide the effect adapter `ShouldComponentUpdate` in the local component providers instead of the root. We do this so the adapter has access to the component's `ChangeDetectorRef`, as shown below.
+
+[source, typescript]
+----
+@Injectable()
+export class ShouldComponentUpdate implements EffectAdapter<boolean> {
+    constructor(private cdr: ChangeDetectorRef) {
+        this.cdr.detach()
+    }
+
+    next(shouldUpdate: boolean) {
+        if (shouldUpdate) {
+            this.cdr.reattach()
+        } else {
+            this.cdr.detach()
+        }
+    }
+}
+----
+
+Now when we use this component, it will only render itself when the value of `count` is greater than 10. Effect adapters lets you extract behavior from your components so they can be expressed purely in terms of reactive state.
+
+== More effective components
+
+In this article we covered the basics of writing effect adapters and demonstrated through example how they can be used to write more effective components. At this point, we have covered almost everything there is to know about Angular Effects. The next article will explain some of the finer points of the Angular Effects API.
+
+=== Next in this series
+
+* link:announcement.adoc[Part I: Introducing Angular Effects]
+* link:getting-started.adoc[Part II: Getting started with Angular Effects]
+* link:thinking-reactively.adoc[Part III: Thinking reactive with Angular Effects]
+* Part IV: Extending Angular Effects with effect adapters **(You are here)**
+* Part V: Exploring the Angular Effects API
+* Part VI: Deep dive into Angular Effects
+

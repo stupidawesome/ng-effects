@@ -371,6 +371,6 @@ Thanks for reading!
 * link:announcement.adoc[Part I: Introducing Angular Effects]
 * link:getting-started.adoc[Part II: Getting started with Angular Effects]
 * Part III: Thinking reactive with Angular Effects **(You are here)**
-* Part IV: Extending Angular Effects with effect adapters
+* link:effect-adapters.adoc[Part IV: Extending Angular Effects with effect adapters]
 * Part V: Exploring the Angular Effects API
 * Part VI: Deep dive into Angular Effects
