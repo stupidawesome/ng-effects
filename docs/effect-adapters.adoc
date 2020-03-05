@@ -31,7 +31,7 @@ export class Log implements EffectAdapter<any> {
 
 TIP: For better readability, effect adapters should be named with a verb.
 
-Here we have a very simple effect adapter. If you're familiar with observers, you'll see how this works in a moment. Before using an effect effect adapter, we have to provide it in our app. In this case we have added it to the "root" provider.
+Here we have a very simple effect adapter. If you're familiar with observers, you'll see how this works in a moment. Before using an effect adapter, we have to provide it in our app. In this case we have added it to the "root" provider.
 
 TIP: Where we provide the adapter matters, as this will affect the context of any injected dependencies.
 
@@ -160,7 +160,7 @@ export class AppComponent {
 }
 ----
 
-Here we have a component that maps global `count` state to a local `count` variable inside the template of a component. We're already familiar with the problems that come with this approach, and we've two more.
+Here we have a component that maps global `count` state to a local `count` variable inside the template of a component. We're already familiar with the problems that come with this approach, and now there's two new problems.
 
 First, the store is now strongly coupled to the component. This is more difficult to test since we have to set up additional mocks that set up global state. The ceremony of connecting and dispatching state quickly adds up to create cluttered components that are difficult to read. The current best practice with NgRx recommends using facade classes, but this introduces another layer of indirection when the redux pattern is already complicated enough as it is.
 

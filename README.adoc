@@ -39,7 +39,7 @@ export class AppComponent {
 
 - link:./docs/announcement.adoc[Introduction]
 - link:./docs/getting-started.adoc[Getting started]
-- link:./docs/thinking-reactively.adoc[Basics]
+- link:./docs/thinking-reactively.adoc[Writing effects]
 - link:./docs/effect-adapters.adoc[Effect adapters]
 
 == Table of contents
