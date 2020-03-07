@@ -1,5 +1,7 @@
 import { Inject, Injectable, InjectionToken, Type } from "@angular/core"
-import { EffectAdapter, EffectMetadata } from "@ng9/ng-effects"
+import { AdapterEffectDecorator, DefaultEffectOptions, EffectAdapter, EffectMetadata, NextEffectAdapter } from "@ng9/ng-effects"
+import { Observable } from "rxjs"
+import { Effect } from "../../../../libs/ng-effects/src/lib/decorators"
 
 export interface Dispatcher {
     dispatch(action: any): void
@@ -15,12 +17,27 @@ export interface DispatchOptions {
     test?: boolean
 }
 
+type Action = {
+    type: string
+}
+
+export type Payload<T extends Action> =  Omit<T, "type"> & Partial<Pick<T, "type">>
+
+// export function Effect<T, U extends Type<any>>(
+//     adapter: Type<NextEffectAdapter<T, any>>,
+//     options?: U & DefaultEffectOptions,
+// ): AdapterEffectDecorator<Observable<Payload<InstanceType<U>>>>
+
+export function Dispatch<U extends Type<Action>>(action: U) {
+    return Effect(DispatchAdapter as Type<DispatchAdapter<U>>, action)
+}
+
 @Injectable()
-export class Dispatch implements EffectAdapter<DispatchValue, DispatchOptions> {
+export class DispatchAdapter<T extends Type<Action>> implements EffectAdapter<InstanceType<T>, T> {
     // tslint:disable-next-line:no-shadowed-variable
     constructor(@Inject(DISPATCH_ADAPTER) private dispatcher: Dispatcher) {}
 
-    public next(action: DispatchValue, metadata: EffectMetadata<DispatchOptions>): void {
+    public next(action: Payload<InstanceType<T>>, metadata: EffectMetadata<T>): void {
         if (!action || !action.type) {
             console.error(`[dispatch adapter] effect ${metadata.path} must return an action!`)
             console.error(`Expected: {type: string}`)

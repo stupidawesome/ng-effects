@@ -72,8 +72,12 @@ type MapStateToProps<T, U> = {
     [key in keyof U]?: (state: T) => U[key]
 }
 
+export function Select() {
+    return Effect(SelectAdapter)
+}
+
 @Injectable({ providedIn: "root" })
-export class Select implements EffectAdapter<MapStateToProps<any, any>> {
+export class SelectAdapter implements EffectAdapter<MapStateToProps<any, any>> {
     constructor(private store: Store<any>) {}
 
     public create(mapState: MapStateToProps<any, any>, metadata: EffectMetadata) {
@@ -96,6 +100,11 @@ export interface AppState {
 
 export const selectAge = (state: AppState) => {
     return state.age || 0
+}
+
+class MyAction {
+    type!: "MyAction"
+    prefix!: string
 }
 
 @Injectable()
@@ -127,11 +136,18 @@ export class TestEffects {
     /**
      * Select adapter example
      */
-    @Effect(Select)
+    @Select()
     public mapStateToProps(): MapStateToProps<AppState, TestComponent> {
         return {
             age: selectAge,
         }
+    }
+    /**
+     * Dispatch adapter example
+     */
+    @Dispatch(MyAction)
+    public dispatch(state: State<TestComponent>) {
+        return of({ prefix: "" })
     }
 
     /**
@@ -228,19 +244,6 @@ export class TestEffects {
             // teardown logic
             sub.unsubscribe()
         }
-    }
-
-    /**
-     * Dispatch adapter example
-     */
-    @Effect(Dispatch, { whenRendered: true })
-    public dispatch() {
-        return of({
-            type: "MY_ACTION",
-            payload: {
-                value: "any",
-            },
-        })
     }
 
     @Effect("show")

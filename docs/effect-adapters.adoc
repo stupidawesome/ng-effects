@@ -216,7 +216,7 @@ export class AppComponent {
         }
     }
 
-    @Effect(Dispatch, "INCREMENT_COUNT")
+    @Effect(Dispatch, IncrementCount)
     incrementCount(state: State<AppComponent>) {
         return state.increment
     }
@@ -229,15 +229,15 @@ Angular Effects doesn't provide any adapters out of the box, so here are sample 
 
 [source, typescript]
 ----
+export type Payload<T extends Action> =  Omit<T, "type"> & Partial<Pick<T, "type">>
+
 @Injectable({ providedIn: "root" })
-export class Dispatch implements EffectAdapter<any, string> {
+export class Dispatch<T extends Action> implements EffectAdapter<Payload<T>, Type<T>> {
     constructor(private store: Store) {}
 
-    public next(payload: any, metadata: EffectMetadata<string>): void {
-        this.store.dispatch({
-            type: metadata.options,
-            payload
-        })
+    public next(payload: Payload<T>, metadata: EffectMetadata<Type<T>>): void {
+        const ActionType = metadata.options
+        this.store.dispatch(new ActionType(payload))
     }
 }
 ----
@@ -267,7 +267,45 @@ export class Select implements EffectAdapter<MapStateToProps<any, any>> {
 }
 ----
 
-We have managed to decouple the store and make the component completely reactive. The result is a component that is easier to test, easier to to read and easier to write. If we wanted we could even go one step further and extract the effects into a separate effects service. Components are then reduced to simple state containers and event emitters with a template attached to them.
+Since these will get used a lot, we can simplify things further and provide better type safety by turning them into custom decorators.
+
+[source, typescript]
+----
+export function Dispatch<U extends Type<Action>>(action: U) {
+    return Effect(DispatchAdapter as Type<DispatchAdapter<U>>, action)
+}
+----
+
+[source, typescript]
+----
+export function Select() {
+    return Effect(SelectAdapter)
+}
+----
+
+The final code in our app looks like this.
+
+[source, typescript]
+----
+export class AppComponent {
+    count = 0
+    increment = new HostEmitter<number>()
+
+    @Select()
+    public mapStateToProps(): MapStateToProps<AppState, AppComponent> {
+        return {
+            count: selectCount,
+        }
+    }
+
+    @Dispatch(IncrementCount)
+    public incrementCount(state: State<AppComponent>) {
+        return state.increment
+    }
+}
+----
+
+We have managed to decouple the store and make the component completely reactive. The result is a component that is easier to test, read and write. We could even go one step further and extract the effects into a separate effects service. Components are then reduced to simple state containers and event emitters with a template attached to them.
 
 == Implementing a `shouldComponentUpdate` lifecycle hook
 
