@@ -305,7 +305,7 @@ export class AppComponent {
 }
 ----
 
-We have managed to decouple the store and make the component completely reactive. The result is a component that is easier to test, read and write. We could even go one step further and extract the effects into a separate effects service. Components are then reduced to simple state containers and event emitters with a template attached to them.
+We have managed to decouple the store and make the component completely reactive. The result is a component that is easier to test, read and write. We could even go one step further and extract the effects into a separate effects service. Components are then reduced to simple state containers with event emitters and a template attached to them.
 
 == Implementing a `shouldComponentUpdate` lifecycle hook
 
