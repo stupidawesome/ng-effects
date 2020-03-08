@@ -1,0 +1,303 @@
+= Exploring the Angular Effects API
+
+This article covers some of the finer points to help you get more out of Angular Effects.
+
+== Multiple bindings
+
+When writing effects, we can bind their emissions to properties on the connected component. We can also choose to bind multiple effects to a single property. Use this technique when properties receive values from several mutually exclusive observable sources.
+
+[source, typescript]
+----
+@Component()
+export class AppComponent {
+    count = 0
+
+    @Effect("count")
+    incrementCount(state: State<AppComponent>) {
+        return state.count.pipe(
+            take(1),
+            increment(1),
+            repeatInterval(1000)
+        )
+    }
+
+    @Effect("count")
+    multiplyCount(state: State<AppComponent>) {
+        return state.count.pipe(
+            take(1),
+            multiply(2),
+            repeatInterval(5000)
+        )
+    }
+}
+----
+
+In this example `count` will be incremented once every second, with its value being multiplied by two every five seconds. Each effect runs independently of one another.
+
+== Assignment bindings
+
+Property bindings bind a value stream to a single property. Assignment bindings are like property bindings, except we can update multiple properties on the connected component at the same time. Effects with assignment bindings must emit objects that match the partial signature of the component it is bound to.
+
+
+[source, typescript]
+----
+@Component()
+export class AppComponent {
+    name = ""
+    version = undefined
+
+    @Effect({ assign: true })
+    incrementCount(state: State<AppComponent>) {
+        return of({
+            name: "Angular",
+            version: {
+                major: 9,
+                minor: 0,
+                patch: 0
+            }
+        })
+    }
+}
+----
+
+Under the hood assignment bindings use `Object.assign()` to assign values emitted from each effect.
+
+== Module effects
+
+Angular Effects can be used inside modules to create global effects. This is useful for mapping websocket channels to global state, global event handling or other side effects that do not depend on local component state.
+
+[source, typescript]
+----
+@Injectable({ providedIn: "root" })
+export class GlobalEffects {
+    websocket = new WebSocketSubject()
+
+    @Dispatch(Authorized)
+    authorized() {
+        return this.websocket.pipe(
+            filter(event => event.type === "AUTHORIZED")
+        )
+    }
+}
+----
+[source, typescript]
+----
+@NgModule({
+    providers: [Effects]
+})
+export class AppModule {
+    constructor(connect: Connect) {
+        connect(this)
+    }
+}
+----
+
+NOTE: See link:effect-adapters#_integrating_angular_effects_with_ngrxstore[Effect adapters: Integrating Angular Effects with `@ngrx/store`] for more information about `@Dispatch()`.
+
+This example shows how we can dispatch an action when the websocket connection receives messages matching a given pattern. Keep in mind that when using effects with modules, some options such as `markDirty` and `detectChanges` will have no effect.
+
+== Special injection tokens
+
+Locally provided effect services have access to the component's `Injector`. This means we can inject special tokens that are only available to the component, such as `ElementRef`, `TemplateRef`, `Renderer` and `ViewContainerRef`. When working with components we can extract these dependencies into our effect services.
+
+[source, typescript]
+----
+interface ButtonLike {
+    disabled: boolean
+    press: HostEmitter<MouseEvent>
+}
+
+@Injectable()
+export class ButtonEffect {
+    constructor(private elementRef: ElementRef, private renderer: Renderer2) {}
+
+    @Effect("press")
+    allowClick(state: State<ButtonLike>) {
+        const eventPattern = handler => this.renderer.listen(this.elementRef.nativeElement, "click", handler)
+
+        return fromEventPattern(eventPattern).pipe(
+            withLatestFrom(state.disabled, (event, disabled) => disabled ? false : event),
+            filter(Boolean)
+        )
+    }
+}
+----
+
+[source, typescript]
+----
+@Component({
+    providers: [Effects, ButtonEffect]
+})
+export class ButtonComponent implements ButtonLike {
+    @Input()
+    disabled = false
+
+    @Output()
+    press = new HostEmitter<MouseEvent>()
+
+    constructor(connect: Connect) {
+        connect(this)
+    }
+}
+----
+
+NOTE: Remember that you must provide your effects in the local component `providers` array to gain access to that component's injector.
+
+This example demonstrates how we can use special injection tokens to extract the behaviour of a button component into a reusable trait. We are able to cleanly decouple the button's state from its behavior.
+
+== HostRef
+
+`HostRef` is a special injection token that gives components the ability to observe its own state. Every effect we write is provided three arguments that are populated from this token: `state`, `context` and `observer`. See link:getting-started.adoc#_arguments[Getting Started: Arguments] for more information.
+
+We can inject this token in our connected components and effect services.
+
+[source,typescript]
+----
+@Injectable()
+export class AppEffects {
+    context: AppComponent
+    state: State<AppComponent>
+    observer: Observable<AppComponent>
+
+    constructor(hostRef: HostRef<AppComponent>) {
+        this.context = hostRef.context
+        this.state = hostRef.state
+        this.observer = hostRef.observer
+    }
+}
+----
+
+We can also inject the parent `HostRef` to observe the state of a connected parent.
+
+[source,typescript]
+----
+@Injectable()
+export class ChildEffects {
+    constructor(@SkipSelf() parent: HostRef<ParentComponent>) {}
+}
+----
+
+Lastly, we can query and observe the state of connected child components.
+
+[source,typescript]
+----
+interface ChildComponent {
+    count: number
+}
+
+@Component()
+export class ParentComponent {
+    @ViewChild(ChildComponent, { read: HostRef })
+    childRef: HostRef
+
+    @Effect({ whenRendered: true })
+    logChildCount(state) {
+        return state.childRef.pipe(
+            switchMap(childRef => childRef.state.count)
+        ).subscribe(count => console.log(count))
+    }
+}
+----
+
+As these examples demonstrate, direct use of `HostRef` is useful when building tightly coupled reactive components.
+
+== Two-way observable state: Renderless select
+
+image:https://dev-to-uploads.s3.amazonaws.com/i/xpj2r1hq9ye66ue46fga.png[]
+
+Putting these concepts into practice, link:https://github.com/stupidawesome/angular-effects-renderless-select-demo[here is a working demo] of a select component powered by Angular Effects. It demonstrates how we can use `HostRef` to create two-way observable state, putting components together with renderless traits, and more.
+
+== Experimental features
+
+These features rely on unstable APIs that could break at any time.
+
+=== Zoneless change detection
+
+Zoneless change detection depends on experimental Ivy renderer features. To enable this feature, add the `USE_EXPERIMENTAL_RENDER_API` provider to your root module.
+
+Zones can be disabled by commenting out or removing the following line in your app's `polyfills.ts`:
+
+```
+import "zone.js/dist/zone" // Remove this to disable zones
+```
+
+In your `main.ts` file, set ngZone to "noop".
+
+```ts
+platformBrowserDynamic()
+    .bootstrapModule(AppModule, { ngZone: "noop" }) // set this option
+    .catch(err => console.error(err))
+```
+
+=== Global connect hook
+
+Global hooks are a new feature in Angular. By using some private APIs we don't have to explicitly inject the `Connect` service to connect our components.
+
+[source,typescript]
+----
+@Component({
+    providers: [Effects]
+})
+export class AppComponent {
+    count = 0
+    // global connect hook
+    constructor() {
+        connect(this)
+    }
+
+    @Effect("count")
+    incrementCount() {
+        // etc
+    }
+}
+----
+
+=== Connect API
+
+NOTE: Under the hood, this the mechanism that makes effects run. This is not a stable API so use it at your own risk.
+
+If you are familiar with `APP_INITIALIZER`, it's like that except for components and directives. To create a service that is automatically instantiated when the component or directive is "connected" (ie. by calling `connect()`), add a multi provider to your providers array similar to this one.
+
+[source,typescript]
+----
+@Injectable()
+export class MyConnectedService {
+    constructor(hostRef: HostRef) {}
+}
+
+export const INITIALIZERS = [{
+    provide: HOST_INITIALIZER,
+    useValue: MyConnectedService,
+    multi: true
+}]
+
+export const CONNECTED = [
+    MyConnectedService,
+    CONNECT,
+    INITIALIZERS
+]
+
+@Component({
+    providers: [CONNECTED]
+})
+export class MyComponent {
+    constructor(connect: Connect) {
+        connect(this)
+    }
+}
+----
+
+When the component is created in this example, `MyConnectedService` will be instantiated and have access to the `HostRef`.
+
+== Diving deep into Angular
+
+Thank you for reading this series on Angular Effects. In the final article of this series, I will take you on a deep dive into the inner workings of Angular Effects and how it's made possible through some rarely used APIs, some experimentation and the hard work of the Angular team to bring us stable Ivy.
+
+=== Next in this series
+
+* link:announcement.adoc[Part I: Introducing Angular Effects]
+* link:getting-started.adoc[Part II: Getting started with Angular Effects]
+* link:thinking-reactively.adoc[Part III: Thinking reactive with Angular Effects]
+* link:effect-adapters.adoc[Part IV: Extending Angular Effects with effect adapters]
+* Part V: Exploring the Angular Effects API **(You are here)**
+* Part VI: Deep dive into Angular Effects

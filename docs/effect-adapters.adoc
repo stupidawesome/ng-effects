@@ -368,6 +368,6 @@ In this article we covered the basics of writing effect adapters and demonstrate
 * link:getting-started.adoc[Part II: Getting started with Angular Effects]
 * link:thinking-reactively.adoc[Part III: Thinking reactive with Angular Effects]
 * Part IV: Extending Angular Effects with effect adapters **(You are here)**
-* Part V: Exploring the Angular Effects API
+* link:exploring-the-api.adoc[Part V: Exploring the Angular Effects API]
 * Part VI: Deep dive into Angular Effects
 
