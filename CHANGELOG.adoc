@@ -1,5 +1,52 @@
 = Changelog
 
+== 9.0.0
+
+=== Features
+
+- allow effect adapters to invoke effects and customise their arguments
+
+=== BREAKING CHANGES
+
+Effect adapters that implement the `CreateEffectAdapter` interface now receive the whole effect function as an argument instead of the invoked return value. This means effect adapters can take full control of the effect and supply the effect function with arbitrary arguments, invoke the function multiple times, etc.
+
+*Before*
+
+[source, typescript]
+----
+@Injectable()
+export class MyAdapter implements EffectAdapter<number> {
+    create(value: Observable<number>, metadata: EffectMetadata) {
+        return value.pipe(
+            delay(500)
+        )
+    }
+    next(value: number) {
+        console.log(value)
+    }
+}
+----
+
+*After*
+
+[source, typescript]
+----
+type EffectFn = (state: State<any>, customArg: string) => Observable<number>
+
+@Injectable()
+export class MyAdapter implements EffectAdapter<EffectFn> {
+    constructor(private hostRef: HostRef) {}
+
+    create(effectFn: EffectFn, metadata: EffectMetadata) {
+        return effectFn(this.hostRef.state, "CUSTOM_ARG")
+    }
+
+    next(value: number) {
+        console.log(value)
+    }
+}
+----
+
 == 9.0.0-rc.6
 
 === Features

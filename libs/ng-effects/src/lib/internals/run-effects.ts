@@ -93,11 +93,14 @@ function runEffect(
     adapter?: NextEffectAdapter<any> & CreateEffectAdapter<any>,
 ) {
     const { args, name, options, path } = metadata
-    const sortedArgs = sortArguments([state, context, observer], args, 3)
-    let returnValue = effect[name].apply(effect, sortedArgs)
+    const defaultArgs = [state, context, observer]
+    const sortedArgs = sortArguments(defaultArgs, args, 3)
+    let returnValue: any
 
     if (adapter && adapter.create) {
-        returnValue = adapter.create(returnValue, metadata)
+        returnValue = adapter.create(effect[name].bind(effect), metadata)
+    } else {
+        returnValue = effect[name].apply(effect, sortedArgs)
     }
 
     const { assign, bind } = options

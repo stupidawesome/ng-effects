@@ -1,6 +1,6 @@
 import Mock = jest.Mock
 import fn = jest.fn
-import { NextEffectAdapter, EffectMetadata } from "../interfaces"
+import { EffectMetadata, NextEffectAdapter } from "../interfaces"
 import { Directive, Type } from "@angular/core"
 import { of } from "rxjs"
 import { createDirective } from "./test-utils"

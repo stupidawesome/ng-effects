@@ -15,8 +15,8 @@ export type EffectAdapter<TValue extends any, TOptions = unknown> = CreateEffect
 > &
     NextEffectAdapter<TValue, TOptions>
 
-export interface CreateEffectAdapter<TValue extends any, TOptions = unknown> {
-    create?(value: TValue, metadata: EffectMetadata<TOptions>): Observable<any> | TeardownLogic
+export interface CreateEffectAdapter<TFunction extends any, TOptions = unknown> {
+    create?(factory: TFunction, metadata: EffectMetadata<TOptions>): Observable<any> | TeardownLogic
     next?(value: any, metadata: EffectMetadata<TOptions>): void
 }
 

@@ -8,6 +8,7 @@ import {
     Input,
     Output,
     QueryList,
+    Type,
     ViewChild,
     ViewChildren,
 } from "@angular/core"
@@ -72,18 +73,18 @@ type MapStateToProps<T, U> = {
     [key in keyof U]?: (state: T) => U[key]
 }
 
-export function Select() {
-    return Effect(SelectAdapter)
+export function Select<T extends any, U extends any>() {
+    return Effect(SelectAdapter as Type<SelectAdapter<T, U>>)
 }
 
 @Injectable({ providedIn: "root" })
-export class SelectAdapter implements EffectAdapter<MapStateToProps<any, any>> {
+export class SelectAdapter<T, U> implements EffectAdapter<() => MapStateToProps<T, U>> {
     constructor(private store: Store<any>) {}
 
-    public create(mapState: MapStateToProps<any, any>, metadata: EffectMetadata) {
+    public create(mapState: () => MapStateToProps<any, any>, metadata: EffectMetadata) {
         metadata.options.assign = true
 
-        const sources = Object.entries(mapState).map(([prop, selector]) =>
+        const sources = Object.entries(mapState()).map(([prop, selector]) =>
             this.store.pipe(
                 select(selector!),
                 map(value => ({ [prop]: value })),
@@ -104,7 +105,6 @@ export const selectAge = (state: AppState) => {
 
 class MyAction {
     type!: "MyAction"
-    prefix!: string
 }
 
 @Injectable()
@@ -136,8 +136,8 @@ export class TestEffects {
     /**
      * Select adapter example
      */
-    @Select()
-    public mapStateToProps(): MapStateToProps<AppState, TestComponent> {
+    @Select<AppState, TestComponent>()
+    public mapStateToProps() {
         return {
             age: selectAge,
         }
@@ -146,7 +146,7 @@ export class TestEffects {
      * Dispatch adapter example
      */
     @Dispatch(MyAction)
-    public dispatch(state: State<TestComponent>) {
+    public dispatch(@State() state: State<TestComponent>) {
         return of({ prefix: "" })
     }
 
@@ -251,6 +251,13 @@ export class TestEffects {
         const { show } = state
         return state.event.pipe(toggleSwitch(show))
     }
+
+    @Effect(AnyAdapter)
+    public test() {}
+}
+
+class AnyAdapter {
+    create() {}
 }
 
 @Injectable()

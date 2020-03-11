@@ -1,7 +1,5 @@
 import { Inject, Injectable, InjectionToken, Type } from "@angular/core"
-import { AdapterEffectDecorator, DefaultEffectOptions, EffectAdapter, EffectMetadata, NextEffectAdapter } from "@ng9/ng-effects"
-import { Observable } from "rxjs"
-import { Effect } from "../../../../libs/ng-effects/src/lib/decorators"
+import { Effect, EffectAdapter, EffectMetadata } from "@ng9/ng-effects"
 
 export interface Dispatcher {
     dispatch(action: any): void
@@ -9,24 +7,11 @@ export interface Dispatcher {
 
 export const DISPATCH_ADAPTER = new InjectionToken("DISPATCH_ADAPTER")
 
-export interface DispatchValue {
-    type: string
-}
-
-export interface DispatchOptions {
-    test?: boolean
-}
-
 type Action = {
     type: string
 }
 
-export type Payload<T extends Action> =  Omit<T, "type"> & Partial<Pick<T, "type">>
-
-// export function Effect<T, U extends Type<any>>(
-//     adapter: Type<NextEffectAdapter<T, any>>,
-//     options?: U & DefaultEffectOptions,
-// ): AdapterEffectDecorator<Observable<Payload<InstanceType<U>>>>
+export type Payload<T extends Action> = Omit<T, "type"> & Partial<Pick<T, "type">>
 
 export function Dispatch<U extends Type<Action>>(action: U) {
     return Effect(DispatchAdapter as Type<DispatchAdapter<U>>, action)

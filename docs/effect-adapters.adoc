@@ -91,14 +91,18 @@ Output:
 > "count: 0"
 ----
 
-One last thing effect adapters can do is _transform_ effects, modifying the return value before it is processed. Effects can then return arbitrary values.
+One last thing effect adapters can do is _transform_ effects, which allows effects to receive custom arguments and return arbitrary values.
 
 [source, typescript]
 ----
+type LogEffectFn = (state: State<any>) => State<any>
+
 @Injectable({ providedIn: "root" })
 export class LogState implements EffectAdapter<State<any>> {
-    create(state: State<any>) {
-        return latest(state)
+    constructor(private hostRef: HostRef) {}
+
+    create(effectFn) {
+        return latest(effectFn(this.hostRef.state))
     }
 
     next(values: {[key: string]: any}) {
@@ -248,14 +252,16 @@ export type MapStateToProps<T, U> = {
     [key in keyof U]?: (state: T) => U[key]
 }
 
+export type SelectEffectFn = () => MapStateToProps<T, U>
+
 @Injectable({ providedIn: "root" })
-export class Select implements EffectAdapter<MapStateToProps<any, any>> {
+export class SelectAdapter<T, U> implements EffectAdapter<SelectEffectFn> {
     constructor(private store: Store<any>) {}
 
-    public create(mapState: MapStateToProps<any, any>, metadata: EffectMetadata) {
+    public create(mapState: SelectEffectFn, metadata: EffectMetadata) {
         metadata.options.assign = true
 
-        const sources = Object.entries(mapState).map(([prop, selector]) =>
+        const sources = Object.entries(mapState()).map(([prop, selector]) =>
             this.store.pipe(
                 select(selector!),
                 map(value => ({ [prop]: value })),

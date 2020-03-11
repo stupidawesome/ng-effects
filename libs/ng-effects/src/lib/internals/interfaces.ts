@@ -14,6 +14,34 @@ export type MapSelect<T> = {
     [key in keyof T]-?: T[key] extends HostEmitter<any> ? T[key] : Observable<T[key]>
 }
 
+export interface AdapterEffectFn<TArgs extends any[], TReturn> {
+    (a1: TArgs[0]): TReturn
+}
+
+export interface AdapterEffectFn2<TArgs extends any[], TReturn> {
+    (a1: TArgs[0], a2: TArgs[1]): TReturn
+}
+
+export interface AdapterEffectFn3<TArgs extends any[], TReturn> {
+    (a1: TArgs[0], a2: TArgs[1], a3: TArgs[2]): TReturn
+}
+
+export interface AdapterEffectFn4<TArgs extends any[], TReturn> {
+    (a1: TArgs[0], a2: TArgs[1], a3: TArgs[2], a4: TArgs[3]): TReturn
+}
+
+export interface AdapterEffectFn5<TArgs extends any[], TReturn> {
+    (a1: TArgs[0], a2: TArgs[1], a3: TArgs[2], a4: TArgs[3], a5: TArgs[4]): TReturn
+}
+
+export interface AdapterEffectFn6<TArgs extends any[], TReturn> {
+    (a1: TArgs[0], a2: TArgs[1], a3: TArgs[2], a4: TArgs[3], a5: TArgs[4], ...args: any[]): TReturn
+}
+
+export interface AdapterEffectFn7<TReturn> {
+    (): TReturn
+}
+
 export interface EffectFn<TReturn, T extends EffectArg<any>, X extends TReturn> {
     (state: T): X
 }
@@ -108,6 +136,21 @@ export interface AdapterEffectDecorator<T> {
             | TypedPropertyDescriptor<EffectFn2<T, U, V, X>>
             | TypedPropertyDescriptor<EffectFn3<T, U, V, W, X>>
             | TypedPropertyDescriptor<EffectFn4<X>>,
+    ): void
+}
+
+export interface CustomEffectDecorator<TArgs extends any[], TReturn> {
+    <U extends TArgs, V extends TReturn>(
+        target: any,
+        prop: PropertyKey,
+        propertyDescriptor:
+            | TypedPropertyDescriptor<AdapterEffectFn<U, V>>
+            | TypedPropertyDescriptor<AdapterEffectFn2<U, V>>
+            | TypedPropertyDescriptor<AdapterEffectFn3<U, V>>
+            | TypedPropertyDescriptor<AdapterEffectFn4<U, V>>
+            | TypedPropertyDescriptor<AdapterEffectFn5<U, V>>
+            | TypedPropertyDescriptor<AdapterEffectFn6<U, V>>
+            | TypedPropertyDescriptor<AdapterEffectFn7<V>>,
     ): void
 }
 

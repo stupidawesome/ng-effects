@@ -10,6 +10,7 @@ import {
     AdapterEffectDecorator,
     AssignEffectDecorator,
     BindEffectDecorator,
+    CustomEffectDecorator,
     DefaultEffectDecorator,
     MapSelect,
 } from "./internals/interfaces"
@@ -35,18 +36,26 @@ export function Effect<T, U>(
     options?: U & DefaultEffectOptions,
 ): AdapterEffectDecorator<Observable<T>>
 
-export function Effect<T, U>(
+export function Effect<
+    T extends (...args: any[]) => any,
+    U,
+    TArgs extends any[] = T extends (...args: infer R) => any ? R : void
+>(
     adapter: Type<CreateEffectAdapter<T, U>>,
     options?: U & DefaultEffectOptions,
-): AdapterEffectDecorator<T>
+): CustomEffectDecorator<TArgs, ReturnType<T>>
 
 export function Effect<T, U>(
     options: { adapter: Type<NextEffectAdapter<T, U>> } & U & DefaultEffectOptions,
 ): AdapterEffectDecorator<Observable<T>>
 
-export function Effect<T, U>(
+export function Effect<
+    T extends (...args: any[]) => any,
+    U,
+    TArgs extends any[] = T extends (...args: infer R) => any ? R : never
+>(
     options: { adapter: Type<CreateEffectAdapter<T, U>> } & U & DefaultEffectOptions,
-): AdapterEffectDecorator<Observable<T>>
+): CustomEffectDecorator<TArgs, Observable<T>>
 
 export function Effect(): any {
     let options: EffectOptions
