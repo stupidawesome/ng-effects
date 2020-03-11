@@ -38,12 +38,11 @@ export function Effect<T, U>(
 
 export function Effect<
     T extends (...args: any[]) => any,
-    U,
-    TArgs extends any[] = T extends (...args: infer R) => any ? R : void
+    U
 >(
     adapter: Type<CreateEffectAdapter<T, U>>,
     options?: U & DefaultEffectOptions,
-): CustomEffectDecorator<TArgs, ReturnType<T>>
+): CustomEffectDecorator<T>
 
 export function Effect<T, U>(
     options: { adapter: Type<NextEffectAdapter<T, U>> } & U & DefaultEffectOptions,
@@ -55,16 +54,16 @@ export function Effect<
     TArgs extends any[] = T extends (...args: infer R) => any ? R : never
 >(
     options: { adapter: Type<CreateEffectAdapter<T, U>> } & U & DefaultEffectOptions,
-): CustomEffectDecorator<TArgs, Observable<T>>
+): CustomEffectDecorator<T>
 
-export function Effect(): any {
+export function Effect(...args: any[]): any {
     let options: EffectOptions
-    if (typeof arguments[0] === "string") {
-        options = { bind: arguments[0], ...arguments[1] }
-    } else if (typeof arguments[0] === "function") {
-        options = { adapter: arguments[0], ...arguments[1] }
+    if (typeof args[0] === "string") {
+        options = { bind: args[0], ...args[1] }
+    } else if (typeof args[0] === "function") {
+        options = { adapter: args[0], adapterOptions: args.slice(1) }
     } else {
-        options = arguments[0]
+        options = args[0]
     }
     return function(target: any, prop: any) {
         defineMetadata(Effect, options, target.constructor, prop)

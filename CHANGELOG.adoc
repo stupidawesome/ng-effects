@@ -1,5 +1,12 @@
 = Changelog
 
+== 9.0.2
+
+=== bug fixes
+
+- improve effect adapter typings
+- fix options for effect adapters that supply non-object arguments
+
 == 9.0.1
 
 No changes

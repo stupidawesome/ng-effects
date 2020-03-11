@@ -6,6 +6,7 @@ export interface EffectMetadata<T = any> {
     path: string
     type: Type<any>
     options: EffectOptions & T
+    adapter: Type<any>
     args: number[]
 }
 
@@ -41,6 +42,7 @@ export interface AssignEffectOptions extends DefaultEffectOptions {
 
 export interface AdapterEffectOptions extends DefaultEffectOptions {
     adapter?: Type<NextEffectAdapter<any, any>>
+    adapterOptions?: any
 }
 
 export interface EffectOptions<TKey extends PropertyKey | unknown = unknown>
@@ -50,3 +52,7 @@ export interface EffectOptions<TKey extends PropertyKey | unknown = unknown>
         AssignEffectOptions {}
 
 export abstract class EffectOptions<TKey extends PropertyKey | unknown = unknown> {}
+
+export type ObservableSources<T> = {
+    [key in keyof T]: Observable<T[key]>
+}

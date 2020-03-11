@@ -48,8 +48,9 @@ function effectRunner(
 
             if (effect) {
                 for (const metadata of effects) {
-                    if (metadata.options.whenRendered === whenRendered) {
-                        const maybeAdapter = metadata.options.adapter
+                    const initMode = metadata.options.whenRendered || false
+                    if (initMode === whenRendered) {
+                        const maybeAdapter = metadata.adapter
                         const adapter = maybeAdapter && injector.get(maybeAdapter)
                         runEffect(
                             state,

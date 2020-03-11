@@ -139,7 +139,7 @@ export interface AdapterEffectDecorator<T> {
     ): void
 }
 
-export interface CustomEffectDecorator<TArgs extends any[], TReturn> {
+export interface CustomEffectDecorator<T extends (...args: any[]) => any, TArgs extends any[] = T extends (...args: infer R) => any ? R : void, TReturn = ReturnType<T>> {
     <U extends TArgs, V extends TReturn>(
         target: any,
         prop: PropertyKey,

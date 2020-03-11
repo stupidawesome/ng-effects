@@ -18,6 +18,7 @@ export function exploreEffects(defaults: DefaultEffectOptions): Generator<Effect
 
         for (const [name, locals] of effects) {
             const path = `${type.name} -> ${name}`
+            const adapter = locals && locals.adapter
             const options = mergeOptions(defaults, locals)
             const args = [State, Context, Observe].map(key => getMetadata(key, type, name))
             const metadata = {
@@ -25,6 +26,7 @@ export function exploreEffects(defaults: DefaultEffectOptions): Generator<Effect
                 type,
                 name,
                 options,
+                adapter,
                 args,
             }
 
@@ -35,6 +37,12 @@ export function exploreEffects(defaults: DefaultEffectOptions): Generator<Effect
 }
 
 export function mergeOptions(defaults: DefaultEffectOptions, options: EffectOptions<any> = {}) {
+    if (options.adapter) {
+        const adapterOptions = options.adapterOptions
+        return adapterOptions && adapterOptions.length === 1
+            ? adapterOptions[0]
+            : adapterOptions
+    }
     // default to `markDirty: true` for bound effects unless explicitly set
     const merged = Object.assign({}, defaults, options)
     if (merged.markDirty === undefined && Boolean(options.bind || options.assign)) {
