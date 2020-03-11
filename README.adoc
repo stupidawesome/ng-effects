@@ -35,6 +35,14 @@ export class AppComponent {
 }
 ----
 
+## Installation
+
+link:https://www.npmjs.com/package/ng-effects[Install via NPM]
+
+```bash
+npm install ng-effects
+```
+
 == Links
 
 - link:./docs/announcement.adoc[Introduction]
@@ -42,4 +50,8 @@ export class AppComponent {
 - link:./docs/thinking-reactively.adoc[Basic effects]
 - link:./docs/effect-adapters.adoc[Effect adapters]
 - link:./docs/exploring-the-api.adoc[Exploring the API]
-- Deep dive
+- How it works
+
+== Api Reference
+
+Coming soon.
