@@ -1,6 +1,4 @@
-![Angular Effects](https://i.imgur.com/A1924dn.png)
-
-# Angular Effects
+<img src="https://i.imgur.com/A1924dn.png" alt="" />
 
 Reactive extensions for Angular.
 
@@ -16,10 +14,6 @@ export class AppComponent{
     @Input()
     count: number = 0
 
-    constructor() {
-        connect(this)
-    }
-
     @Effect("count")
     incrementCount(state: State<AppState>) {
         return state.count.pipe(
@@ -27,6 +21,10 @@ export class AppComponent{
             increment(1),
             repeatInterval(1000)
         )
+    }
+
+    constructor() {
+        connect(this)
     }
 }
 ```

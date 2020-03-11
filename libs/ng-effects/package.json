@@ -1,6 +1,6 @@
 {
     "name": "ng-effects",
-    "version": "9.0.0",
+    "version": "9.0.1",
     "peerDependencies": {
         "@angular/common": "^9.0.0",
         "@angular/core": "^9.0.0",
@@ -14,6 +14,7 @@
         "effects",
         "connect"
     ],
-    "homepage": "https://github.com/stupidawesome/ng-effects",
+    "homepage": "https://ngfx.io",
+    "repository": "https://github.com/stupidawesome/ng-effects",
     "license": "MIT"
 }
