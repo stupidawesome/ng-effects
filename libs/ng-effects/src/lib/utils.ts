@@ -7,7 +7,7 @@ import { ObservableSources } from "./interfaces"
 
 export function changes<T>(): MonoTypeOperatorFunction<T>
 export function changes<T>(source: Observable<T>): Observable<T>
-export function changes<T>(source: MapSelect<T>): Observable<T>
+export function changes<T>(source: ObservableSources<T>): Observable<T>
 export function changes<T>(source?: Observable<T> | MapSelect<T>): any {
     if (source) {
         if (source instanceof Observable) {
