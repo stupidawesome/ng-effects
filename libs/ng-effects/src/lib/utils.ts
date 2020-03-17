@@ -1,5 +1,9 @@
 import { combineLatest, MonoTypeOperatorFunction, Observable } from "rxjs"
-import { ElementRef, ViewContainerRef, ɵSWITCH_VIEW_CONTAINER_REF_FACTORY__POST_R3__ as injectViewContainerRef } from "@angular/core"
+import {
+    ElementRef,
+    ViewContainerRef,
+    ɵSWITCH_VIEW_CONTAINER_REF_FACTORY__POST_R3__ as injectViewContainerRef,
+} from "@angular/core"
 import { MapSelect } from "./internals/interfaces"
 import { map, skip } from "rxjs/operators"
 import { Connect } from "./connect"

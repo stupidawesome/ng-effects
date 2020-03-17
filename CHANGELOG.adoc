@@ -1,5 +1,11 @@
 = Changelog
 
+== 9.0.4
+
+=== Bug fixes
+
+- fix assignment to effect bindings with union types
+
 == 9.0.3
 
 === Bug fixes

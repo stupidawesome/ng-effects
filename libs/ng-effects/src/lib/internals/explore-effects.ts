@@ -39,9 +39,7 @@ export function exploreEffects(defaults: DefaultEffectOptions): Generator<Effect
 export function mergeOptions(defaults: DefaultEffectOptions, options: EffectOptions<any> = {}) {
     if (options.adapter) {
         const adapterOptions = options.adapterOptions
-        return adapterOptions && adapterOptions.length === 1
-            ? adapterOptions[0]
-            : adapterOptions
+        return adapterOptions && adapterOptions.length === 1 ? adapterOptions[0] : adapterOptions
     }
     // default to `markDirty: true` for bound effects unless explicitly set
     const merged = Object.assign({}, defaults, options)

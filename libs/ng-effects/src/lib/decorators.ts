@@ -3,8 +3,8 @@ import {
     BindEffectOptions,
     CreateEffectAdapter,
     DefaultEffectOptions,
-    NextEffectAdapter,
     EffectOptions,
+    NextEffectAdapter,
 } from "./interfaces"
 import {
     AdapterEffectDecorator,
@@ -36,10 +36,7 @@ export function Effect<T, U>(
     options?: U & DefaultEffectOptions,
 ): AdapterEffectDecorator<Observable<T>>
 
-export function Effect<
-    T extends (...args: any[]) => any,
-    U
->(
+export function Effect<T extends (...args: any[]) => any, U>(
     adapter: Type<CreateEffectAdapter<T, U>>,
     options?: U & DefaultEffectOptions,
 ): CustomEffectDecorator<T>

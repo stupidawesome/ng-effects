@@ -254,6 +254,24 @@ export class TestEffects {
 
     @Effect(AnyAdapter)
     public test() {}
+
+    // noinspection JSUnusedLocalSymbols
+    @Effect("union")
+    public unionTypeTest(
+        state: State<TestComponent>,
+        context: TestComponent,
+        observer: Observable<TestComponent>,
+    ) {
+        return of(true)
+    }
+
+    // noinspection JSUnusedLocalSymbols
+    @Effect({ assign: true })
+    public unionTypeTest2(state: State<TestComponent>) {
+        return of({
+            union: true,
+        })
+    }
 }
 
 class AnyAdapter {
@@ -309,6 +327,8 @@ export class TestComponent implements TestState {
     public viewChildren?: QueryList<ElementRef> = NONE
 
     public show: boolean
+
+    public union?: boolean
 
     @HostListener("ageChange")
     public event: HostEmitter<MouseEvent | undefined>
