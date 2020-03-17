@@ -91,7 +91,8 @@
                     "options": {
                         "jestConfig": "apps/ng9/jest.config.js",
                         "tsConfig": "apps/ng9/tsconfig.spec.json",
-                        "setupFile": "apps/ng9/src/test-setup.ts"
+                        "setupFile": "apps/ng9/src/test-setup.ts",
+                        "passWithNoTests": true
                     }
                 }
             }
@@ -129,7 +130,8 @@
                     "options": {
                         "jestConfig": "libs/ng-effects/jest.config.js",
                         "tsConfig": "libs/ng-effects/tsconfig.spec.json",
-                        "setupFile": "libs/ng-effects/src/test-setup.ts"
+                        "setupFile": "libs/ng-effects/src/test-setup.ts",
+                        "passWithNoTests": true
                     }
                 }
             },
