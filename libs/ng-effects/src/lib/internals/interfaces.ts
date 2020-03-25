@@ -158,7 +158,7 @@ export interface CustomEffectDecorator<
     ): void
 }
 
-export interface BindEffectDecorator<TKey extends string> {
+export interface BindEffectDecorator<TKey extends PropertyKey> {
     <
         TReturn extends BindReturnType<T, TKey extends keyof T ? TKey : never>,
         TArg extends EffectArg<T>,

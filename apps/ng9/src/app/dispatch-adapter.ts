@@ -38,6 +38,6 @@ export function dispatchAdapter(dispatcher: Type<Dispatcher>) {
             provide: DISPATCH_ADAPTER,
             useClass: dispatcher,
         },
-        Dispatch,
+        DispatchAdapter,
     ]
 }

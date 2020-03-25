@@ -95,6 +95,11 @@ export class SelectAdapter<T, U> implements EffectAdapter<() => MapStateToProps<
     }
 }
 
+@Injectable({ providedIn: "root" })
+class AnyAdapter {
+    create() {}
+}
+
 export interface AppState {
     age: number
 }
@@ -114,7 +119,9 @@ export class TestEffects {
      * Injector example with special tokens
      * HostRef can be injected to get host context.
      */
-    constructor(private elementRef: ElementRef, hostRef: HostRef, private cdr: ChangeDetectorRef) {}
+    constructor(private elementRef: ElementRef, private hostRef: HostRef, private cdr: ChangeDetectorRef) {
+        hostRef.context
+    }
 
     /**
      * Effect decorator with explicit binding example
@@ -145,10 +152,10 @@ export class TestEffects {
     /**
      * Dispatch adapter example
      */
-    @Dispatch(MyAction)
-    public dispatch(@State() state: State<TestComponent>) {
-        return of({ prefix: "" })
-    }
+    // @Dispatch(MyAction)
+    // public dispatch(@State() state: State<TestComponent>) {
+    //     return of({ prefix: "" })
+    // }
 
     /**
      * Unsafe bind example
@@ -274,10 +281,6 @@ export class TestEffects {
     }
 }
 
-class AnyAdapter {
-    create() {}
-}
-
 @Injectable()
 export class ShouldComponentUpdate implements EffectAdapter<boolean> {
     constructor(private cdr: ChangeDetectorRef) {
@@ -344,6 +347,7 @@ export class TestComponent implements TestState {
         this.ageChange = new HostEmitter(true)
         this.event = new HostEmitter()
         this.show = true
+        this.union = true
 
         connect(this)
     }
