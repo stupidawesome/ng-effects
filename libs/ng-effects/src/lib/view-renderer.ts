@@ -9,7 +9,7 @@ export class ViewRenderer implements RenderApi, OnDestroy {
     private readonly end: Subject<void>
 
     constructor(rendererFactory: RendererFactory2) {
-        const origBeginFn = rendererFactory.end || noop
+        const origBeginFn = rendererFactory.begin || noop
         const origEndFn = rendererFactory.end || noop
         const begin = new Subject<void>()
         const end = new Subject<void>()

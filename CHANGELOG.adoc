@@ -1,5 +1,11 @@
 = Changelog
 
+== 9.0.5
+
+=== Bug fixes
+
+- fix bug caused by importing `BrowserAnimationsModule` (closes #6)
+
 == 9.0.4
 
 === Bug fixes
