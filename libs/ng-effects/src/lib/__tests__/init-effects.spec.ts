@@ -8,10 +8,10 @@ import {
 } from "./test-utils"
 import { globalDefaults } from "../internals/constants"
 import { EMPTY } from "rxjs"
-import { Connect } from "../connect"
 import { Effect } from "../decorators"
 import { Directive } from "@angular/core"
 import { effectMetadata } from "../internals/explore-effects"
+import { Connect } from "../../connect/providers"
 
 describe("How to init effects", () => {
     it("should instantiate one effect on directives", () => {

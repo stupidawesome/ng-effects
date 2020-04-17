@@ -9,6 +9,7 @@ import { Connect, Effect, effects, Effects, USE_EXPERIMENTAL_RENDER_API } from "
 import { Store } from "./store"
 import { dispatchAdapter } from "./dispatch-adapter"
 import { of } from "rxjs"
+import { CompositionComponent } from "./composition/composition.component"
 
 @Injectable()
 export class ModuleEffects {
@@ -19,15 +20,15 @@ export class ModuleEffects {
 }
 
 @NgModule({
-    declarations: [AppComponent, TestComponent],
+    declarations: [AppComponent, TestComponent, CompositionComponent],
     imports: [BrowserModule, HttpClientModule],
-    providers: [USE_EXPERIMENTAL_RENDER_API, dispatchAdapter(Store), Effects, ModuleEffects],
+    providers: [USE_EXPERIMENTAL_RENDER_API, dispatchAdapter(Store)],
     // providers: [dispatchAdapter(Store), Effects, ModuleEffects],
     bootstrap: [AppComponent],
 })
 export class AppModule {
-    constructor(connect: Connect) {
-        connect(this)
+    constructor() {
+        // connect(this)
     }
     @Effect()
     public moduleEffect() {

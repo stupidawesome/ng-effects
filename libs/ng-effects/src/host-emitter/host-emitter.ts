@@ -1,7 +1,7 @@
 import { Observable, Subject } from "rxjs"
 import { EventEmitter } from "@angular/core"
-import { Callable } from "./internals/callable"
-import { apply } from "./internals/apply"
+import { Callable } from "./callable"
+import { apply } from "./apply"
 
 export interface HostEmitter<T> extends Subject<T> {
     (value?: T): T

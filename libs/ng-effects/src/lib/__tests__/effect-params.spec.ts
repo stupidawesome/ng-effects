@@ -1,9 +1,9 @@
 import { Directive } from "@angular/core"
 import { Context, Effect, Observe, State } from "../decorators"
-import { Connect } from "../connect"
 import { createDirective } from "./test-utils"
 import { Effects } from "../providers"
 import { Observable } from "rxjs"
+import { Connect } from "../../connect/providers"
 import Mock = jest.Mock
 import fn = jest.fn
 

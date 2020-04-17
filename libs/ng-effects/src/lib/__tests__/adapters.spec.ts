@@ -5,8 +5,8 @@ import { Directive, Type } from "@angular/core"
 import { of } from "rxjs"
 import { createDirective } from "./test-utils"
 import { Effect } from "../decorators"
-import { Connect } from "../connect"
 import { Effects } from "../providers"
+import { Connect } from "../../connect/providers"
 
 describe("How to use Adapters to hook into effects", () => {
     it("should observe values emitted by effects", () => {

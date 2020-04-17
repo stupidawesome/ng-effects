@@ -5,7 +5,9 @@ import { Dispatcher } from "./dispatch-adapter"
 @Injectable({ providedIn: "root" })
 export class Store<T> extends BehaviorSubject<any> implements Dispatcher {
     constructor() {
-        super({})
+        super({
+            age: 0,
+        })
     }
     dispatch(action: any) {
         // tslint:disable-next-line:no-console

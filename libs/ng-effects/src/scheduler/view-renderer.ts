@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Injectable, OnDestroy, RendererFactory2 } from "@angular/core"
-import { Subject } from "rxjs"
-import { noop, unsubscribe } from "./internals/utils"
-import { RenderApi } from "./internals/interfaces"
+import { noop, Subject } from "rxjs"
+import { RenderApi } from "./interfaces"
+import { unsubscribe } from "../connect/utils"
 
 @Injectable({ providedIn: "root" })
 export class ViewRenderer implements RenderApi, OnDestroy {
@@ -15,13 +15,13 @@ export class ViewRenderer implements RenderApi, OnDestroy {
         const end = new Subject<void>()
 
         rendererFactory.begin = function() {
-            origBeginFn.apply(rendererFactory)
             begin.next()
+            origBeginFn.apply(rendererFactory)
         }
 
         rendererFactory.end = function() {
-            origEndFn.apply(rendererFactory)
             end.next()
+            origEndFn.apply(rendererFactory)
         }
 
         this.end = end

@@ -1,18 +1,6 @@
-import { ChangeDetectorRef } from "@angular/core"
 import { Observable, TeardownLogic } from "rxjs"
-import { HostEmitter } from "../host-emitter"
+import { HostEmitter } from "../../host-emitter/host-emitter"
 import { Context, State } from "../decorators"
-
-export interface RenderApi {
-    detectChanges(componentOrView: any, changeDetector?: ChangeDetectorRef): void
-    markDirty(componentOrView: any, changeDetector?: ChangeDetectorRef): void
-    whenScheduled(): Observable<void>
-    whenRendered(): Observable<void>
-}
-
-export type MapSelect<T> = {
-    [key in keyof T]-?: T[key] extends HostEmitter<any> ? T[key] : Observable<T[key]>
-}
 
 export interface AdapterEffectFn<TArgs extends any[], TReturn> {
     (a1: TArgs[0]): TReturn

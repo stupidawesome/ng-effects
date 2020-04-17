@@ -1,11 +1,11 @@
 import { createDirective } from "./test-utils"
-import { changes } from "../utils"
 import { from } from "rxjs"
 import { mergeAll } from "rxjs/operators"
-import { Connect } from "../connect"
 import { Effect, State } from "../decorators"
 import { Effects } from "../providers"
 import { Directive } from "@angular/core"
+import { changes } from "../../operators/changes"
+import { Connect } from "../../connect/providers"
 import fn = jest.fn
 import Mock = jest.Mock
 

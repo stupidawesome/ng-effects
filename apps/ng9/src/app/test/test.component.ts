@@ -26,17 +26,8 @@ import {
     Observe,
     State,
 } from "@ng9/ng-effects"
-import { increment } from "../utils"
-import {
-    distinctUntilChanged,
-    map,
-    mapTo,
-    repeat,
-    repeatWhen,
-    switchMapTo,
-    take,
-} from "rxjs/operators"
-import { Dispatch } from "../dispatch-adapter"
+import { increment, MapStateToProps, select } from "../utils"
+import { map, mapTo, repeat, repeatWhen, switchMapTo, take } from "rxjs/operators"
 import { Store } from "../store"
 
 interface TestState {
@@ -61,16 +52,6 @@ function repeatInterval<T>(time: number): MonoTypeOperatorFunction<T> {
     return function(source) {
         return source.pipe(repeatWhen(() => interval(time)))
     }
-}
-
-export function select<T, U>(selector: (state: T) => U): OperatorFunction<T, U> {
-    return function(source) {
-        return source.pipe(map(selector), distinctUntilChanged())
-    }
-}
-
-type MapStateToProps<T, U> = {
-    [key in keyof U]?: (state: T) => U[key]
 }
 
 export function Select<T extends any, U extends any>() {
@@ -108,10 +89,6 @@ export const selectAge = (state: AppState) => {
     return state.age || 0
 }
 
-class MyAction {
-    type!: "MyAction"
-}
-
 @Injectable()
 export class TestEffects {
     // noinspection JSUnusedLocalSymbols
@@ -119,7 +96,11 @@ export class TestEffects {
      * Injector example with special tokens
      * HostRef can be injected to get host context.
      */
-    constructor(private elementRef: ElementRef, private hostRef: HostRef, private cdr: ChangeDetectorRef) {
+    constructor(
+        private elementRef: ElementRef,
+        private hostRef: HostRef,
+        private cdr: ChangeDetectorRef,
+    ) {
         hostRef.context
     }
 

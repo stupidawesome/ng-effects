@@ -1,5 +1,11 @@
 = Changelog
 
+== 9.1.0-next.0
+
+=== Features
+
+- add groundwork for composition API
+
 == 9.0.5
 
 === Bug fixes

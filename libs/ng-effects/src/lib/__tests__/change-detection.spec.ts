@@ -3,10 +3,11 @@ import { createComponent, createDirective } from "./test-utils"
 import { delay } from "rxjs/operators"
 import { fakeAsync, TestBed, tick } from "@angular/core/testing"
 import { ChangeDetectorRef, Directive } from "@angular/core"
-import { DETECT_CHANGES, MARK_DIRTY } from "../internals/providers"
-import { Connect } from "../connect"
 import { Effect, State } from "../decorators"
-import { Effects, USE_EXPERIMENTAL_RENDER_API } from "../providers"
+import { Effects } from "../providers"
+import { DETECT_CHANGES, MARK_DIRTY } from "../../scheduler/providers"
+import { USE_EXPERIMENTAL_RENDER_API } from "../../scheduler/experimental-view-renderer"
+import { Connect } from "../../connect/providers"
 import Mock = jest.Mock
 import fn = jest.fn
 

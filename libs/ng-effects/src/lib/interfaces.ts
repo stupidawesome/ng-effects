@@ -52,7 +52,3 @@ export interface EffectOptions<TKey extends PropertyKey | unknown = unknown>
         AssignEffectOptions {}
 
 export abstract class EffectOptions<TKey extends PropertyKey | unknown = unknown> {}
-
-export type ObservableSources<T> = {
-    [key in keyof T]: Observable<T[key]>
-}

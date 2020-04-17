@@ -1,6 +1,6 @@
-import { ChangeDetectorRef, Injector, NgZone, ViewContainerRef } from "@angular/core"
+import { Injector, ViewContainerRef } from "@angular/core"
 import { isObservable, Observable, Subject } from "rxjs"
-import { ViewRenderer } from "../view-renderer"
+import { ViewRenderer } from "../../scheduler/view-renderer"
 import {
     CreateEffectAdapter,
     EffectMetadata,
@@ -8,12 +8,13 @@ import {
     NextEffectAdapter,
 } from "../interfaces"
 import { take } from "rxjs/operators"
-import { assertPropertyExists, isTeardownLogic, throwBadReturnTypeError } from "./utils"
-import { DestroyObserver } from "./destroy-observer"
-import { HostRef } from "./host-ref"
+import { DestroyObserver } from "../../connect/destroy-observer"
+import { HostRef } from "../../connect/host-ref"
 import { effectMetadata } from "./explore-effects"
-import { HostEmitter } from "../host-emitter"
+import { HostEmitter } from "../../host-emitter/host-emitter"
 import { State } from "../decorators"
+import { assertPropertyExists, throwBadReturnTypeError } from "../../connect/utils"
+import { isTeardownLogic } from "./utils"
 
 function effectRunner(
     hostRef: HostRef,
@@ -132,7 +133,6 @@ function runEffect(
                         assertPropertyExists(bind, context)
                         context[bind] = value
                     }
-
                     notifier.next(options)
                 },
                 error(error: any) {
@@ -149,20 +149,14 @@ function runEffect(
 }
 
 export function runEffects(
-    effectsMetadata: EffectMetadata[],
     hostRef: HostRef,
     destroyObserver: DestroyObserver,
     viewRenderer: ViewRenderer,
-    parentRef: HostRef,
     injector: Injector,
-    changeDetector?: ChangeDetectorRef,
+    changeNotifier: Subject<EffectOptions | void>,
     viewContainerRef?: ViewContainerRef,
 ) {
-    let createMode = true
-    const changeNotifier = new Subject<EffectOptions | void>()
     const rendered = viewRenderer.whenRendered().pipe(take(1))
-    const scheduled = viewRenderer.whenScheduled()
-    const noopZone = !NgZone.isInAngularZone()
 
     // noinspection JSDeprecatedSymbols
     const runEffects = effectRunner(
@@ -173,37 +167,7 @@ export function runEffects(
         viewContainerRef && viewContainerRef.parentInjector,
     )
 
-    const detectChanges = async function(opts: EffectOptions | void) {
-        hostRef.tick()
-        if (!opts) {
-            return
-        }
-        if (parentRef) {
-            parentRef.tick()
-        }
-        if (createMode || !changeDetector) {
-            return
-        }
-        if (opts.detectChanges) {
-            viewRenderer.detectChanges(hostRef.context, changeDetector)
-        } else if (opts.markDirty) {
-            // async workaround for "noop" zone
-            if (noopZone) {
-                await Promise.resolve()
-            }
-            if (!destroyObserver.isDestroyed) {
-                viewRenderer.markDirty(hostRef.context, changeDetector)
-            }
-        }
-    }
-
-    // Start event loop
-    destroyObserver.add(
-        scheduled.subscribe(changeNotifier),
-        rendered.subscribe(runEffects),
-        changeNotifier.subscribe(detectChanges),
-    )
+    destroyObserver.add(rendered.subscribe(runEffects))
 
     runEffects()
-    createMode = false
 }

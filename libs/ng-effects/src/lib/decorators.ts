@@ -12,11 +12,11 @@ import {
     BindEffectDecorator,
     CustomEffectDecorator,
     DefaultEffectDecorator,
-    MapSelect,
 } from "./internals/interfaces"
 import { defineMetadata } from "./internals/metadata"
 import { Type } from "@angular/core"
 import { Observable } from "rxjs"
+import { MapSelect } from "../operators/interfaces"
 
 export function Effect(): DefaultEffectDecorator
 

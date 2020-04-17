@@ -1,5 +1,5 @@
 import { Injector } from "@angular/core"
-import { HostRef } from "../host-ref"
+import { HostRef } from "./interfaces"
 
 export function connectFactory(initializers: any[], injector: Injector) {
     const deduped = new Set(initializers)

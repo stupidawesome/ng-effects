@@ -14,7 +14,7 @@ import {
 import { ComponentFixture, TestBed } from "@angular/core/testing"
 import { Effect } from "../decorators"
 import { EffectOptions } from "../interfaces"
-import { Connect } from "../connect"
+import { Connect } from "../../connect/providers"
 import fn = jest.fn
 
 export function createDirective(directive: Type<any>, deps?: any[], providers?: Provider[]) {

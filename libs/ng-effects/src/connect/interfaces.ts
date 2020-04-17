@@ -1,7 +1,7 @@
+import { State } from "../lib/decorators"
 import { Observable } from "rxjs"
-import { State } from "./decorators"
 
-export abstract class HostRef<T = any> {
+export abstract class HostRef<T extends any = any> {
     /**
      * The component or directive instance.
      */

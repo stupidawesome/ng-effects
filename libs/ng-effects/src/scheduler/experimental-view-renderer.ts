@@ -1,5 +1,5 @@
 import { Inject, Injectable, RendererFactory2 } from "@angular/core"
-import { ViewRenderer } from "../view-renderer"
+import { ViewRenderer } from "./view-renderer"
 import { DETECT_CHANGES, MARK_DIRTY } from "./providers"
 
 @Injectable()
@@ -15,3 +15,10 @@ export class ExperimentalIvyViewRenderer extends ViewRenderer {
         this.markDirty = markDirty
     }
 }
+
+export const USE_EXPERIMENTAL_RENDER_API = [
+    {
+        provide: ViewRenderer,
+        useClass: ExperimentalIvyViewRenderer,
+    },
+]

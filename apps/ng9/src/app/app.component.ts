@@ -1,17 +1,17 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ViewChild } from "@angular/core"
-import { changes, connect, Effect, Effects, HostRef, State, ViewRenderer } from "@ng9/ng-effects"
-import { interval } from "rxjs"
+import { ChangeDetectionStrategy, Component, ViewChild } from "@angular/core"
+import { changes, Effect, HostRef, State } from "@ng9/ng-effects"
 import { distinctUntilChanged, map } from "rxjs/operators"
 
 @Component({
     selector: "app-root",
     template: `
-        <app-test [age]="age" (ageChange)="age = $event">
-            <app-test *ngIf="show">Nested!</app-test>
-        </app-test>
+        <app-composition></app-composition>
+        <!--        <app-test [age]="age" (ageChange)="age = $event">-->
+        <!--            <app-test *ngIf="show">Nested!</app-test>-->
+        <!--        </app-test>-->
     `,
     styleUrls: ["./app.component.scss"],
-    providers: [Effects],
+    providers: [],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent {
@@ -22,18 +22,18 @@ export class AppComponent {
     @ViewChild(HostRef)
     ref?: HostRef
 
-    constructor(cdr: ChangeDetectorRef, viewRenderer: ViewRenderer) {
+    constructor() {
         this.show = false
         this.age = 31
 
         // imperative change detection should propagate to effects
         // ie. when inputs are changed
-        interval(10000).subscribe(() => {
-            this.age = 30
-            viewRenderer.markDirty(this, cdr)
-        })
+        // interval(10000).subscribe(() => {
+        //     this.age = 30
+        //     viewRenderer.markDirty(this, cdr)
+        // })
 
-        connect(this)
+        // connect(this)
     }
 
     /**
