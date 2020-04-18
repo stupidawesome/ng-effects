@@ -10,6 +10,7 @@ import { Store } from "./store"
 import { dispatchAdapter } from "./dispatch-adapter"
 import { of } from "rxjs"
 import { CompositionComponent } from "./composition/composition.component"
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations"
 
 @Injectable()
 export class ModuleEffects {
@@ -21,7 +22,7 @@ export class ModuleEffects {
 
 @NgModule({
     declarations: [AppComponent, TestComponent, CompositionComponent],
-    imports: [BrowserModule, HttpClientModule],
+    imports: [BrowserModule, HttpClientModule, BrowserAnimationsModule],
     providers: [USE_EXPERIMENTAL_RENDER_API, dispatchAdapter(Store)],
     // providers: [dispatchAdapter(Store), Effects, ModuleEffects],
     bootstrap: [AppComponent],

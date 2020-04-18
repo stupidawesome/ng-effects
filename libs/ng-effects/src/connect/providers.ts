@@ -86,15 +86,9 @@ export function setup(fn: Function): Provider {
     ]
 }
 
-export function connect(fn: () => void): Provider
-export function connect(context: object): void
-export function connect(arg: unknown): unknown {
-    if (typeof arg === "function") {
-        return setup(arg)
-    } else {
-        const connect = injectViewContainerRef(ViewContainerRef, ElementRef).injector.get(Connect)
-        if (connect) {
-            connect(arg)
-        }
+export function connect(context: object): void {
+    const connect = injectViewContainerRef(ViewContainerRef, ElementRef).injector.get(Connect)
+    if (connect) {
+        connect(context)
     }
 }

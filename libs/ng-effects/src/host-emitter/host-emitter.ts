@@ -5,7 +5,7 @@ import { apply } from "./apply"
 
 export interface HostEmitter<T> extends Subject<T> {
     (value?: T): T
-    (...value: T extends Array<infer U> ? T : never[]): void
+    (...value: T extends Array<infer U> ? T : never[]): T extends Array<infer U> ? T : never[]
     emit(value?: T): void
 }
 
@@ -23,9 +23,5 @@ export class HostEmitter<T> extends Callable<(next: T) => void> {
             }
         })
         apply(this, new EventEmitter(isAsync))
-    }
-
-    public set event(event: any) {
-        this.next(event)
     }
 }

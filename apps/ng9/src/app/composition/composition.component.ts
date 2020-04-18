@@ -1,68 +1,60 @@
 import { Component, Input, Output, QueryList, ViewChildren } from "@angular/core"
-import {
-    connect,
-    HostEmitter,
-    useAssign,
-    useEmit,
-    useState,
-    useTeardown,
-    whenRendered,
-} from "@ng9/ng-effects"
-import { debounceTime, map, take } from "rxjs/operators"
-import { increment } from "../utils"
-import { useDispatch, useMapStateToProps, useShouldComponentUpdate } from "./utils"
+import { connect, HostEmitter, setup, use, useContext, useEffect, useState } from "@ng9/ng-effects"
+import { share } from "rxjs/operators"
+import { useStore } from "./utils"
 import { AppState } from "../test/test.component"
 import { Store } from "../store"
+import { HttpClient } from "@angular/common/http"
+import { interval } from "rxjs"
 
-export const Composition = connect(() => {
-    const state = useState<CompositionComponent>()
-    const { age } = state
-    const assign = useAssign<CompositionComponent>()
-    const emit = useEmit<CompositionComponent>()
-    const dispatch = useDispatch(Store)
-    const shouldComponentUpdate = useShouldComponentUpdate()
-    const teardown = useTeardown()
-    const mapStateToProps = useMapStateToProps<AppState, CompositionComponent>(Store)
+const sharedTimer = interval(1000).pipe(share())
 
-    assign({
-        age: age.pipe(debounceTime(1000), increment(1)),
-    })
-
-    emit({
-        ageChange: age.changes,
-    })
-
-    mapStateToProps({
+export const Composition = setup(() => {
+    const http = use(HttpClient)
+    const { ageChange } = useContext<CompositionComponent>()
+    const {
+        age: [age, setAge],
+        name: [name],
+        count: [count],
+    } = useState<CompositionComponent>()
+    const dispatch = useStore<AppState, CompositionComponent>(Store, {
         age: state => state.age,
     })
 
-    shouldComponentUpdate(age.pipe(map(age => age < 50)))
+    useEffect(() => {
+        dispatch({
+            type: "NameChange",
+            payload: age(),
+        })
+    }, [name])
 
-    teardown(age.subscribe(value => console.log(value)))
+    useEffect(() => ageChange.emit(age()), [age])
 
-    whenRendered(() => {
-        dispatch(
-            age.pipe(
-                map(age => ({
-                    type: "NameChange",
-                    payload: age,
-                })),
-                take(1),
-            ),
-        )
+    useEffect(() => {
+        return http.get<any>(name()).subscribe(res => console.log(res))
+    }, [name])
+
+    useEffect(() => {
+        return sharedTimer.subscribe(() => {
+            setAge(age() + 1)
+        })
+    }, [age])
+
+    useEffect(() => {
+        console.log("rendered", count())
     })
 })
 
-export const Multiply = connect(() => {
-    const assign = useAssign<CompositionComponent>()
-    const { count } = useState<CompositionComponent>()
+export const Multiply = setup(() => {
+    const {
+        count: [count, setCount],
+    } = useState<CompositionComponent>()
 
-    assign({
-        count: count.pipe(
-            debounceTime(1000),
-            map(value => value * 2),
-        ),
-    })
+    useEffect(() => {
+        return sharedTimer.subscribe(() => {
+            setCount(count() + 1)
+        })
+    }, [count])
 })
 
 @Component({
@@ -77,19 +69,24 @@ export const Multiply = connect(() => {
     providers: [Composition, Multiply],
 })
 export class CompositionComponent {
-    name = ""
-    count = 1
+    name: string
+    count: number
 
     @Input()
-    age = 30
+    age: number
 
     @Output()
-    ageChange = new HostEmitter<number>(true)
+    ageChange: HostEmitter<number>
 
     @ViewChildren("element")
     viewChildren?: QueryList<any>
 
     constructor() {
+        this.name = ""
+        this.count = 1
+        this.age = 30
+        this.ageChange = new HostEmitter<number>(true)
+        this.viewChildren = undefined
         connect(this)
     }
 }

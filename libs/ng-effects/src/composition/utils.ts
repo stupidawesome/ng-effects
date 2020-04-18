@@ -1,12 +1,9 @@
 import { inject as oinject, InjectionToken, Type } from "@angular/core"
-import { asapScheduler, BehaviorSubject, Observable, scheduled, TeardownLogic } from "rxjs"
-import { AssignSources, EmitSources } from "./interfaces"
+import { Observable, TeardownLogic } from "rxjs"
 import { DestroyObserver } from "../connect/destroy-observer"
-import { take } from "rxjs/operators"
+import { bufferCount, distinctUntilChanged, map, startWith, switchMap } from "rxjs/operators"
 import { ViewRenderer } from "../scheduler/view-renderer"
-import { latest } from "../operators/latest"
 import { HostRef } from "../connect/interfaces"
-import { changes } from "../operators/changes"
 import { ChangeNotifier } from "../connect/providers"
 
 export function inject<T>(token: { prototype: T } | Type<T> | InjectionToken<T>): T {
@@ -23,47 +20,45 @@ export function useContext<T extends any>() {
     return useHostRef<T>().context
 }
 
-export function whenRendered(fn: () => any): void {
+export function useEffect(fn: () => TeardownLogic, deps?: (() => any)[]): void {
     const viewRenderer = use(ViewRenderer)
     const teardown = useTeardown()
-    teardown(scheduled(viewRenderer.whenRendered().pipe(take(1)), asapScheduler).subscribe(fn))
-}
+    const inner = new Observable(() => {
+        return fn()
+    })
+    let obs: Observable<any> = viewRenderer.whenScheduled().pipe(startWith(0), bufferCount(3))
 
-export interface StateSubject<T> extends BehaviorSubject<T> {
-    changes: Observable<T>
-    setValue: (value: T, flags?: { markDirty: boolean }) => void
+    if (deps) {
+        obs = obs.pipe(
+            map(() => deps.map(dep => dep())),
+            distinctUntilChanged((a, b) => a.every((val, i) => val === b[i])),
+        )
+    }
+
+    teardown(() => obs.pipe(switchMap(() => inner)).subscribe())
 }
 
 export type UseState<T> = {
-    [key in keyof T]-?: StateSubject<T[key]>
+    [key in keyof T]-?: [
+        () => T[key],
+        (value: T[key], opts?: { markDirty?: boolean; detectChanges?: boolean }) => void,
+    ]
 }
 
-export function stateFactory<T>(context: T, changeNotifier: ChangeNotifier): <U extends keyof T>(key: U) => StateSubject<T[U]> {
-    const teardown = useTeardown()
+export function stateFactory<T>(
+    context: T,
+    changeNotifier: ChangeNotifier,
+): <U extends keyof T>(key: U) => [() => T[U], (value: T[U]) => void] {
     return function<U extends keyof T>(key: U) {
-        class StateSubject<U extends keyof T> extends BehaviorSubject<T[U]> {
-            get changes() {
-                return changes(this)
-            }
-
-            setValue(value: any, flags: any = { markDirty: true }) {
-                context[key] = value
-                this.next(value)
-                changeNotifier.next(flags)
-            }
-
-            constructor(private key: U) {
-                super(context[key])
-                teardown(
-                    changeNotifier.subscribe(() => {
-                        if (context[key] !== this.value) {
-                            this.next(context[key])
-                        }
-                    }),
-                )
-            }
+        function state(): T[U] {
+            return context[key]
         }
-        return new StateSubject(key)
+        function setState(value: T[U], flags: any = { markDirty: true }) {
+            context[key] = value
+            changeNotifier.next(flags)
+        }
+
+        return [state, setState]
     }
 }
 
@@ -82,56 +77,25 @@ function mapState(state: any, context: any, factory: any) {
     }, state)
 }
 
+const stateMap = new WeakMap()
+
 export function useState<T>(): UseState<T> {
     const context = useContext()
+
+    if (stateMap.has(context)) {
+        return stateMap.get(context)
+    }
+
     const changeNotifier = use(ChangeNotifier)
     const factory = stateFactory(context, changeNotifier)
     const state = {} as UseState<T>
 
-    whenRendered(() => mapState(state, context, factory))
+    stateMap.set(context, state)
 
     return mapState(state, context, factory)
 }
 
-export function useAssign<T extends any>() {
-    const effect = useEffect()
-    const state = useState<T>()
-
-    return function assign(source: AssignSources<T>, opts: any = { markDirty: true }) {
-        effect(() =>
-            latest(source).subscribe(obj => {
-                for (const key in obj) {
-                    if (state[key]) {
-                        state[key].setValue(obj[key], opts)
-                    }
-                }
-            }),
-        )
-    }
-}
-
-export function useEmit<T extends any>() {
-    const context = useContext<T>()
-    const effect = useEffect()
-    return function emit(source: EmitSources<T>) {
-        effect(() =>
-            latest(source).subscribe(obj => {
-                for (const [key, value] of Object.entries(obj)) {
-                    context[key].next(value)
-                }
-            }),
-        )
-    }
-}
-
-export function useTeardown() {
-    const effect = useEffect()
-    return function(source: TeardownLogic) {
-        effect(() => source)
-    }
-}
-
-export function useEffect<T extends any>() {
+export function useTeardown<T extends any>() {
     const destroy = use(DestroyObserver)
     return function effect(factory: () => TeardownLogic) {
         destroy.add(factory())
