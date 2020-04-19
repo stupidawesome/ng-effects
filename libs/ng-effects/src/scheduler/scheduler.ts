@@ -16,7 +16,7 @@ export function scheduler(
     changeDetector?: ChangeDetectorRef,
 ) {
     const noopZone = !NgZone.isInAngularZone()
-    const scheduled = viewRenderer.whenScheduled()
+    const scheduled = viewRenderer.whenScheduled
 
     const detectChanges = async function(opts: EffectOptions | void) {
         if (!opts || !changeDetector) {

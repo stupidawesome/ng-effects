@@ -1,10 +1,11 @@
 import { inject as oinject, InjectionToken, Type } from "@angular/core"
 import { Observable, TeardownLogic } from "rxjs"
 import { DestroyObserver } from "../connect/destroy-observer"
-import { bufferCount, distinctUntilChanged, map, startWith, switchMap } from "rxjs/operators"
+import { distinctUntilChanged, filter, map, share, switchMap, take } from "rxjs/operators"
 import { ViewRenderer } from "../scheduler/view-renderer"
 import { HostRef } from "../connect/interfaces"
 import { ChangeNotifier } from "../connect/providers"
+import { ChangeDetection, ChangeDetectionMap } from "./interfaces"
 
 export function inject<T>(token: { prototype: T } | Type<T> | InjectionToken<T>): T {
     return oinject(token as any)
@@ -13,90 +14,140 @@ export function inject<T>(token: { prototype: T } | Type<T> | InjectionToken<T>)
 export const use = inject
 
 export function useHostRef<T extends any>(): HostRef<T> {
-    return use(HostRef) as HostRef<T>
+    return inject(HostRef) as HostRef<T>
 }
 
 export function useContext<T extends any>() {
     return useHostRef<T>().context
 }
 
-export function useEffect(fn: () => TeardownLogic, deps?: (() => any)[]): void {
-    const viewRenderer = use(ViewRenderer)
+export function watch<T>(
+    target: () => T,
+    handler: (newValue: T, oldValue: T) => TeardownLogic,
+): void {
     const teardown = useTeardown()
-    const inner = new Observable(() => {
-        return fn()
-    })
-    let obs: Observable<any> = viewRenderer.whenScheduled().pipe(startWith(0), bufferCount(3))
+    const scheduler = inject(ViewRenderer)
+    let previousValue: any
 
-    if (deps) {
-        obs = obs.pipe(
-            map(() => deps.map(dep => dep())),
-            distinctUntilChanged((a, b) => a.every((val, i) => val === b[i])),
-        )
-    }
-
-    teardown(() => obs.pipe(switchMap(() => inner)).subscribe())
+    teardown(() =>
+        scheduler.whenRendered
+            .pipe(
+                map(target),
+                filter(value => value !== previousValue),
+                switchMap(value => {
+                    const obs = new Observable(() => handler(value, previousValue))
+                    previousValue = value
+                    return obs
+                }),
+            )
+            .subscribe(),
+    )
 }
 
-export type UseState<T> = {
-    [key in keyof T]-?: [
-        () => T[key],
-        (value: T[key], opts?: { markDirty?: boolean; detectChanges?: boolean }) => void,
-    ]
+export function whenRendered(fn: () => TeardownLogic) {
+    const teardown = useTeardown()
+    const scheduler = inject(ViewRenderer)
+
+    teardown(() =>
+        scheduler.whenRendered
+            .pipe(
+                switchMap(() => new Observable(() => fn())),
+            )
+            .subscribe(),
+    )
 }
 
-export function stateFactory<T>(
+export function afterViewInit(fn: () => TeardownLogic) {
+    const teardown = useTeardown()
+    const scheduler = inject(ViewRenderer)
+
+    teardown(() =>
+        scheduler.whenRendered
+            .pipe(
+                take(1),
+                switchMap(() => new Observable(fn)),
+            )
+            .subscribe(),
+    )
+}
+
+const updatedCache = new WeakMap()
+
+export function onChanges(fn: () => TeardownLogic) {
+    const teardown = useTeardown()
+    const context = useContext()
+    const scheduler = inject(ViewRenderer)
+
+    const changes =
+        updatedCache.get(context) ||
+        updatedCache
+            .set(
+                context,
+                scheduler.whenScheduled.pipe(
+                    map(() => Object.values(context)),
+                    distinctUntilChanged((a, b) => a.every((val, i) => val === b[i])),
+                    share(),
+                ),
+            )
+            .get(context)
+
+    teardown(() => changes.pipe(switchMap(() => new Observable(fn))).subscribe())
+}
+
+export function onDestroy(fn: () => void) {
+    useTeardown()(() => fn)
+}
+
+const cache = new WeakMap()
+
+export function stateFactory<T extends object>(
     context: T,
     changeNotifier: ChangeNotifier,
-): <U extends keyof T>(key: U) => [() => T[U], (value: T[U]) => void] {
-    return function<U extends keyof T>(key: U) {
-        function state(): T[U] {
-            return context[key]
-        }
-        function setState(value: T[U], flags: any = { markDirty: true }) {
-            context[key] = value
-            changeNotifier.next(flags)
-        }
-
-        return [state, setState]
-    }
+    opts: ChangeDetectionMap<T> | ChangeDetection = {},
+): T {
+    return new Proxy<T>(context, {
+        get(target: T, p: PropertyKey): any {
+            if (!Reflect.has(target, p)) {
+                throw new Error(`[ng-effects] Cannot get uninitialized property: ${String(p)}`)
+            }
+            const value = Reflect.get(target, p)
+            if (value instanceof Object) {
+                if (cache.has(value)) {
+                    return cache.get(value)
+                }
+                const changes = typeof opts === "number" ? opts : Reflect.get(opts, p)
+                const state = stateFactory(value, changeNotifier, changes)
+                cache.set(value, state)
+                return state
+            } else {
+                return value
+            }
+        },
+        set(target: T, p: PropertyKey, value: any): boolean {
+            if (!Reflect.has(target, p)) {
+                throw new Error(`[ng-effects] Cannot set uninitialized property: ${String(p)}`)
+            }
+            const success = Reflect.set(target, p, value)
+            const changes = typeof opts === "number" ? opts : Reflect.get(opts, p)
+            if (changes === ChangeDetection.DetectChanges) {
+                changeNotifier.next({ detectChanges: true })
+            } else if (changes !== ChangeDetection.None) {
+                changeNotifier.next({ markDirty: true })
+            }
+            return success
+        },
+    })
 }
 
-function mapState(state: any, context: any, factory: any) {
-    return Object.entries(context).reduce((acc, [key, _value]) => {
-        return Object.defineProperty(acc, key, {
-            configurable: true,
-            get() {
-                Object.defineProperty(acc, key, {
-                    enumerable: true,
-                    value: factory(key),
-                })
-                return acc[key]
-            },
-        })
-    }, state)
-}
-
-const stateMap = new WeakMap()
-
-export function useState<T>(): UseState<T> {
+export function useState<T>(opts?: ChangeDetectionMap<T>): T {
     const context = useContext()
+    const changeNotifier = inject(ChangeNotifier)
 
-    if (stateMap.has(context)) {
-        return stateMap.get(context)
-    }
-
-    const changeNotifier = use(ChangeNotifier)
-    const factory = stateFactory(context, changeNotifier)
-    const state = {} as UseState<T>
-
-    stateMap.set(context, state)
-
-    return mapState(state, context, factory)
+    return stateFactory(context, changeNotifier, opts)
 }
 
 export function useTeardown<T extends any>() {
-    const destroy = use(DestroyObserver)
+    const destroy = inject(DestroyObserver)
     return function effect(factory: () => TeardownLogic) {
         destroy.add(factory())
     }

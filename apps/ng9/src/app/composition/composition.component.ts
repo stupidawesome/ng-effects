@@ -1,60 +1,49 @@
 import { Component, Input, Output, QueryList, ViewChildren } from "@angular/core"
-import { connect, HostEmitter, setup, use, useContext, useEffect, useState } from "@ng9/ng-effects"
-import { share } from "rxjs/operators"
+import { afterViewInit, connect, HostEmitter, onChanges, setup, use, useContext, useState, watch, whenRendered } from "@ng9/ng-effects"
 import { useStore } from "./utils"
 import { AppState } from "../test/test.component"
 import { Store } from "../store"
 import { HttpClient } from "@angular/common/http"
-import { interval } from "rxjs"
-
-const sharedTimer = interval(1000).pipe(share())
+import { timer } from "rxjs"
 
 export const Composition = setup(() => {
     const http = use(HttpClient)
     const { ageChange } = useContext<CompositionComponent>()
-    const {
-        age: [age, setAge],
-        name: [name],
-        count: [count],
-    } = useState<CompositionComponent>()
+    const state = useState<CompositionComponent>()
     const dispatch = useStore<AppState, CompositionComponent>(Store, {
         age: state => state.age,
     })
 
-    useEffect(() => {
-        dispatch({
-            type: "NameChange",
-            payload: age(),
+    afterViewInit(() => {
+        watch(() => state.count, () => {
+            console.log('hi!')
         })
-    }, [name])
+        // console.log('mounted!', state.viewChildren.length)
+    })
 
-    useEffect(() => ageChange.emit(age()), [age])
+    whenRendered(() => {
+        // console.log('rendered!')
+    })
 
-    useEffect(() => {
-        return http.get<any>(name()).subscribe(res => console.log(res))
-    }, [name])
-
-    useEffect(() => {
-        return sharedTimer.subscribe(() => {
-            setAge(age() + 1)
-        })
-    }, [age])
-
-    useEffect(() => {
-        console.log("rendered", count())
+    onChanges(() => {
+        // console.log('updated!')
     })
 })
 
 export const Multiply = setup(() => {
-    const {
-        count: [count, setCount],
-    } = useState<CompositionComponent>()
+    const { ageChange } = useContext<CompositionComponent>()
+    const state = useState<CompositionComponent>()
 
-    useEffect(() => {
-        return sharedTimer.subscribe(() => {
-            setCount(count() + 1)
+    watch(() => state.age, () => {
+        return timer(1000).subscribe(() => {
+            state.age += 1
+            ageChange(state.age)
         })
-    }, [count])
+    })
+
+    watch(() => state.count, (value) => {
+        console.log(value)
+    })
 })
 
 @Component({
@@ -64,6 +53,7 @@ export const Multiply = setup(() => {
             Age: {{ age }}<br />
             Count: {{ count }}
         </div>
+        <button (click)="incrementCount()">Increment</button>
     `,
     styleUrls: ["./composition.component.scss"],
     providers: [Composition, Multiply],
@@ -79,14 +69,18 @@ export class CompositionComponent {
     ageChange: HostEmitter<number>
 
     @ViewChildren("element")
-    viewChildren?: QueryList<any>
+    viewChildren: QueryList<any>
 
     constructor() {
         this.name = ""
         this.count = 1
         this.age = 30
         this.ageChange = new HostEmitter<number>(true)
-        this.viewChildren = undefined
+        this.viewChildren = new QueryList()
         connect(this)
+    }
+
+    incrementCount() {
+        this.count += 1
     }
 }

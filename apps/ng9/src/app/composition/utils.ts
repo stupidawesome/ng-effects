@@ -32,7 +32,7 @@ export function useMapStateToProps<TState extends any, TProps extends any>(
         if (selector) {
             effect(() =>
                 store.pipe(select(selector)).subscribe(value => {
-                    state[key][1](value, { markDirty: true })
+                    state[key] = value
                 }),
             )
         }

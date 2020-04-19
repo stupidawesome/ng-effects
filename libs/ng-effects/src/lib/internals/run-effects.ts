@@ -156,7 +156,7 @@ export function runEffects(
     changeNotifier: Subject<EffectOptions | void>,
     viewContainerRef?: ViewContainerRef,
 ) {
-    const rendered = viewRenderer.whenRendered().pipe(take(1))
+    const rendered = viewRenderer.whenRendered.pipe(take(1))
 
     // noinspection JSDeprecatedSymbols
     const runEffects = effectRunner(

@@ -1,12 +1,12 @@
-import { ChangeDetectorRef, Injectable, OnDestroy, RendererFactory2 } from "@angular/core"
-import { noop, Subject } from "rxjs"
+import { ChangeDetectorRef, Injectable, RendererFactory2 } from "@angular/core"
+import { noop, Observable, Subject } from "rxjs"
 import { RenderApi } from "./interfaces"
-import { unsubscribe } from "../connect/utils"
+import { share } from "rxjs/operators"
 
 @Injectable({ providedIn: "root" })
-export class ViewRenderer implements RenderApi, OnDestroy {
-    private readonly begin: Subject<void>
-    private readonly end: Subject<void>
+export class ViewRenderer implements RenderApi {
+    whenScheduled: Observable<any>
+    whenRendered: Observable<any>
 
     constructor(rendererFactory: RendererFactory2) {
         const origBeginFn = rendererFactory.begin || noop
@@ -24,8 +24,13 @@ export class ViewRenderer implements RenderApi, OnDestroy {
             origEndFn.apply(rendererFactory)
         }
 
-        this.end = end
-        this.begin = begin
+        this.whenScheduled = begin.pipe(
+            share()
+        )
+
+        this.whenRendered = end.pipe(
+            share()
+        )
     }
 
     public detectChanges(hostRef: any, changeDetector: ChangeDetectorRef) {
@@ -34,17 +39,5 @@ export class ViewRenderer implements RenderApi, OnDestroy {
 
     public markDirty(hostRef: any, changeDetector: ChangeDetectorRef) {
         changeDetector.markForCheck()
-    }
-
-    public whenScheduled() {
-        return this.begin.asObservable()
-    }
-
-    public whenRendered() {
-        return this.end.asObservable()
-    }
-
-    public ngOnDestroy() {
-        unsubscribe([this.begin, this.end])
     }
 }

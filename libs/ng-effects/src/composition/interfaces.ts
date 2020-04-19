@@ -7,3 +7,13 @@ export type EmitSources<T> = {
 export type AssignSources<T> = {
     [key in keyof T]?: Observable<T[key]>
 }
+
+export enum ChangeDetection {
+    MarkDirty,
+    DetectChanges,
+    None
+}
+
+export type ChangeDetectionMap<T> = {
+    [key in keyof T]?: ChangeDetection
+}
