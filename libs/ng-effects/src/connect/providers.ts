@@ -22,11 +22,10 @@ import { merge, Observable, Subject } from "rxjs"
 import { DefaultEffectOptions } from "../lib/interfaces"
 import { delayWhen, distinctUntilChanged, map, share, skip, switchMap, take } from "rxjs/operators"
 import { unsubscribe } from "./utils"
-
 let _context: Injector
 let _hook: LifeCycleHooks | undefined
 
-export function setContext(context: any, hook?: LifeCycleHooks) {
+export function setContext(context?: any, hook?: LifeCycleHooks) {
     _context = context
     _hook = hook
 }
@@ -145,6 +144,7 @@ export function setup<T>(fn: (context: T) => void): Provider {
 
                 setContext(injector)
                 fn(context)
+                setContext()
 
                 const afterViewInit = getHooks(LifeCycleHooks.AfterViewInit)
                 const onChanges = getHooks(LifeCycleHooks.OnChanges)
@@ -165,11 +165,13 @@ export function setup<T>(fn: (context: T) => void): Provider {
                                 take(1),
                                 switchMap(() => {
                                     setContext(injector, LifeCycleHooks.AfterViewInit)
-                                    return merge(
+                                    const merged = merge(
                                         ...iter.map(callback => {
                                             return new Observable(() => callback())
                                         }),
                                     )
+                                    setContext()
+                                    return merged
                                 }),
                             )
                             .subscribe(),
@@ -182,11 +184,13 @@ export function setup<T>(fn: (context: T) => void): Provider {
                             switchMap(() => {
                                 flush(LifeCycleHooks.OnChangesEffects)
                                 setContext(injector, LifeCycleHooks.OnChanges)
-                                return merge(
+                                const merged = merge(
                                     ...iter.map(callback => {
                                         return new Observable(() => callback())
                                     }),
                                 )
+                                setContext()
+                                return merged
                             }),
                         )
                         .subscribe()
@@ -200,11 +204,13 @@ export function setup<T>(fn: (context: T) => void): Provider {
                                 delayWhen(() => scheduler.whenRendered),
                                 switchMap(() => {
                                     setContext(injector, LifeCycleHooks.WhenRendered)
-                                    return merge(
+                                    const merged = merge(
                                         ...iter.map(callback => {
                                             return new Observable(() => callback())
                                         }),
                                     )
+                                    setContext()
+                                    return merged
                                 }),
                             )
                             .subscribe(),

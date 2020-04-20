@@ -10,6 +10,9 @@ import { unsubscribe } from "../connect/utils"
 
 export function inject<T>(token: { prototype: T } | Type<T> | InjectionToken<T>): T {
     const injector = getContext()
+    if (!injector) {
+        throw new Error("inject() must be called from a valid injection context.")
+    }
     return injector.get(token as any)
 }
 
