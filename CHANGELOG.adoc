@@ -1,5 +1,74 @@
 = Changelog
 
+== 9.1.0-next.3
+
+=== Features
+
+- add `ngOnConnect` hook
+
+Similar to `setup` from Vue, but called after the component is constructed. It receives a reactive `this` context so that effects are automatically triggered when values change. When state is updated outside of `ngOnConnect`, such as when a button triggers `incrementCount`, its value is propagated to effects on the next change detection run. Template events automatically trigger change detection so no manual change detection is required. A non reactive reference to the component can be injected with `useContext()`.
+
+Example:
+
+[source, typescript]
+----
+@Component({
+    providers: [Connectable],
+})
+export class MyComponent implements Connectable {
+    count: number = 0
+
+    incrementCount() {
+        this.count += 1
+    }
+
+    ngOnConnect() {
+        const http = inject(HttpClient)
+        const context = useContext<this>() // non reactive
+
+        effect(() => {
+            console.log(this.count)
+        })
+    }
+
+    constructor(connect: Connect) {
+        connect(this)
+    }
+}
+----
+
+Effects can be composed by calling functions inside the `ngOnConnect` hook, or provided as a `Connectable` in the providers array.
+
+[source, typescript]
+----
+// Connectable provider
+const MyConnectable = connectable<MyComponent>((state) => {
+    effect(() => console.log("MyConnectable"))
+})
+
+// Composable function
+function useConnectable(state: MyComponent) {
+    effect(() => console.log("useConnectable"))
+}
+
+@Component({
+    providers: [Connectable, MyConnectable]
+})
+export class MyComponent {
+    ngOnConnect() {
+        // pass in the reactive context
+        useConnectable(this)
+
+        effect(() => console.log("ngOnConnect"))
+    }
+
+    constructor(connect: Connect) {
+        // calls ngOnConnect() and runs MyConnectable
+        connect(this)
+    }
+}
+----
+
 == 9.1.0-next.2
 
 === Features
@@ -11,9 +80,7 @@ the plan is to deprecate the decorator based API in favour of this one.
 
 [source, typescript]
 ----
-export const MyHooks = setup<CompositionComponent>(context => {
-    const state = useReactive(context)
-
+export const Connectable = connectable<CompositionComponent>(state => {
     effect(() => { // runs immediately and every time count changes
         return timer(1000).subscribe(() => {
             state.count += 1
@@ -22,7 +89,7 @@ export const MyHooks = setup<CompositionComponent>(context => {
 })
 
 @Component({
-    providers: [MyHooks]
+    providers: [Connectable]
 })
 export class MyComponent {
     count = 0

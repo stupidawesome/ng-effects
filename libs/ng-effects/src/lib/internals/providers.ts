@@ -4,8 +4,9 @@ import { ViewRenderer } from "../../scheduler/view-renderer"
 import { EffectMetadata } from "../interfaces"
 import { createEffectsFactory } from "./utils"
 import { runEffects } from "./run-effects"
-import { ChangeNotifier, HOST_INITIALIZER } from "../../connect/providers"
+import { HOST_INITIALIZER } from "../../connect/providers"
 import { HostRef } from "../../connect/interfaces"
+import { ChangeNotifier } from "../../connect/change-notifier"
 
 export const EFFECTS = new InjectionToken<EffectMetadata[]>("EFFECTS", {
     providedIn: "any",

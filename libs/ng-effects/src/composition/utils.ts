@@ -4,9 +4,10 @@ import { DestroyObserver } from "../connect/destroy-observer"
 import { distinctUntilChanged, map, skip, startWith, switchMap } from "rxjs/operators"
 import { ViewRenderer } from "../scheduler/view-renderer"
 import { HostRef } from "../connect/interfaces"
-import { addHook, ChangeNotifier, getContext, getLifeCycle, LifeCycleHooks } from "../connect/providers"
 import { ChangeDetection, ChangeDetectionMap } from "./interfaces"
 import { unsubscribe } from "../connect/utils"
+import { ChangeNotifier } from "../connect/change-notifier"
+import { addHook, getContext, getLifeCycle, LifeCycleHooks } from "../connect/hooks"
 
 export function inject<T>(token: { prototype: T } | Type<T> | InjectionToken<T>): T {
     const injector = getContext()
@@ -15,8 +16,6 @@ export function inject<T>(token: { prototype: T } | Type<T> | InjectionToken<T>)
     }
     return injector.get(token as any)
 }
-
-export const use = inject
 
 export function useHostRef<T extends any>(): HostRef<T> {
     return inject(HostRef) as HostRef<T>

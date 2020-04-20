@@ -16,3 +16,7 @@ export abstract class HostRef<T extends any = any> {
      */
     abstract readonly observer: Observable<T>
 }
+
+export interface OnConnect<T extends object = any> {
+    ngOnConnect(context?: T): void
+}

@@ -4,8 +4,8 @@ import { ViewRenderer } from "./view-renderer"
 import { asapScheduler, Subject } from "rxjs"
 import { EffectOptions } from "../lib/interfaces"
 import { ChangeDetectorRef, NgZone } from "@angular/core"
-import { ChangeNotifier } from "../connect/providers"
 import { subscribeOn } from "rxjs/operators"
+import { ChangeNotifier } from "../connect/change-notifier"
 
 export function scheduler(
     hostRef: HostRef,

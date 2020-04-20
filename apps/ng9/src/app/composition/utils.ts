@@ -1,5 +1,5 @@
 import { Observable } from "rxjs"
-import { use, useContext, useReactive, useTeardown } from "@ng9/ng-effects"
+import { inject, useContext, useReactive, useTeardown } from "@ng9/ng-effects"
 import { ChangeDetectorRef, Type } from "@angular/core"
 import { MapStateToProps, select } from "../utils"
 import { distinctUntilChanged } from "rxjs/operators"
@@ -12,7 +12,7 @@ export function useStore<TState extends object, TProps extends any>(
     token: Type<Dispatcher>,
     mapStateToProps?: MapStateToProps<TState, TProps>,
 ) {
-    const dispatcher = use(token)
+    const dispatcher = inject(token)
     if (mapStateToProps) {
         useMapStateToProps<TState, TProps>(token, mapStateToProps)
     }
@@ -26,7 +26,7 @@ export function useMapStateToProps<TState extends object, TProps extends any>(
     arg: MapStateToProps<TState, TProps>,
 ) {
     const state = useReactive(useContext<TState>())
-    const store = use(token)
+    const store = inject(token)
     const effect = useTeardown()
     for (const [key, selector] of Object.entries(arg)) {
         if (selector) {
@@ -41,7 +41,7 @@ export function useMapStateToProps<TState extends object, TProps extends any>(
 
 export function useShouldComponentUpdate(source: Observable<boolean>) {
     const effect = useTeardown()
-    const cdr = use(ChangeDetectorRef)
+    const cdr = inject(ChangeDetectorRef)
     cdr.detach()
 
     effect(() =>

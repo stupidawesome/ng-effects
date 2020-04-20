@@ -1,6 +1,11 @@
 import { TestBed } from "@angular/core/testing"
 import { Effects, effects } from "../providers"
-import { createDirective, createEffectsClass, createSimpleComponent, createSimpleDirective } from "./test-utils"
+import {
+    createDirective,
+    createEffectsClass,
+    createSimpleComponent,
+    createSimpleDirective,
+} from "./test-utils"
 import { globalDefaults } from "../internals/constants"
 import { EMPTY } from "rxjs"
 import { Effect } from "../decorators"

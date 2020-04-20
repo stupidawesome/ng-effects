@@ -4,12 +4,12 @@ import {
     ElementRef,
     inject,
     InjectionToken,
-    Injector,
     INJECTOR,
     Optional,
     Provider,
     Self,
     SkipSelf,
+    Type,
     ViewContainerRef,
     ɵSWITCH_VIEW_CONTAINER_REF_FACTORY__POST_R3__ as injectViewContainerRef,
 } from "@angular/core"
@@ -18,68 +18,11 @@ import { connectFactory } from "./connect-factory"
 import { DestroyObserver } from "./destroy-observer"
 import { scheduler } from "../scheduler/scheduler"
 import { ViewRenderer } from "../scheduler/view-renderer"
-import { merge, Observable, Subject } from "rxjs"
-import { DefaultEffectOptions } from "../lib/interfaces"
+import { merge, Observable } from "rxjs"
 import { delayWhen, distinctUntilChanged, map, share, skip, switchMap, take } from "rxjs/operators"
-import { unsubscribe } from "./utils"
-let _context: Injector
-let _hook: LifeCycleHooks | undefined
-
-export function setContext(context?: any, hook?: LifeCycleHooks) {
-    _context = context
-    _hook = hook
-}
-
-export function getContext() {
-    return _context
-}
-
-export function getLifeCycle() {
-    return _hook !== undefined ? _hook + 1 : undefined
-}
-
-export function flush(hook: LifeCycleHooks) {
-    const effects = getHooks(hook)
-    if (effects) {
-        unsubscribe([...effects])
-        effects.clear()
-    }
-}
-
-const hooks = new WeakMap()
-
-export enum LifeCycleHooks {
-    OnChanges = 1,
-    OnChangesEffects = 2,
-    AfterViewInit = 3,
-    AfterViewInitEffects = 4,
-    WhenRendered = 5,
-    WhenRenderedEffects,
-    OnDestroy,
-}
-
-export function addHook(hook: LifeCycleHooks | undefined, callback: Function) {
-    if (hook === undefined) {
-        return
-    }
-    const context = getContext()
-    if (!hooks.has(context)) {
-        hooks.set(context, new Map())
-    }
-    const map = hooks.get(context)
-    if (!map.has(hook)) {
-        map.set(hook, new Set())
-    }
-    const callbacks = map.get(hook)
-    callbacks.add(callback)
-}
-
-export function getHooks(hook: LifeCycleHooks): Set<Function> | undefined {
-    const context = getContext()
-    return hooks.get(context)?.get(hook)
-}
-
-export class ChangeNotifier extends Subject<DefaultEffectOptions | void> {}
+import { useReactive } from "../composition/utils"
+import { ChangeNotifier } from "./change-notifier"
+import { flush, getHooks, LifeCycleHooks, setContext } from "./hooks"
 
 export const HOST_REF = {
     provide: HostRef,
@@ -94,7 +37,16 @@ export interface Connect {
     <T>(context: T): void
 }
 
-export class Connect {}
+export function runSetup() {
+    const injector = inject(INJECTOR)
+    const context = inject(HostRef as Type<any>).context
+    if (typeof context.ngOnConnect === "function") {
+        setContext(injector)
+        const reactive = useReactive(context)
+        context.ngOnConnect.call(reactive, reactive)
+        setContext()
+    }
+}
 
 export const CONNECT = [
     {
@@ -129,9 +81,9 @@ export const CONNECT_SCHEDULER = [
     },
 ]
 
-export const SCHEDULER = [CONNECT, CONNECT_SCHEDULER, RUN_SCHEDULER, DestroyObserver]
+export const SCHEDULER = [CONNECT_SCHEDULER, RUN_SCHEDULER, CONNECT, DestroyObserver]
 
-export function setup<T>(fn: (context: T) => void): Provider {
+export function connectable<T>(fn: (context: T) => void): Provider {
     return [
         SCHEDULER,
         {
@@ -143,7 +95,7 @@ export function setup<T>(fn: (context: T) => void): Provider {
                 const context = injector.get(HostRef).context
 
                 setContext(injector)
-                fn(context)
+                fn(useReactive(context))
                 setContext()
 
                 const afterViewInit = getHooks(LifeCycleHooks.AfterViewInit)
@@ -203,6 +155,7 @@ export function setup<T>(fn: (context: T) => void): Provider {
                             .pipe(
                                 delayWhen(() => scheduler.whenRendered),
                                 switchMap(() => {
+                                    flush(LifeCycleHooks.WhenRenderedEffects)
                                     setContext(injector, LifeCycleHooks.WhenRendered)
                                     const merged = merge(
                                         ...iter.map(callback => {
@@ -219,6 +172,15 @@ export function setup<T>(fn: (context: T) => void): Provider {
             },
         },
         {
+            provide: runSetup,
+            useFactory: runSetup,
+        },
+        {
+            provide: HOST_INITIALIZER,
+            useValue: runSetup,
+            multi: true,
+        },
+        {
             provide: HOST_INITIALIZER,
             useValue: fn,
             multi: true,
@@ -230,5 +192,23 @@ export function connect(context: object): void {
     const connect = injectViewContainerRef(ViewContainerRef, ElementRef).injector.get(Connect)
     if (connect) {
         connect(context)
+    }
+}
+
+export interface Connectable<T extends object = any> {
+    ngOnConnect(context?: T): void
+}
+
+export const Connectable = connectable(() => {})
+
+export function Connect(): ClassDecorator {
+    return function(target) {
+        return new Proxy(target, {
+            construct(target: any, argArray: any): any {
+                const instance = new target(...argArray)
+                connect(instance)
+                return instance
+            },
+        })
     }
 }

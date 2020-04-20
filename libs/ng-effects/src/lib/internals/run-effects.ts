@@ -1,7 +1,12 @@
 import { Injector, ViewContainerRef } from "@angular/core"
 import { isObservable, Observable, Subject } from "rxjs"
 import { ViewRenderer } from "../../scheduler/view-renderer"
-import { CreateEffectAdapter, EffectMetadata, EffectOptions, NextEffectAdapter } from "../interfaces"
+import {
+    CreateEffectAdapter,
+    EffectMetadata,
+    EffectOptions,
+    NextEffectAdapter,
+} from "../interfaces"
 import { take } from "rxjs/operators"
 import { DestroyObserver } from "../../connect/destroy-observer"
 import { HostRef } from "../../connect/host-ref"
