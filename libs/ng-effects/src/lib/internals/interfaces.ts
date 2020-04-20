@@ -146,13 +146,17 @@ export interface CustomEffectDecorator<
     ): void
 }
 
+export type Map<T> = {
+    [key in keyof T]: T[key]
+}
+
 export interface BindEffectDecorator<TKey extends PropertyKey> {
     <
         TReturn extends BindReturnType<T, TKey extends keyof T ? TKey : never>,
         TArg extends EffectArg<T>,
         TArg2 extends EffectArg<T>,
         TArg3 extends EffectArg<T>,
-        T extends EffectTarget<TArg>
+        T extends Map<EffectTarget<TArg>>
     >(
         target: any,
         prop: PropertyKey,
@@ -170,7 +174,7 @@ export interface AssignEffectDecorator<T extends object> {
         TArg extends EffectArg<T>,
         TArg2 extends EffectArg<T>,
         TArg3 extends EffectArg<T>,
-        T extends EffectTarget<TArg>
+        T extends Map<EffectTarget<TArg>>
     >(
         target: any,
         prop: PropertyKey,

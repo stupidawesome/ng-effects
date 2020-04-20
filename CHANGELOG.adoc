@@ -110,6 +110,12 @@ Removed
 
 - add groundwork for composition API
 
+== 9.0.6
+
+=== Bug fixes
+
+- fix types for TypeScript 3.8
+
 == 9.0.5
 
 === Bug fixes
