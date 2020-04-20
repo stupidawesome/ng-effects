@@ -1,5 +1,42 @@
 = Changelog
 
+== 9.1.0-next.2
+
+=== Features
+
+- add experimental composition API
+
+This library will be introducing a compositional API that works similar to Vue 3.0. This isn't a breaking change, but
+the plan is to deprecate the decorator based API in favour of this one.
+
+[source, typescript]
+----
+export const MyHooks = setup<CompositionComponent>(context => {
+    const state = useReactive(context)
+
+    effect(() => { // runs immediately and every time count changes
+        return timer(1000).subscribe(() => {
+            state.count += 1
+        })
+    })
+})
+
+@Component({
+    providers: [MyHooks]
+})
+export class MyComponent {
+    count = 0
+    constructor(connect: Connect) {
+        connect(this)
+    }
+}
+
+----
+
+== 9.1.0-next.1
+
+Removed
+
 == 9.1.0-next.0
 
 === Features
