@@ -2,7 +2,9 @@ import { createHostRef } from "./host-ref"
 import {
     ChangeDetectorRef,
     ElementRef,
+    inject,
     InjectionToken,
+    Injector,
     INJECTOR,
     Optional,
     Provider,
@@ -16,8 +18,67 @@ import { connectFactory } from "./connect-factory"
 import { DestroyObserver } from "./destroy-observer"
 import { scheduler } from "../scheduler/scheduler"
 import { ViewRenderer } from "../scheduler/view-renderer"
-import { Subject } from "rxjs"
+import { merge, Observable, Subject } from "rxjs"
 import { DefaultEffectOptions } from "../lib/interfaces"
+import { delayWhen, distinctUntilChanged, map, share, skip, switchMap, take } from "rxjs/operators"
+import { unsubscribe } from "./utils"
+
+let _context: Injector
+let _hook: LifeCycleHooks | undefined
+
+export function setContext(context: any, hook?: LifeCycleHooks) {
+    _context = context
+    _hook = hook
+}
+
+export function getContext() {
+    return _context
+}
+
+export function getLifeCycle() {
+    return _hook !== undefined ? _hook + 1 : undefined
+}
+
+export function flush(hook: LifeCycleHooks) {
+    const effects = getHooks(hook)
+    if (effects) {
+        unsubscribe([...effects])
+        effects.clear()
+    }
+}
+
+const hooks = new WeakMap()
+
+export enum LifeCycleHooks {
+    OnChanges = 1,
+    OnChangesEffects = 2,
+    AfterViewInit = 3,
+    AfterViewInitEffects = 4,
+    WhenRendered = 5,
+    WhenRenderedEffects,
+    OnDestroy,
+}
+
+export function addHook(hook: LifeCycleHooks | undefined, callback: Function) {
+    if (hook === undefined) {
+        return
+    }
+    const context = getContext()
+    if (!hooks.has(context)) {
+        hooks.set(context, new Map())
+    }
+    const map = hooks.get(context)
+    if (!map.has(hook)) {
+        map.set(hook, new Set())
+    }
+    const callbacks = map.get(hook)
+    callbacks.add(callback)
+}
+
+export function getHooks(hook: LifeCycleHooks): Set<Function> | undefined {
+    const context = getContext()
+    return hooks.get(context)?.get(hook)
+}
 
 export class ChangeNotifier extends Subject<DefaultEffectOptions | void> {}
 
@@ -71,12 +132,85 @@ export const CONNECT_SCHEDULER = [
 
 export const SCHEDULER = [CONNECT, CONNECT_SCHEDULER, RUN_SCHEDULER, DestroyObserver]
 
-export function setup(fn: Function): Provider {
+export function setup<T>(fn: (context: T) => void): Provider {
     return [
         SCHEDULER,
         {
             provide: fn,
-            useFactory: fn,
+            useFactory: () => {
+                const injector = inject(INJECTOR)
+                const scheduler = injector.get(ViewRenderer)
+                const destroy = injector.get(DestroyObserver)
+                const context = injector.get(HostRef).context
+
+                setContext(injector)
+                fn(context)
+
+                const afterViewInit = getHooks(LifeCycleHooks.AfterViewInit)
+                const onChanges = getHooks(LifeCycleHooks.OnChanges)
+                const whenRendered = getHooks(LifeCycleHooks.WhenRendered)
+
+                const changes = scheduler.whenScheduled.pipe(
+                    map(() => Object.values(context)),
+                    distinctUntilChanged((a, b) => a.every((val, i) => val === b[i])),
+                    skip(1),
+                    share(),
+                )
+
+                if (afterViewInit) {
+                    const iter = [...afterViewInit]
+                    destroy.add(
+                        scheduler.whenRendered
+                            .pipe(
+                                take(1),
+                                switchMap(() => {
+                                    setContext(injector, LifeCycleHooks.AfterViewInit)
+                                    return merge(
+                                        ...iter.map(callback => {
+                                            return new Observable(() => callback())
+                                        }),
+                                    )
+                                }),
+                            )
+                            .subscribe(),
+                    )
+                }
+                if (onChanges) {
+                    const iter = [...onChanges]
+                    changes
+                        .pipe(
+                            switchMap(() => {
+                                flush(LifeCycleHooks.OnChangesEffects)
+                                setContext(injector, LifeCycleHooks.OnChanges)
+                                return merge(
+                                    ...iter.map(callback => {
+                                        return new Observable(() => callback())
+                                    }),
+                                )
+                            }),
+                        )
+                        .subscribe()
+                }
+
+                if (whenRendered) {
+                    const iter = [...whenRendered]
+                    destroy.add(
+                        changes
+                            .pipe(
+                                delayWhen(() => scheduler.whenRendered),
+                                switchMap(() => {
+                                    setContext(injector, LifeCycleHooks.WhenRendered)
+                                    return merge(
+                                        ...iter.map(callback => {
+                                            return new Observable(() => callback())
+                                        }),
+                                    )
+                                }),
+                            )
+                            .subscribe(),
+                    )
+                }
+            },
         },
         {
             provide: HOST_INITIALIZER,

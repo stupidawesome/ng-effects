@@ -11,7 +11,7 @@ export type AssignSources<T> = {
 export enum ChangeDetection {
     MarkDirty,
     DetectChanges,
-    None
+    None,
 }
 
 export type ChangeDetectionMap<T> = {

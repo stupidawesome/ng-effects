@@ -24,13 +24,9 @@ export class ViewRenderer implements RenderApi {
             origEndFn.apply(rendererFactory)
         }
 
-        this.whenScheduled = begin.pipe(
-            share()
-        )
+        this.whenScheduled = begin.pipe(share())
 
-        this.whenRendered = end.pipe(
-            share()
-        )
+        this.whenRendered = end.pipe(share())
     }
 
     public detectChanges(hostRef: any, changeDetector: ChangeDetectorRef) {

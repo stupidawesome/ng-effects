@@ -70,8 +70,10 @@ export function assertPropertyExists(key: any, obj: any) {
 
 export function unsubscribe(subs: any[]) {
     for (const sub of subs) {
-        sub.complete && sub.complete()
-        sub.unsubscribe && sub.unsubscribe()
-        sub.call && sub()
+        if (sub) {
+            sub.complete && sub.complete()
+            sub.unsubscribe && sub.unsubscribe()
+            sub.call && sub()
+        }
     }
 }

@@ -1,49 +1,44 @@
 import { Component, Input, Output, QueryList, ViewChildren } from "@angular/core"
-import { afterViewInit, connect, HostEmitter, onChanges, setup, use, useContext, useState, watch, whenRendered } from "@ng9/ng-effects"
-import { useStore } from "./utils"
-import { AppState } from "../test/test.component"
-import { Store } from "../store"
-import { HttpClient } from "@angular/common/http"
+import { afterViewInit, connect, effect, HostEmitter, setup, useReactive, whenRendered } from "@ng9/ng-effects"
 import { timer } from "rxjs"
 
-export const Composition = setup(() => {
-    const http = use(HttpClient)
-    const { ageChange } = useContext<CompositionComponent>()
-    const state = useState<CompositionComponent>()
-    const dispatch = useStore<AppState, CompositionComponent>(Store, {
-        age: state => state.age,
+export const Composition = setup<CompositionComponent>(context => {
+    const state = useReactive(context)
+
+    effect(() => {
+        console.log("count changed!", state.count)
+        context.ageChange(state.count)
+
+        return timer(1000).subscribe(() => {
+            state.age += 1
+        })
+    })
+
+    effect(() => {
+        return
     })
 
     afterViewInit(() => {
-        watch(() => state.count, () => {
-            console.log('hi!')
-        })
-        // console.log('mounted!', state.viewChildren.length)
+        console.log("mounted!")
     })
 
     whenRendered(() => {
-        // console.log('rendered!')
-    })
+        console.log("rendered!")
 
-    onChanges(() => {
-        // console.log('updated!')
+        effect(() =>
+            timer(500).subscribe(() => {
+                console.log("after delay")
+            }),
+        )
     })
 })
 
-export const Multiply = setup(() => {
-    const { ageChange } = useContext<CompositionComponent>()
-    const state = useState<CompositionComponent>()
+export const Multiply = setup<CompositionComponent>(context => {
+    const state = useReactive(context)
 
-    watch(() => state.age, () => {
-        return timer(1000).subscribe(() => {
-            state.age += 1
-            ageChange(state.age)
-        })
-    })
-
-    watch(() => state.count, (value) => {
-        console.log(value)
-    })
+    // watch(() => state.count, (value) => {
+    //     console.log(value)
+    // })
 })
 
 @Component({
