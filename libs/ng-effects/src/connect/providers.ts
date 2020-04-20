@@ -23,6 +23,7 @@ import { delayWhen, distinctUntilChanged, map, share, skip, switchMap, take } fr
 import { useReactive } from "../composition/utils"
 import { ChangeNotifier } from "./change-notifier"
 import { flush, getHooks, LifeCycleHooks, setContext } from "./hooks"
+import { ChangeDetection } from "../composition/interfaces"
 
 export const HOST_REF = {
     provide: HostRef,
@@ -42,7 +43,7 @@ export function runSetup() {
     const context = inject(HostRef as Type<any>).context
     if (typeof context.ngOnConnect === "function") {
         setContext(injector)
-        const reactive = useReactive(context)
+        const reactive = useReactive(context, ChangeDetection.MarkDirty)
         context.ngOnConnect.call(reactive, reactive)
         setContext()
     }
@@ -95,7 +96,7 @@ export function connectable<T>(fn: (context: T) => void): Provider {
                 const context = injector.get(HostRef).context
 
                 setContext(injector)
-                fn(useReactive(context))
+                fn(useReactive(context, ChangeDetection.MarkDirty))
                 setContext()
 
                 const afterViewInit = getHooks(LifeCycleHooks.AfterViewInit)

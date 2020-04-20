@@ -86,7 +86,6 @@ export function stateFactory<T extends object>(
     changeNotifier: ChangeNotifier,
     opts: ChangeDetectionMap<T> | ChangeDetection = {},
 ): T {
-    const isHostContext = context === useContext()
     return new Proxy<T>(context, {
         get(target: T, p: PropertyKey): any {
             if (!Reflect.has(target, p)) {
@@ -114,10 +113,7 @@ export function stateFactory<T extends object>(
             const changes = typeof opts === "number" ? opts : Reflect.get(opts, p)
             if (changes === ChangeDetection.DetectChanges) {
                 changeNotifier.next({ detectChanges: true })
-            } else if (
-                (isHostContext && changes !== ChangeDetection.None) ||
-                changes === ChangeDetection.MarkDirty
-            ) {
+            } else if (changes === ChangeDetection.MarkDirty) {
                 changeNotifier.next({ markDirty: true })
             }
             return success
@@ -125,7 +121,7 @@ export function stateFactory<T extends object>(
     })
 }
 
-export function useReactive<T extends object>(value: T, opts?: ChangeDetectionMap<T>): T {
+export function useReactive<T extends object>(value: T, opts?: ChangeDetectionMap<T> | ChangeDetection): T {
     const changeNotifier = inject(ChangeNotifier)
     return stateFactory(value, changeNotifier, opts)
 }

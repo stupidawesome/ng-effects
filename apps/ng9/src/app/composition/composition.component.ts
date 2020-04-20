@@ -64,6 +64,8 @@ export class CompositionComponent implements Connectable {
 
         effect(() => {
             console.log(this.count)
+
+            return timer(1000).subscribe(() => this.incrementCount())
         })
     }
 }
