@@ -3,6 +3,7 @@ import {
     ChangeDetectorRef,
     ElementRef,
     inject,
+    Injectable,
     InjectionToken,
     INJECTOR,
     Optional,
@@ -38,6 +39,9 @@ export interface Connect {
     <T>(context: T): void
 }
 
+@Injectable()
+export class Connect {}
+
 export function runSetup() {
     const injector = inject(INJECTOR)
     const context = inject(HostRef as Type<any>).context
@@ -50,6 +54,7 @@ export function runSetup() {
 }
 
 export const CONNECT = [
+    Connect,
     {
         provide: Connect,
         useFactory: connectFactory,
@@ -201,15 +206,3 @@ export interface Connectable<T extends object = any> {
 }
 
 export const Connectable = connectable(() => {})
-
-export function Connect(): ClassDecorator {
-    return function(target) {
-        return new Proxy(target, {
-            construct(target: any, argArray: any): any {
-                const instance = new target(...argArray)
-                connect(instance)
-                return instance
-            },
-        })
-    }
-}

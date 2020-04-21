@@ -1,14 +1,12 @@
-import { Component } from "@angular/core"
-import { Connect, Connectable, connectable, effect, inject, useReactive } from "@ng9/ng-effects"
-import { timer } from "rxjs"
-import { HttpClient } from "@angular/common/http"
+import { Component, EventEmitter, Input, Output } from "@angular/core"
+import { Connect, Connectable, connectable, effect, useContext, useReactive } from "@ng9/ng-effects"
+import { interval, timer } from "rxjs"
 
 function useButton(context: CompositionComponent) {
     const state = useReactive(context)
 
     effect(() => {
         console.log("count changed!", state.count)
-        // context.ageChange(state.count)
 
         return timer(1000).subscribe(() => {
             state.count += 1
@@ -46,26 +44,36 @@ export const Multiply = connectable<CompositionComponent>(context => {
     selector: "app-composition",
     template: `
         <div>Count: {{ count }}</div>
-        <button (click)="incrementCount()">Increment</button>
+        <div>Target: {{ target }}</div>
     `,
     styleUrls: ["./composition.component.scss"],
     providers: [Connectable],
 })
-@Connect()
 export class CompositionComponent implements Connectable {
+    @Input()
     count: number = 0
+
+    @Output()
+    countChange = new EventEmitter()
+
+    target: string = ""
 
     incrementCount() {
         this.count += 1
     }
 
     ngOnConnect() {
-        const http = inject(HttpClient)
-
+        const { countChange } = this
         effect(() => {
-            console.log(this.count)
-
-            return timer(1000).subscribe(() => this.incrementCount())
+            this.target = `target is ${this.count}`
+            countChange.emit(this.count)
         })
+        effect(() => {
+            return interval(1000).subscribe(() => this.incrementCount())
+        })
+    }
+
+    constructor(connect: Connect) {
+        connect(this)
     }
 }

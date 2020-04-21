@@ -5,7 +5,14 @@ import { AppComponent } from "./app.component"
 import { TestComponent } from "./test/test.component"
 import { HttpClientModule } from "@angular/common/http"
 // noinspection ES6UnusedImports
-import { Connect, Effect, effects, Effects, USE_EXPERIMENTAL_RENDER_API } from "@ng9/ng-effects"
+import {
+    connect,
+    Connect,
+    Effect,
+    effects,
+    Effects,
+    USE_EXPERIMENTAL_RENDER_API,
+} from "@ng9/ng-effects"
 import { Store } from "./store"
 import { dispatchAdapter } from "./dispatch-adapter"
 import { of } from "rxjs"
@@ -23,16 +30,12 @@ export class ModuleEffects {
 @NgModule({
     declarations: [AppComponent, TestComponent, CompositionComponent],
     imports: [BrowserModule, HttpClientModule, BrowserAnimationsModule],
-    providers: [USE_EXPERIMENTAL_RENDER_API, dispatchAdapter(Store)],
+    providers: [USE_EXPERIMENTAL_RENDER_API, dispatchAdapter(Store), Effects],
     // providers: [dispatchAdapter(Store), Effects, ModuleEffects],
     bootstrap: [AppComponent],
 })
 export class AppModule {
-    constructor() {
-        // connect(this)
-    }
-    @Effect()
-    public moduleEffect() {
-        return of("")
+    constructor(connect: Connect) {
+        connect(this)
     }
 }

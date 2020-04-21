@@ -33,11 +33,6 @@ export class ViewRenderer implements RenderApi {
             return origFactory.call(rendererFactory, hostElement, type)
         }
 
-        rendererFactory.begin = function() {
-            begin.next()
-            origBeginFn.apply(rendererFactory)
-        }
-
         rendererFactory.end = function() {
             end.next()
             origEndFn.apply(rendererFactory)

@@ -5,7 +5,8 @@ import { distinctUntilChanged, map } from "rxjs/operators"
 @Component({
     selector: "app-root",
     template: `
-        <app-composition></app-composition>
+        <app-composition [(count)]="count"></app-composition>
+        <button (click)="incrementCount()">Increment</button>
         <!--        <app-test [age]="age" (ageChange)="age = $event">-->
         <!--            <app-test *ngIf="show">Nested!</app-test>-->
         <!--        </app-test>-->
@@ -18,6 +19,7 @@ export class AppComponent {
     title = "ng9"
     show: boolean
     age: number
+    count = 10
 
     @ViewChild(HostRef)
     ref?: HostRef
@@ -46,5 +48,9 @@ export class AppComponent {
             map(age => age > 35),
             distinctUntilChanged(),
         )
+    }
+
+    incrementCount() {
+        this.count += 10
     }
 }

@@ -1,5 +1,18 @@
 = Changelog
 
+9.1.0-next.5
+
+== Bug fixes
+
+- make effects run when change detection is scheduled instead of after render
+- fix reactive proxy accessors
+- ensure reactive state is updated when inputs change
+- fix types for TypeScript 3.8
+
+== 9.1.0-next.4
+
+- fix error when accessing state outside of injection context
+
 == 9.1.0-next.3
 
 === Features
