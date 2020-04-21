@@ -1,5 +1,11 @@
 = Changelog
 
+== 9.0.7
+
+=== Bug fixes
+
+- ensure reactive state is updated when inputs change
+
 == 9.0.6
 
 === Bug fixes

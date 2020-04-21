@@ -27,16 +27,7 @@ import {
     State,
 } from "@ng9/ng-effects"
 import { increment } from "../utils"
-import {
-    distinctUntilChanged,
-    map,
-    mapTo,
-    repeat,
-    repeatWhen,
-    switchMapTo,
-    take,
-} from "rxjs/operators"
-import { Dispatch } from "../dispatch-adapter"
+import { distinctUntilChanged, map, mapTo, repeat, repeatWhen, switchMapTo, take } from "rxjs/operators"
 import { Store } from "../store"
 
 interface TestState {
@@ -106,10 +97,6 @@ export interface AppState {
 
 export const selectAge = (state: AppState) => {
     return state.age || 0
-}
-
-class MyAction {
-    type!: "MyAction"
 }
 
 @Injectable()
