@@ -15,7 +15,8 @@ import { distinctUntilChanged, map } from "rxjs/operators"
 @Component({
     selector: "app-root",
     template: `
-        <app-connectable></app-connectable>
+        <app-connectable [(count)]="count"></app-connectable>
+        <button (click)="increment()">Increment</button>
     `,
     styleUrls: ["./app.component.scss"],
     providers: [Effects],
@@ -25,6 +26,7 @@ export class AppComponent {
     title = "ng9"
     show: boolean
     age: number
+    count = 10
 
     @ViewChild(HostRef)
     ref?: HostRef
@@ -53,5 +55,9 @@ export class AppComponent {
             map(age => age > 35),
             distinctUntilChanged(),
         )
+    }
+
+    increment() {
+        this.count += 10
     }
 }

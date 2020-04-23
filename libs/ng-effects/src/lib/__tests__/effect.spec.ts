@@ -176,14 +176,13 @@ describe("effect", () => {
         given: subject.componentInstance.ngOnConnect = connect
 
         when: {
-            // TODO: investigate strange behaviour with sequential change detection
             detectChangesAfterEach(subject, [1, 2, 3, 4, 5])
             subject.destroy()
             tick(10000)
         }
 
         // called twice for each change detection (5x2)
-        then: expect(expected).toHaveBeenCalledTimes(11) // should be 10?
+        then: expect(expected).toHaveBeenCalledTimes(10)
     }))
 
     it("should call hooks in the right order", () => {

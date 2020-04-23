@@ -7,6 +7,7 @@ import {
     Optional,
     Provider,
     StaticProvider,
+    ViewContainerRef,
 } from "@angular/core"
 import { Connectable } from "../connectable.directive"
 import { TestBed } from "@angular/core/testing"
@@ -26,6 +27,7 @@ export class ConnectedComponent extends Connectable {
     constructor(
         @Inject(INJECTOR) injector: Injector,
         @Optional() @Inject(FAKE_INJECTOR) fakeInjector: Injector,
+        viewContainerRef: ViewContainerRef,
     ) {
         super(fakeInjector || injector)
     }

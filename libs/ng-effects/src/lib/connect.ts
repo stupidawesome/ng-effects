@@ -8,10 +8,11 @@ import {
     KeyValueChanges,
     KeyValueDiffers,
     Type,
+    ViewContainerRef,
 } from "@angular/core"
 import { Context, EffectHook, LifecycleHook, OnConnect } from "./interfaces"
 import { CONNECTABLE } from "./constants"
-import { Subject, TeardownLogic } from "rxjs"
+import { queueScheduler, scheduled, Subject, TeardownLogic } from "rxjs"
 import { getLifecycleHook, setLifecycleHook } from "./lifecycle"
 
 type CleanupMap = Map<LifecycleHook, Set<TeardownLogic>>
@@ -72,11 +73,45 @@ export function setContext(context?: any) {
     activeContext = context
 }
 
+export function inject<T>(
+    token: Type<T> | AbstractType<T> | InjectionToken<T>,
+    flags: InjectFlags,
+): T | null
 export function inject<T>(token: Type<T> | AbstractType<T> | InjectionToken<T>): T
 export function inject<T>(
     token: Type<T> | AbstractType<T> | InjectionToken<T>,
     flags?: InjectFlags,
 ): T | null {
+    // Workaround for https://github.com/angular/angular/issues/31776
+    if (flags) {
+        let parent: Injector
+        try {
+            parent = oinject(ViewContainerRef as Type<any>)?.parentInjector
+        } catch {
+            throw new Error(
+                "This injector is a temporary workaround that can only be used inside a `connectable()` or `ngOnConnect()` call. For other injection contexts, please import `inject()` from @angular/core. Related issue: https://github.com/angular/angular/issues/31776",
+            )
+        }
+        const optional = Boolean(flags & InjectFlags.Optional) ? null : undefined
+        if (Boolean(flags & InjectFlags.SkipSelf) && parent) {
+            return parent.get(token, optional)
+        }
+        if (Boolean(flags & InjectFlags.Self)) {
+            const current: T = getInjector().get(token as any, null)
+            const parentExists = parent ? parent.get(token, null) : null
+            if (optional === null && parentExists === current) {
+                return null
+            }
+            if (parentExists === null || parentExists !== current) {
+                return current
+            } else {
+                throw new Error(
+                    `EXCEPTION: No provider for ${"name" in token ? token.name : token.toString()}`,
+                )
+            }
+        }
+    }
+
     return oinject(token as any, flags)
 }
 
@@ -107,21 +142,26 @@ function setPreviousValues(object: any, values: any[]) {
 }
 
 function getCurrentValues(deps: Map<any, Set<any>>) {
-    return Array.from(deps).map(([context, keys]) => Array.from(keys).map(key => context[key]))
+    const current: any = []
+    Array.from(deps).map(([context, keys]) => {
+        Array.from(keys).map(key => {
+            current.push(context[key])
+        })
+    })
+    return current
 }
 
 export function invalidateEffects(target: Context) {
     const invalidations = getInvalidations(target)
-
     const run = new Set<Function>()
     for (const [deps, invalidate] of invalidations) {
         const current = getCurrentValues(deps)
-        const previous = getPreviousValues(target) || []
+        const previous = getPreviousValues(deps) || []
         setPreviousValues(target, current)
+
         if (current === previous) {
             break
         }
-
         if (current.length !== previous.length) {
             run.add(invalidate)
             break
@@ -141,6 +181,7 @@ export function invalidateEffects(target: Context) {
 }
 
 export function runEffect(context: Context, effect: EffectHook, cleanup: Set<TeardownLogic>) {
+    flushDeps()
     effects.delete(effect)
     const teardown = effect()
     const deps = flushDeps()
@@ -151,6 +192,7 @@ export function runEffect(context: Context, effect: EffectHook, cleanup: Set<Tea
         unsubscribe(teardown)
         runEffect(context, effect, cleanup)
     }
+    setPreviousValues(deps, getCurrentValues(deps))
     getInvalidations(context).set(deps, invalidation)
     cleanup.add(() => {
         invalidations.delete(deps)
@@ -223,14 +265,15 @@ export function runScheduler() {
     const differ = iterableDiffers.find(context).create()
     let changed = true
 
-    scheduler.subscribe(lifecycle => {
+    scheduled(scheduler, queueScheduler).subscribe(lifecycle => {
         switch (lifecycle) {
             case LifecycleHook.DoCheck: {
                 const diff = differ.diff(context)
-                if (hasChanges(diff)) {
+                const ch = hasChanges(diff)
+                if (ch) {
                     changed = true
                     changeDetectorRef.markForCheck()
-                    runInContext(context, LifecycleHook.OnChanges, () => {
+                    runInContext(context, LifecycleHook.DoCheck, () => {
                         const runEffects = invalidateEffects(context)
                         scheduler.next(LifecycleHook.OnChanges)
                         runEffects()
@@ -258,7 +301,7 @@ export function runScheduler() {
 }
 
 export function setup() {
-    const initializers = oinject(CONNECTABLE, InjectFlags.Host | InjectFlags.Optional)
+    const initializers = inject(CONNECTABLE, InjectFlags.Self | InjectFlags.Optional)
     const context = getContext<Partial<OnConnect>>()
     const reactive = reactiveFactory(context)
     const cleanup = cleanupMap.get(context) as Map<LifecycleHook, Set<TeardownLogic>>

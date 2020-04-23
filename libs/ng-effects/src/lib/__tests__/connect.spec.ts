@@ -9,7 +9,7 @@ import {
     FAKE_INJECTOR,
     provide,
 } from "./utils"
-import { ChangeDetectorRef } from "@angular/core"
+import { ChangeDetectorRef, ViewContainerRef } from "@angular/core"
 
 describe("connect", () => {
     beforeEach(() => declare(ConnectedComponent))
@@ -26,6 +26,12 @@ describe("connect", () => {
             {
                 provide: ChangeDetectorRef,
                 useValue: null,
+            },
+            {
+                provide: ViewContainerRef,
+                useValue: {
+                    parentInjector: expected,
+                },
             },
         )
         given: subject = createConnectedComponent()

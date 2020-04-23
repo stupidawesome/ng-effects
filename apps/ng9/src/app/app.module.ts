@@ -10,6 +10,7 @@ import { Store } from "./store"
 import { dispatchAdapter } from "./dispatch-adapter"
 import { of } from "rxjs"
 import { ConnectableComponent } from "./connectable/connectable.component"
+import { ConnectableChildComponent } from "./connectable-child/connectable-child.component"
 
 @Injectable()
 export class ModuleEffects {
@@ -20,7 +21,7 @@ export class ModuleEffects {
 }
 
 @NgModule({
-    declarations: [AppComponent, TestComponent, ConnectableComponent],
+    declarations: [AppComponent, TestComponent, ConnectableComponent, ConnectableChildComponent],
     imports: [BrowserModule, HttpClientModule],
     providers: [USE_EXPERIMENTAL_RENDER_API, dispatchAdapter(Store), Effects, ModuleEffects],
     // providers: [dispatchAdapter(Store), Effects, ModuleEffects],
