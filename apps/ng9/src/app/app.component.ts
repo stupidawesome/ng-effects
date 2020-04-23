@@ -1,14 +1,21 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ViewChild } from "@angular/core"
-import { changes, connect, Effect, Effects, HostRef, State, ViewRenderer } from "@ng9/ng-effects"
+import {
+    changes,
+    Connect,
+    connect,
+    Effect,
+    Effects,
+    HostRef,
+    State,
+    ViewRenderer,
+} from "@ng9/ng-effects"
 import { interval } from "rxjs"
 import { distinctUntilChanged, map } from "rxjs/operators"
 
 @Component({
     selector: "app-root",
     template: `
-        <app-test [age]="age" (ageChange)="age = $event">
-            <app-test *ngIf="show">Nested!</app-test>
-        </app-test>
+        <app-connectable></app-connectable>
     `,
     styleUrls: ["./app.component.scss"],
     providers: [Effects],
@@ -22,7 +29,7 @@ export class AppComponent {
     @ViewChild(HostRef)
     ref?: HostRef
 
-    constructor(cdr: ChangeDetectorRef, viewRenderer: ViewRenderer) {
+    constructor(connect: Connect, cdr: ChangeDetectorRef, viewRenderer: ViewRenderer) {
         this.show = false
         this.age = 31
 

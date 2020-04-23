@@ -36,16 +36,3 @@ export function latest<T extends any>(source: ObservableSources<T>): Observable<
         }),
     )
 }
-
-/**
- * Connect views without explicitly injecting `Connect`
- *
- * @experimental
- * @param context The component or directive instance
- */
-export function connect(context: any) {
-    const connect = injectViewContainerRef(ViewContainerRef, ElementRef).injector.get(Connect)
-    if (connect) {
-        connect(context)
-    }
-}

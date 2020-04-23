@@ -1,4 +1,3 @@
-import { afterViewInit, effect, onChanges, onDestroy, whenRendered } from "../hooks"
 import { ConnectedComponent, createConnectedComponent, declare } from "./utils"
 import fn = jest.fn
 import Mock = jest.Mock

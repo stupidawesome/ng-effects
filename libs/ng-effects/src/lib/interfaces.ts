@@ -8,7 +8,7 @@ export type ConnectableFunction<T = any> = (ctx: T) => void
 
 export type EffectHook = () => TeardownLogic
 
-export type Context = object
+export type Context = { [key: string]: any }
 
 export const enum LifecycleHook {
     OnInit,

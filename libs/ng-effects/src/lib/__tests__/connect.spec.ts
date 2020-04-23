@@ -9,6 +9,7 @@ import {
     FAKE_INJECTOR,
     provide,
 } from "./utils"
+import { ChangeDetectorRef } from "@angular/core"
 
 describe("connect", () => {
     beforeEach(() => declare(ConnectedComponent))
@@ -17,10 +18,16 @@ describe("connect", () => {
         let subject, expected, result
 
         given: expected = createInjector()
-        given: provide({
-            provide: FAKE_INJECTOR,
-            useValue: expected,
-        })
+        given: provide(
+            {
+                provide: FAKE_INJECTOR,
+                useValue: expected,
+            },
+            {
+                provide: ChangeDetectorRef,
+                useValue: null,
+            },
+        )
         given: subject = createConnectedComponent()
 
         when: {
