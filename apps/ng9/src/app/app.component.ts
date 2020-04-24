@@ -1,21 +1,14 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ViewChild } from "@angular/core"
-import {
-    changes,
-    Connect,
-    connect,
-    Effect,
-    Effects,
-    HostRef,
-    State,
-    ViewRenderer,
-} from "@ng9/ng-effects"
+import { changes, Connect, Effect, Effects, HostRef, State, ViewRenderer } from "@ng9/ng-effects"
 import { interval } from "rxjs"
 import { distinctUntilChanged, map } from "rxjs/operators"
 
 @Component({
     selector: "app-root",
     template: `
-        <app-connectable [(count)]="count"></app-connectable>
+        <app-connectable [(count)]="count">
+            <app-connectable-child [count]="count" #test></app-connectable-child>
+        </app-connectable>
         <button (click)="increment()">Increment</button>
     `,
     styleUrls: ["./app.component.scss"],

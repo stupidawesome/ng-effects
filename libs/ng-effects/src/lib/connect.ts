@@ -43,8 +43,8 @@ export function takeInjector() {
     }
 }
 
-export function getInjector() {
-    const injector = injectorMap.get(getContext())
+export function getInjector(context: Context = getContext()) {
+    const injector = injectorMap.get(context)
 
     if (!injector) {
         throwMissingInjectorError()
@@ -82,11 +82,12 @@ export function inject<T>(
     token: Type<T> | AbstractType<T> | InjectionToken<T>,
     flags?: InjectFlags,
 ): T | null {
+    const nodeInjector = getInjector()
     // Workaround for https://github.com/angular/angular/issues/31776
     if (flags) {
         let parent: Injector
         try {
-            parent = oinject(ViewContainerRef as Type<any>)?.parentInjector
+            parent = nodeInjector.get(ViewContainerRef as Type<any>)?.parentInjector
         } catch {
             throw new Error(
                 "This injector is a temporary workaround that can only be used inside a `connectable()` or `ngOnConnect()` call. For other injection contexts, please import `inject()` from @angular/core. Related issue: https://github.com/angular/angular/issues/31776",
@@ -97,7 +98,7 @@ export function inject<T>(
             return parent.get(token, optional)
         }
         if (Boolean(flags & InjectFlags.Self)) {
-            const current: T = getInjector().get(token as any, null)
+            const current: T = nodeInjector.get(token as any, null)
             const parentExists = parent ? parent.get(token, null) : null
             if (optional === null && parentExists === current) {
                 return null
@@ -112,7 +113,7 @@ export function inject<T>(
         }
     }
 
-    return oinject(token as any, flags)
+    return nodeInjector.get(token)
 }
 
 export function getHooks() {
@@ -214,7 +215,7 @@ export function runHooks(
     const scheduler = getScheduler()
     const context = getContext()
 
-    scheduler.subscribe({
+    scheduled(scheduler, queueScheduler).subscribe({
         next: current => {
             if (current === lifecycle) {
                 flush(cleanup)
@@ -339,20 +340,24 @@ export function runInContext<T extends (...args: any[]) => any>(
     return returnValue
 }
 
-export function connect(injector: Injector) {
-    injectors.push(injector)
-}
-
-export function init(context: any) {
+export function connect(context: Context, injector: Injector) {
     const cleanup = new Map()
     const lifecycle = new Map()
 
-    for (const [index] of Array.from({ length: 6 }).entries()) {
+    injectorMap.set(context, injector)
+    hooksMap.set(context, lifecycle)
+    cleanupMap.set(context, cleanup)
+
+    for (const index of Array.from({ length: 6 }).keys()) {
         cleanup.set(index, new Set<TeardownLogic>())
         lifecycle.set(index, new Set<EffectHook>())
     }
 
-    const hostInjector = takeInjector()
+    setContext(context)
+}
+
+export function init(context: any) {
+    const hostInjector = getInjector(context)
     const injector = Injector.create({
         parent: hostInjector,
         providers: [
@@ -363,9 +368,6 @@ export function init(context: any) {
             },
         ],
     })
-    injectorMap.set(context, hostInjector)
-    hooksMap.set(context, lifecycle)
-    cleanupMap.set(context, cleanup)
 
     runInContext(context, LifecycleHook.OnInit, () => injector.get(setup))
 }

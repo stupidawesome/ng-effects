@@ -1,5 +1,5 @@
-import { Component, InjectFlags } from "@angular/core"
-import { Connectable, inject } from "@ng9/ng-effects"
+import { Component, Input } from "@angular/core"
+import { Connectable, effect } from "@ng9/ng-effects"
 import { TEST } from "../connectable/connectable.component"
 
 @Component({
@@ -14,7 +14,13 @@ import { TEST } from "../connectable/connectable.component"
     ],
 })
 export class ConnectableChildComponent extends Connectable {
+    @Input()
+    count = 0
+
     ngOnConnect(): void {
-        console.log("child!", inject(TEST))
+        effect(() => {
+            // double whatever input value is
+            this.count *= 2
+        })
     }
 }
