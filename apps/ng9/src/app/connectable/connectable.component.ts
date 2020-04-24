@@ -1,21 +1,5 @@
-import {
-    Component,
-    ContentChildren,
-    InjectFlags,
-    InjectionToken,
-    Input,
-    Output,
-    QueryList,
-    ViewChildren,
-} from "@angular/core"
-import {
-    afterViewInit,
-    connectable,
-    Connectable,
-    effect,
-    HostEmitter,
-    inject,
-} from "@ng9/ng-effects"
+import { Component, ContentChildren, InjectionToken, Input, Output, QueryList } from "@angular/core"
+import { afterViewInit, connectable, Connectable, effect, HostEmitter, inject, watchEffect } from "@ng9/ng-effects"
 import { interval, timer } from "rxjs"
 import { HttpClient } from "@angular/common/http"
 
@@ -30,7 +14,7 @@ export const MyConnectable = connectable<ConnectableComponent>(ctx => {
         console.log(ctx.children)
     })
 
-    effect(() => {
+    watchEffect(() => {
         ctx.offset = ctx.count + 1
         ctx.countChange.emit(ctx.count)
         return timer(1000).subscribe(() => {

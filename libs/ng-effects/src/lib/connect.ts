@@ -9,7 +9,7 @@ import {
     Type,
     ViewContainerRef,
 } from "@angular/core"
-import { Context, EffectHook, LifecycleHook, OnConnect } from "./interfaces"
+import { Context, EffectHook, EffectOptions, LifecycleHook, OnConnect } from "./interfaces"
 import { CONNECTABLE } from "./constants"
 import { Subject, TeardownLogic } from "rxjs"
 import { getLifecycleHook, setLifecycleHook } from "./lifecycle"
@@ -18,7 +18,7 @@ type CleanupMap = Map<LifecycleHook, Set<TeardownLogic>>
 
 const injectorMap = new WeakMap<Context, Injector>()
 const cleanupMap = new WeakMap<Context, CleanupMap>()
-const effects = new Set<EffectHook>()
+const effects = new Map<EffectHook, EffectOptions>()
 const hooksMap = new WeakMap<Context, Map<LifecycleHook, Set<EffectHook>>>()
 const schedulerMap = new WeakMap<Context, Subject<LifecycleHook | undefined>>()
 
@@ -170,18 +170,20 @@ export function invalidateEffects(target: Context) {
     }
 }
 
-export function runEffect(context: Context, effect: EffectHook, cleanup: Set<TeardownLogic>) {
+export function runEffect(context: Context, effect: EffectHook, options: EffectOptions, cleanup: Set<TeardownLogic>) {
     flushDeps()
     effects.delete(effect)
     const teardown = effect()
-    const deps = flushDeps()
+    const deps = options.watch ? flushDeps() : new Map()
     const invalidations = getInvalidations(context)
     const invalidation = () => {
         cleanup.delete(teardown)
         invalidations.delete(invalidation)
         unsubscribe(teardown)
         previousValues.delete(deps)
-        return () => runEffect(context, effect, cleanup)
+        return function () {
+            runEffect(context, effect, options, cleanup)
+        }
     }
     setPreviousValues(deps, getCurrentValues(deps))
     invalidations.set(invalidation, deps)
@@ -189,8 +191,8 @@ export function runEffect(context: Context, effect: EffectHook, cleanup: Set<Tea
 }
 
 export function runEffects(context: Context, cleanup: Set<TeardownLogic>) {
-    for (const effect of effects) {
-        runEffect(context, effect, cleanup)
+    for (const [effect, options] of effects) {
+        runEffect(context, effect, options, cleanup)
     }
 }
 
@@ -360,8 +362,8 @@ export function init(context: any) {
     runInContext(context, LifecycleHook.OnInit, () => injector.get(setup))
 }
 
-export function addEffect(fn: EffectHook) {
-    effects.add(fn)
+export function addEffect(fn: EffectHook, options: EffectOptions = {}) {
+    effects.set(fn, options)
 }
 
 export function addHook(fn: EffectHook, lifecycle: LifecycleHook) {
@@ -417,10 +419,6 @@ export function reactiveFactory<T extends object>(context: T, opts: any = { shal
             return success
         },
     })
-}
-
-export function effect(fn: () => TeardownLogic) {
-    addEffect(fn)
 }
 
 export function onChanges(fn: () => TeardownLogic) {

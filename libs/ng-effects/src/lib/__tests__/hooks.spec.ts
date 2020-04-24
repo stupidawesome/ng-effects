@@ -1,9 +1,10 @@
 import { ConnectedComponent, createConnectedComponent, declare } from "./utils"
 import fn = jest.fn
 import Mock = jest.Mock
-import { afterViewInit, effect, onChanges, onDestroy, whenRendered } from "../connect"
+import { afterViewInit, onChanges, onDestroy, whenRendered } from "../connect"
+import { effect, watchEffect } from "../utils"
 
-const hooks = [effect, onChanges, afterViewInit, whenRendered, onDestroy]
+const hooks = [watchEffect, effect, onChanges, afterViewInit, whenRendered, onDestroy]
 
 describe("lifecycle hooks", () => {
     beforeEach(() => declare(ConnectedComponent))

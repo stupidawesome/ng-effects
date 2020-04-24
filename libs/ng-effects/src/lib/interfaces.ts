@@ -19,3 +19,7 @@ export const enum LifecycleHook {
     DoCheck,
     AfterViewChecked,
 }
+
+export interface EffectOptions {
+    watch?: boolean
+}

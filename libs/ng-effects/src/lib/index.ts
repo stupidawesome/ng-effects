@@ -1,7 +1,6 @@
 export * from "./connectable.directive"
 export {
     connect,
-    effect,
     whenRendered,
     onChanges,
     onDestroy,
@@ -16,3 +15,4 @@ export {
 } from "./connect"
 export * from "./constants"
 export * from "./providers"
+export * from "./utils"
