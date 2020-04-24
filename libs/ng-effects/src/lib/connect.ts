@@ -163,10 +163,8 @@ export function invalidateEffects(target: Context) {
             }
         }
     }
-    return function() {
-        for (const fn of run) {
-            fn()
-        }
+    for (const fn of run) {
+        fn()
     }
 }
 
@@ -258,16 +256,11 @@ export function runScheduler() {
     scheduler.subscribe(lifecycle => {
         switch (lifecycle) {
             case LifecycleHook.DoCheck: {
-                const diff = differ.diff(context)
-                const ch = hasChanges(diff)
-                if (ch) {
+                invalidateEffects(context)
+                if (hasChanges(differ.diff(context))) {
                     changed = true
                     changeDetectorRef.markForCheck()
-                    runInContext(context, LifecycleHook.DoCheck, () => {
-                        const runEffects = invalidateEffects(context)
-                        scheduler.next(LifecycleHook.OnChanges)
-                        runEffects()
-                    })
+                    scheduler.next(LifecycleHook.OnChanges)
                 }
                 break
             }
@@ -380,9 +373,7 @@ export function getDeps(object: object) {
 }
 
 export function addDeps(object: Context, key: any) {
-    if (getLifecycleHook() !== undefined) {
-        getDeps(object).add(key)
-    }
+    getDeps(object).add(key)
 }
 
 export function flushDeps() {
@@ -393,13 +384,14 @@ export function flushDeps() {
 
 const cache = new WeakMap()
 
-export function reactiveFactory<T extends object>(context: T, opts: any = { shallow: true }) {
-    return new Proxy<T>(context, {
+export function reactiveFactory<T extends object>(source: T, opts: any = { shallow: true }) {
+    const context = getContext()
+    return new Proxy<T>(source, {
         get(target: T, p: PropertyKey, receiver: any): any {
             const value = Reflect.get(target, p, receiver)
             const desc = Object.getOwnPropertyDescriptor(target, p)
             if (desc && desc.enumerable) {
-                addDeps(context, p)
+                addDeps(target, p)
             }
             if ((desc && !desc.writable && !desc.configurable) || opts.shallow) {
                 return value
@@ -408,7 +400,8 @@ export function reactiveFactory<T extends object>(context: T, opts: any = { shal
                 if (cache.has(value)) {
                     return cache.get(value)
                 }
-                const state = reactiveFactory(value)
+                console.log('deep')
+                const state = reactiveFactory(value, opts)
                 cache.set(value, state)
                 return state
             } else return value

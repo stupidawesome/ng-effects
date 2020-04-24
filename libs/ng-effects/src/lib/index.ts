@@ -9,7 +9,6 @@ export {
     viewChecked,
     check,
     destroy,
-    reactiveFactory as reactive,
     inject,
     viewInit,
 } from "./connect"
