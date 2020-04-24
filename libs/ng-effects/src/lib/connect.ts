@@ -1,7 +1,6 @@
 import {
     AbstractType,
     ChangeDetectorRef,
-    inject as oinject,
     InjectFlags,
     InjectionToken,
     Injector,
@@ -12,12 +11,11 @@ import {
 } from "@angular/core"
 import { Context, EffectHook, LifecycleHook, OnConnect } from "./interfaces"
 import { CONNECTABLE } from "./constants"
-import { queueScheduler, scheduled, Subject, TeardownLogic } from "rxjs"
+import { Subject, TeardownLogic } from "rxjs"
 import { getLifecycleHook, setLifecycleHook } from "./lifecycle"
 
 type CleanupMap = Map<LifecycleHook, Set<TeardownLogic>>
 
-const injectors: Injector[] = []
 const injectorMap = new WeakMap<Context, Injector>()
 const cleanupMap = new WeakMap<Context, CleanupMap>()
 const effects = new Set<EffectHook>()
@@ -32,15 +30,6 @@ export function throwMissingInjectorError(): never {
 
 export function throwMissingContextError(): never {
     throw new Error("[ngfx] Invalid execution context")
-}
-
-export function takeInjector() {
-    const injector = injectors.shift()
-    if (injector) {
-        return injector
-    } else {
-        throwMissingInjectorError()
-    }
 }
 
 export function getInjector(context: Context = getContext()) {
@@ -127,7 +116,7 @@ export function flush(cleanup: Set<TeardownLogic>) {
     cleanup.clear()
 }
 
-const invalidationsMap = new WeakMap<Context, Map<typeof depsMap, Function>>()
+const invalidationsMap = new WeakMap<Context, Map<Function, typeof depsMap>>()
 const previousValues = new WeakMap<Context, any[] | undefined>()
 
 function getInvalidations(context: Context) {
@@ -155,21 +144,21 @@ function getCurrentValues(deps: Map<any, Set<any>>) {
 export function invalidateEffects(target: Context) {
     const invalidations = getInvalidations(target)
     const run = new Set<Function>()
-    for (const [deps, invalidate] of invalidations) {
+    for (const [invalidate, deps] of invalidations) {
         const current = getCurrentValues(deps)
         const previous = getPreviousValues(deps) || []
-        setPreviousValues(target, current)
+        setPreviousValues(deps, current)
 
         if (current === previous) {
             break
         }
         if (current.length !== previous.length) {
-            run.add(invalidate)
+            run.add(invalidate())
             break
         }
         for (const [index, value] of current.entries()) {
             if (previous[index] !== value) {
-                run.add(invalidate)
+                run.add(invalidate())
                 break
             }
         }
@@ -189,16 +178,14 @@ export function runEffect(context: Context, effect: EffectHook, cleanup: Set<Tea
     const invalidations = getInvalidations(context)
     const invalidation = () => {
         cleanup.delete(teardown)
-        invalidations.delete(deps)
+        invalidations.delete(invalidation)
         unsubscribe(teardown)
-        runEffect(context, effect, cleanup)
+        previousValues.delete(deps)
+        return () => runEffect(context, effect, cleanup)
     }
     setPreviousValues(deps, getCurrentValues(deps))
-    getInvalidations(context).set(deps, invalidation)
-    cleanup.add(() => {
-        invalidations.delete(deps)
-        unsubscribe(teardown)
-    })
+    invalidations.set(invalidation, deps)
+    cleanup.add(teardown)
 }
 
 export function runEffects(context: Context, cleanup: Set<TeardownLogic>) {
@@ -215,7 +202,7 @@ export function runHooks(
     const scheduler = getScheduler()
     const context = getContext()
 
-    scheduled(scheduler, queueScheduler).subscribe({
+    scheduler.subscribe({
         next: current => {
             if (current === lifecycle) {
                 flush(cleanup)
@@ -266,7 +253,7 @@ export function runScheduler() {
     const differ = iterableDiffers.find(context).create()
     let changed = true
 
-    scheduled(scheduler, queueScheduler).subscribe(lifecycle => {
+    scheduler.subscribe(lifecycle => {
         switch (lifecycle) {
             case LifecycleHook.DoCheck: {
                 const diff = differ.diff(context)
@@ -337,6 +324,7 @@ export function runInContext<T extends (...args: any[]) => any>(
     setLifecycleHook(lifecycle)
     const returnValue = func()
     setContext()
+    setLifecycleHook()
     return returnValue
 }
 
