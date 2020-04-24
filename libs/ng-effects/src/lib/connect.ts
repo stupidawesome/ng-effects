@@ -4,6 +4,8 @@ import {
     InjectFlags,
     InjectionToken,
     Injector,
+    IterableChanges,
+    IterableDiffers,
     KeyValueChanges,
     KeyValueDiffers,
     Type,
@@ -106,7 +108,7 @@ export function inject<T>(
 }
 
 export function getHooks() {
-    return hooksMap.get(getContext())
+    return hooksMap.get(getContext())!
 }
 
 export function flush(cleanup: Set<TeardownLogic>) {
@@ -116,22 +118,14 @@ export function flush(cleanup: Set<TeardownLogic>) {
     cleanup.clear()
 }
 
-const invalidationsMap = new WeakMap<Context, Map<Function, typeof depsMap>>()
+const invalidationsMap = new WeakMap<Context, Map<Function, () => boolean>>()
 const previousValues = new WeakMap<Context, any[] | undefined>()
 
 function getInvalidations(context: Context) {
     return invalidationsMap.get(context) || invalidationsMap.set(context, new Map()).get(context)!
 }
 
-function getPreviousValues(object: any) {
-    return previousValues.get(object) || previousValues.set(object, undefined).get(object)
-}
-
-function setPreviousValues(object: any, values: any[]) {
-    previousValues.set(object, values)
-}
-
-function getCurrentValues(deps: Map<any, Set<any>>) {
+function getValues(deps: Map<any, Set<any>>) {
     const current: any = []
     Array.from(deps).map(([context, keys]) => {
         Array.from(keys).map(key => {
@@ -143,54 +137,57 @@ function getCurrentValues(deps: Map<any, Set<any>>) {
 
 export function invalidateEffects(target: Context) {
     const invalidations = getInvalidations(target)
-    const run = new Set<Function>()
-    for (const [invalidate, deps] of invalidations) {
-        const current = getCurrentValues(deps)
-        const previous = getPreviousValues(deps) || []
-        setPreviousValues(deps, current)
-
-        if (current === previous) {
-            break
-        }
-        if (current.length !== previous.length) {
-            run.add(invalidate())
-            break
-        }
-        for (const [index, value] of current.entries()) {
-            if (previous[index] !== value) {
-                run.add(invalidate())
-                break
-            }
+    const effectsToRun = new Set<Function>()
+    let changed = false
+    for (const [invalidate, detectChanges] of invalidations) {
+        if (detectChanges()) {
+            changed = true
+            effectsToRun.add(invalidate())
         }
     }
-    for (const fn of run) {
-        fn()
+    for (const effect of effectsToRun) {
+        effect()
     }
+    return changed
 }
 
-export function runEffect(context: Context, effect: EffectHook, options: EffectOptions, cleanup: Set<TeardownLogic>) {
+export function runEffect(
+    context: Context,
+    effect: EffectHook,
+    options: EffectOptions,
+    cleanup: Set<TeardownLogic>,
+    differs: IterableDiffers,
+) {
     flushDeps()
     effects.delete(effect)
     const teardown = effect()
     const deps = options.watch ? flushDeps() : new Map()
     const invalidations = getInvalidations(context)
+    const differ = differs.find([]).create()
+
+    differ.diff(getValues(deps))
+
+    function detectChanges() {
+        return hasChanges(differ.diff(getValues(deps)))
+    }
+
     const invalidation = () => {
         cleanup.delete(teardown)
         invalidations.delete(invalidation)
-        unsubscribe(teardown)
         previousValues.delete(deps)
-        return function () {
-            runEffect(context, effect, options, cleanup)
+        unsubscribe(teardown)
+        return function() {
+            runEffect(context, effect, options, cleanup, differs)
         }
     }
-    setPreviousValues(deps, getCurrentValues(deps))
-    invalidations.set(invalidation, deps)
+    invalidations.set(invalidation, detectChanges)
     cleanup.add(teardown)
 }
 
 export function runEffects(context: Context, cleanup: Set<TeardownLogic>) {
+    const differs = inject(IterableDiffers)
     for (const [effect, options] of effects) {
-        runEffect(context, effect, options, cleanup)
+        runEffect(context, effect, options, cleanup, differs)
     }
 }
 
@@ -232,17 +229,8 @@ export function unsubscribe(teardown: TeardownLogic) {
 
 export function noop() {}
 
-export function hasChanges(diff: KeyValueChanges<any, any> | null): boolean {
-    if (diff === null) {
-        return false
-    }
-    let hasChanges = false
-    diff.forEachItem(record => {
-        if (record.currentValue !== record.previousValue) {
-            hasChanges = true
-        }
-    })
-    return hasChanges
+export function hasChanges(diff: IterableChanges<any> | KeyValueChanges<any, any> | null): boolean {
+    return diff !== null
 }
 
 export function runScheduler() {
@@ -251,16 +239,19 @@ export function runScheduler() {
     const context: { [key: string]: any } = getContext()
     const changeDetectorRef = inject(ChangeDetectorRef)
     const differ = iterableDiffers.find(context).create()
+    const hasOnChanges = Boolean(getHooks().get(LifecycleHook.OnChanges))
     let changed = true
 
     scheduler.subscribe(lifecycle => {
         switch (lifecycle) {
             case LifecycleHook.DoCheck: {
-                invalidateEffects(context)
-                if (hasChanges(differ.diff(context))) {
-                    changed = true
-                    changeDetectorRef.markForCheck()
-                    scheduler.next(LifecycleHook.OnChanges)
+                const invalidated = invalidateEffects(context)
+                if (hasOnChanges || invalidated) {
+                    if (hasChanges(differ.diff(context))) {
+                        changed = true
+                        changeDetectorRef.markForCheck()
+                        scheduler.next(LifecycleHook.OnChanges)
+                    }
                 }
                 break
             }
@@ -373,7 +364,9 @@ export function getDeps(object: object) {
 }
 
 export function addDeps(object: Context, key: any) {
-    getDeps(object).add(key)
+    if (getLifecycleHook() !== undefined) {
+        getDeps(object).add(key)
+    }
 }
 
 export function flushDeps() {
@@ -400,7 +393,6 @@ export function reactiveFactory<T extends object>(source: T, opts: any = { shall
                 if (cache.has(value)) {
                     return cache.get(value)
                 }
-                console.log('deep')
                 const state = reactiveFactory(value, opts)
                 cache.set(value, state)
                 return state

@@ -1,5 +1,5 @@
 import { Component, Input } from "@angular/core"
-import { Connectable, watchEffect } from "@ng9/ng-effects"
+import { Connectable } from "@ng9/ng-effects"
 import { TEST } from "../connectable/connectable.component"
 
 @Component({
@@ -18,9 +18,9 @@ export class ConnectableChildComponent extends Connectable {
     count = 0
 
     ngOnConnect(): void {
-        watchEffect(() => {
-            // double whatever input value is
-            this.count *= 2
-        })
+        // watchEffect(() => {
+        //     // double whatever input value is
+        //     // this.count *= 2
+        // })
     }
 }

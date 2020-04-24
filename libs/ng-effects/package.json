@@ -1,6 +1,6 @@
 {
     "name": "ng-effects",
-    "version": "9.1.0-next.8",
+    "version": "9.1.0-next.9",
     "peerDependencies": {
         "@angular/common": "^9.0.0",
         "@angular/core": "^9.0.0",

@@ -1,13 +1,22 @@
 import { Component, ContentChildren, InjectionToken, Input, Output, QueryList } from "@angular/core"
-import { afterViewInit, connectable, Connectable, effect, HostEmitter, inject, reactive, watchEffect } from "@ng9/ng-effects"
+import {
+    afterViewInit,
+    connectable,
+    Connectable,
+    effect,
+    HostEmitter,
+    inject,
+    reactive,
+    watchEffect,
+} from "@ng9/ng-effects"
 import { interval, timer } from "rxjs"
 import { HttpClient } from "@angular/common/http"
 
 export const MyConnectable = connectable<ConnectableComponent>(ctx => {
     const test = reactive({
         test: {
-            test: 1
-        }
+            test: 1,
+        },
     })
 
     watchEffect(() => {
@@ -24,12 +33,13 @@ export const MyConnectable = connectable<ConnectableComponent>(ctx => {
     })
 
     afterViewInit(() => {
-        console.log(ctx.children)
+        // console.log(ctx.children)
     })
 
     watchEffect(() => {
         ctx.offset = ctx.count + 1
         ctx.countChange.emit(ctx.count)
+        // console.log('watch', ctx.count)
         return timer(1000).subscribe(() => {
             ctx.incrementCount()
         })
