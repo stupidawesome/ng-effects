@@ -3,34 +3,28 @@
 
 image::https://i.imgur.com/A1924dn.png[Angular Effects]
 
-== Angular Effects
+== NgFx
 
-Reactive extensions for Angular.
+Reactive hooks for Angular.
 
 [source,typescript]
 ----
 @Component({
     selector: "app-root",
     template: `
-        <div>Count: {{count}}</div>
+        <div>Count: {{ count }}</div>
     `,
-    providers: [Effects],
 })
-export class AppComponent {
+export class AppComponent extends Connectable {
     @Input()
     count: number = 0
 
-    @Effect("count")
-    incrementCount(state: State<AppState>) {
-        return state.count.pipe(
-            take(1),
-            increment(1),
-            repeatInterval(1000)
+    ngOnConnect() {
+        effect(() =>
+            timer(1000).subscribe(() =>
+                this.count += 1
+            )
         )
-    }
-
-    constructor(connect: Connect) {
-        connect(this)
     }
 }
 ----
@@ -40,17 +34,8 @@ export class AppComponent {
 link:https://www.npmjs.com/package/ng-effects[Install via NPM]
 
 ```bash
-npm install ng-effects
+npm install ng-effects@next
 ```
-
-== Links
-
-- link:./docs/announcement.adoc[Introduction]
-- link:./docs/getting-started.adoc[Getting started]
-- link:./docs/thinking-reactively.adoc[Basic effects]
-- link:./docs/effect-adapters.adoc[Effect adapters]
-- link:./docs/exploring-the-api.adoc[Exploring the API]
-- How it works
 
 == Api Reference
 
