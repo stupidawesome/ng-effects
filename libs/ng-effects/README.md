@@ -2,8 +2,7 @@
 
 Reactive hooks for Angular.
 
-[source,typescript]
-----
+```ts
 @Component({
     selector: "app-root",
     template: `
@@ -22,7 +21,7 @@ export class AppComponent extends Connectable {
         )
     }
 }
-----
+```
 
 ## Installation
 
