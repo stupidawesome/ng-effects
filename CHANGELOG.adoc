@@ -18,7 +18,7 @@ const MyConnectable = connectable<AppComponent>((context) => { // connectable pr
     })
 
     // available hooks:
-    // - OnChanges: fires any time a component property is detected
+    // - OnChanges: fires every time a component property change is detected
     // - AfterViewInit: fires once when component is first mounted
     // - WhenRendered: fires every time the component view updated
     // - OnDestroy: fires once when the component is being destroyed
