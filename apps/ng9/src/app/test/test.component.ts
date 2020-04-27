@@ -15,7 +15,7 @@ import {
 import { interval, merge, MonoTypeOperatorFunction, Observable, of, OperatorFunction } from "rxjs"
 import {
     changes,
-    connect,
+    Connect,
     Context,
     Effect,
     EffectAdapter,
@@ -27,7 +27,15 @@ import {
     State,
 } from "@ng9/ng-effects"
 import { increment } from "../utils"
-import { distinctUntilChanged, map, mapTo, repeat, repeatWhen, switchMapTo, take } from "rxjs/operators"
+import {
+    distinctUntilChanged,
+    map,
+    mapTo,
+    repeat,
+    repeatWhen,
+    switchMapTo,
+    take,
+} from "rxjs/operators"
 import { Store } from "../store"
 
 interface TestState {
@@ -106,7 +114,11 @@ export class TestEffects {
      * Injector example with special tokens
      * HostRef can be injected to get host context.
      */
-    constructor(private elementRef: ElementRef, private hostRef: HostRef, private cdr: ChangeDetectorRef) {
+    constructor(
+        private elementRef: ElementRef,
+        private hostRef: HostRef,
+        private cdr: ChangeDetectorRef,
+    ) {
         hostRef.context
     }
 
@@ -328,7 +340,7 @@ export class TestComponent implements TestState {
         return state.age.pipe(mapTo(true))
     }
 
-    constructor() {
+    constructor(connect: Connect) {
         this.name = "abc"
         this.age = 0
         this.ageChange = new HostEmitter(true)

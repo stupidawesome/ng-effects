@@ -1,5 +1,125 @@
 = Changelog
 
+== 9.1.0-rc.0
+
+This release introduces a composition/hooks model based on Vue 3's Composition API. This will replace the decorator API, which has been deprecated.
+
+We can now use functional composition with context-aware hooks to execute reactive effects.
+
+[source,typescript]
+----
+const MyConnectable = connectable<AppComponent>((context) => { // connectable provider injected with reactive context
+    // inject(HttpClient) dependency injection allowed in setup
+    afterViewInit(() => { // lifecycle hooks
+        effect(() => {
+            // return teardown logic
+            // cleaned up when component destroyed or effect is invalidated
+        })
+    })
+
+    // available hooks:
+    // - OnChanges: fires any time a component property is detected
+    // - AfterViewInit: fires once when component is first mounted
+    // - WhenRendered: fires every time the component view updated
+    // - OnDestroy: fires once when the component is being destroyed
+})
+
+@Component({
+    selector: "app-root",
+    template: `
+        <div>Count: {{ count }}</div>
+    `,
+    providers: [MyConnectable] // executed after ngOnConnect
+})
+export class AppComponent extends Connectable { // base class required
+    @Input()
+    count = 0 // state
+
+    private http = inject(HttpClient) // dependency injection allowed in initializers
+
+    incrementCount() { // method
+        // inject(HttpClient) dependency injection allowed in methods
+        this.count += 1
+    }
+
+    ngOnConnect() { // setup
+        // inject(HttpClient) dependency injection allowed in setup
+
+        effect(() => // basic effect, no tracking
+            interval(1000).subscribe(() => this.incrementCount()) // increment count once per second
+        )
+
+        watchEffect(() => { // reactive effect, dependency tracking
+            console.log(this.count) // logs count whenever it changes
+        })
+    }
+}
+----
+
+=== Features
+
+- use IterableDiffers for effect invalidation
+- add utils, add effect options, create untracked effect separate to watchEffect
+- allow `inject()` inside component methods
+- allow `inject()` inside property initializers
+- add `connectable` hook
+- add `ngOnConnect` hook
+- throw error when injecting outside of a valid injection context
+- add experimental composition api
+
+=== Bug fixes
+
+- fix reactive factory
+- fix change detection, dependency injection
+- fix circular deps, initial change detection, create test component
+- fix memory leak
+- tap ngDoCheck lifecycle hook in effects scheduler
+- update changelog
+- fix types for typescript 3.8
+- fix error when accessing reactive state outside injection context
+
+=== Deprecations
+
+- deprecate decorator API
+
+The decorator API will be removed and replaced by the composition API in 10.0.0.
+
+==== Deprecated Symbols
+
+- `Connect`
+- `HOST_INITIALIZER`
+- `Effect`
+- `State`
+- `Context`
+- `Observe`
+- `HostRef`
+- `EffectMetadata`
+- `EffectAdapter`
+- `CreateEffectAdapter`
+- `NextEffectAdapter`
+- `DefaultEffectOptions`
+- `BindEffectOptions`
+- `AssignEffectOptions`
+- `AdapterEffectOptions`
+- `EffectOptions`
+- `ObservableSources`
+- `CONNECT`
+- `effects`
+- `Effects`
+- `USE_EXPERIMENTAL_RENDER_API`
+- `changes`
+- `latest`
+- `ViewRenderer`
+
+=== Misc
+
+- upgrade workspace
+- update readme
+
+=== BREAKING CHANGES
+
+The composition API relies on ES6 Proxy objects to create the proper execution context for connected components. This means dropping support for https://caniuse.com/#feat=proxy[older browsers] that don't support them.
+
 == 9.0.7
 
 === Bug fixes

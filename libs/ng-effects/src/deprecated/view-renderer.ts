@@ -5,6 +5,9 @@ import { RenderApi } from "./internals/interfaces"
 
 export const isNgEffectsHook = Symbol()
 
+/**
+ * @deprecated Will be replaced by composition API in 10.0.0
+ */
 @Injectable({ providedIn: "root" })
 export class ViewRenderer implements RenderApi, OnDestroy {
     private readonly begin: Subject<void>
