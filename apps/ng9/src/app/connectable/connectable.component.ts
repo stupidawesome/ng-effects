@@ -39,7 +39,6 @@ export const MyConnectable = connectable<ConnectableComponent>(ctx => {
     watchEffect(() => {
         ctx.offset = ctx.count + 1
         ctx.countChange.emit(ctx.count)
-        // console.log('watch', ctx.count)
         return timer(1000).subscribe(() => {
             ctx.incrementCount()
         })

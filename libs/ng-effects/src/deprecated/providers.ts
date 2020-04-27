@@ -9,6 +9,9 @@ import { HOST_INITIALIZER } from "./constants"
 import { CONNECT_EFFECTS, EFFECTS, HOST_REF, RUN_EFFECTS } from "./internals/providers"
 import { DestroyObserver } from "./internals/destroy-observer"
 
+/**
+ * @deprecated Will be replaced by composition API in 10.0.0
+ */
 export const CONNECT = [
     {
         provide: Connect,
@@ -18,6 +21,9 @@ export const CONNECT = [
     HOST_REF,
 ]
 
+/**
+ * @deprecated Will be replaced by composition API in 10.0.0
+ */
 export function effects(effectOptions?: DefaultEffectOptions) {
     return [
         {
@@ -27,8 +33,14 @@ export function effects(effectOptions?: DefaultEffectOptions) {
     ]
 }
 
+/**
+ * @deprecated Will be replaced by composition API in 10.0.0
+ */
 export const Effects = [CONNECT, CONNECT_EFFECTS, RUN_EFFECTS, DestroyObserver]
 
+/**
+ * @deprecated Will be replaced by composition API in 10.0.0
+ */
 export const USE_EXPERIMENTAL_RENDER_API = [
     {
         provide: ViewRenderer,

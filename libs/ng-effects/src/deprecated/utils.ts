@@ -1,17 +1,23 @@
 import { combineLatest, MonoTypeOperatorFunction, Observable } from "rxjs"
-import {
-    ElementRef,
-    ViewContainerRef,
-    ɵSWITCH_VIEW_CONTAINER_REF_FACTORY__POST_R3__ as injectViewContainerRef,
-} from "@angular/core"
 import { MapSelect } from "./internals/interfaces"
 import { map, skip } from "rxjs/operators"
-import { Connect } from "./connect"
 import { ObservableSources } from "./interfaces"
 
+/**
+ * @deprecated Will be replaced by composition API in 10.0.0
+ */
 export function changes<T>(): MonoTypeOperatorFunction<T>
+/**
+ * @deprecated Will be replaced by composition API in 10.0.0
+ */
 export function changes<T>(source: Observable<T>): Observable<T>
+/**
+ * @deprecated Will be replaced by composition API in 10.0.0
+ */
 export function changes<T>(source: ObservableSources<T>): Observable<T>
+/**
+ * @deprecated Will be replaced by composition API in 10.0.0
+ */
 export function changes<T>(source?: Observable<T> | MapSelect<T>): any {
     if (source) {
         if (source instanceof Observable) {
@@ -24,6 +30,9 @@ export function changes<T>(source?: Observable<T> | MapSelect<T>): any {
     }
 }
 
+/**
+ * @deprecated Will be replaced by composition API in 10.0.0
+ */
 export function latest<T extends any>(source: ObservableSources<T>): Observable<T> {
     const keys = Object.getOwnPropertyNames(source)
     const sources = keys.map(key => source[key])

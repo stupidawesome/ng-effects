@@ -21,13 +21,15 @@ export class AppComponent extends Connectable {
 
     ngOnConnect() {
         effect(() =>
-            timer(1000).subscribe(() =>
+            interval(1000).subscribe(() =>
                 this.count += 1
             )
         )
     }
 }
 ----
+
+NOTE: Looking for the previous (9.0.x) docs? https://github.com/stupidawesome/ng-effects/tree/master/docs[Click here].
 
 ## Installation
 
@@ -36,6 +38,10 @@ link:https://www.npmjs.com/package/ng-effects[Install via NPM]
 ```bash
 npm install ng-effects@next
 ```
+
+== Getting Started
+
+Coming soon.
 
 == Api Reference
 

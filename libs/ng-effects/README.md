@@ -1,40 +1,35 @@
 <img src="https://i.imgur.com/A1924dn.png" alt="" />
 
-Reactive extensions for Angular.
+Reactive hooks for Angular.
 
-```typescript
+[source,typescript]
+----
 @Component({
     selector: "app-root",
     template: `
         <div>Count: {{ count }}</div>
     `,
-    providers: [Effects],
 })
-export class AppComponent{
+export class AppComponent extends Connectable {
     @Input()
     count: number = 0
 
-    @Effect("count")
-    incrementCount(state: State<AppState>) {
-        return state.count.pipe(
-            take(1),
-            increment(1),
-            repeatInterval(1000)
+    ngOnConnect() {
+        effect(() =>
+            interval(1000).subscribe(() =>
+                this.count += 1
+            )
         )
     }
-
-    constructor() {
-        connect(this)
-    }
 }
-```
+----
 
 ## Installation
 
 Install via NPM.
 
 ```bash
-npm install ng-effects
+npm install ng-effects@next
 ```
 
 ## Usage

@@ -5,8 +5,10 @@ import {
     InjectionToken,
     Injector,
     IterableChanges,
+    IterableDiffer,
     IterableDiffers,
     KeyValueChanges,
+    KeyValueDiffer,
     KeyValueDiffers,
     Type,
     ViewContainerRef,
@@ -158,17 +160,18 @@ export function runEffect(
     cleanup: Set<TeardownLogic>,
     differs: IterableDiffers,
 ) {
-    flushDeps()
     effects.delete(effect)
+    collectDeps()
     const teardown = effect()
-    const deps = options.watch ? flushDeps() : new Map()
+    const flushedDeps = flushDeps()
+    const deps = options.watch ? flushedDeps : new Map()
     const invalidations = getInvalidations(context)
     const differ = differs.find([]).create()
 
     differ.diff(getValues(deps))
 
     function detectChanges() {
-        return hasChanges(differ.diff(getValues(deps)))
+        return hasChanges(differ, getValues(deps))
     }
 
     const invalidation = () => {
@@ -229,8 +232,13 @@ export function unsubscribe(teardown: TeardownLogic) {
 
 export function noop() {}
 
-export function hasChanges(diff: IterableChanges<any> | KeyValueChanges<any, any> | null): boolean {
-    return diff !== null
+export const targetSymbol = Symbol()
+
+export function hasChanges(
+    differ: IterableDiffer<any> | KeyValueDiffer<any, any>,
+    context: any,
+): boolean {
+    return differ.diff(Reflect.get(context, targetSymbol) || context) !== null
 }
 
 export function runScheduler() {
@@ -240,15 +248,13 @@ export function runScheduler() {
     const changeDetectorRef = inject(ChangeDetectorRef)
     const differ = iterableDiffers.find(context).create()
     const hasOnChanges = Boolean(getHooks().get(LifecycleHook.OnChanges))
-    let changed = true
 
     scheduler.subscribe(lifecycle => {
         switch (lifecycle) {
             case LifecycleHook.DoCheck: {
                 const invalidated = invalidateEffects(context)
                 if (hasOnChanges || invalidated) {
-                    if (hasChanges(differ.diff(context))) {
-                        changed = true
+                    if (hasChanges(differ, context)) {
                         changeDetectorRef.markForCheck()
                         scheduler.next(LifecycleHook.OnChanges)
                     }
@@ -256,12 +262,9 @@ export function runScheduler() {
                 break
             }
             case LifecycleHook.AfterViewChecked: {
-                if (changed) {
-                    changed = false
-                    runInContext(context, LifecycleHook.WhenRendered, () =>
-                        scheduler.next(LifecycleHook.WhenRendered),
-                    )
-                }
+                runInContext(context, LifecycleHook.WhenRendered, () =>
+                    scheduler.next(LifecycleHook.WhenRendered),
+                )
                 break
             }
             case LifecycleHook.OnDestroy: {
@@ -277,16 +280,15 @@ export function runScheduler() {
 export function setup() {
     const initializers = inject(CONNECTABLE, InjectFlags.Self | InjectFlags.Optional)
     const context = getContext<Partial<OnConnect>>()
-    const reactive = reactiveFactory(context)
     const cleanup = cleanupMap.get(context) as Map<LifecycleHook, Set<TeardownLogic>>
 
     if (context.ngOnConnect) {
-        context.ngOnConnect.call(reactive)
+        context.ngOnConnect()
     }
 
     if (initializers) {
         for (const initializer of initializers) {
-            initializer(reactive)
+            initializer(context)
         }
     }
 
@@ -306,15 +308,18 @@ export function runInContext<T extends (...args: any[]) => any>(
     lifecycle: LifecycleHook | undefined,
     func: T,
 ): ReturnType<T> {
+    const prevContext = activeContext
+    const prevLifecycle = getLifecycleHook()
     setContext(context)
     setLifecycleHook(lifecycle)
     const returnValue = func()
-    setContext()
-    setLifecycleHook()
+    setContext(prevContext)
+    setLifecycleHook(prevLifecycle)
     return returnValue
 }
 
-export function connect(context: Context, injector: Injector) {
+export function connect<T extends object>(source: T, injector: Injector): T {
+    const context = reactiveFactory<T>(source, source)
     const cleanup = new Map()
     const lifecycle = new Map()
 
@@ -328,6 +333,8 @@ export function connect(context: Context, injector: Injector) {
     }
 
     setContext(context)
+
+    return context
 }
 
 export function init(context: any) {
@@ -359,48 +366,74 @@ export function addHook(fn: EffectHook, lifecycle: LifecycleHook) {
 
 export const depsMap = new Map<{ [key: string]: any }, Set<string | number>>()
 
+let depsEnabled = false
+
 export function getDeps(object: object) {
     return depsMap.get(object) || depsMap.set(object, new Set()).get(object)!
 }
 
+export function collectDeps() {
+    depsEnabled = true
+}
+
 export function addDeps(object: Context, key: any) {
-    if (getLifecycleHook() !== undefined) {
+    if (depsEnabled) {
         getDeps(object).add(key)
     }
 }
 
 export function flushDeps() {
     const deps = new Map(depsMap)
+    depsEnabled = false
     depsMap.clear()
     return deps
 }
 
 const cache = new WeakMap()
 
-export function reactiveFactory<T extends object>(source: T, opts: any = { shallow: true }) {
-    const context = getContext()
+export function reactiveFactory<T extends object>(
+    context: any,
+    source: T,
+    opts: any = { shallow: true },
+): T {
     return new Proxy<T>(source, {
         get(target: T, p: PropertyKey, receiver: any): any {
+            if (p === targetSymbol) {
+                return target
+            }
             const value = Reflect.get(target, p, receiver)
-            const desc = Object.getOwnPropertyDescriptor(target, p)
+            const desc = Reflect.getOwnPropertyDescriptor(target, p)
+            if (p === "__ngContext__") {
+                return value
+            }
             if (desc && desc.enumerable) {
                 addDeps(target, p)
             }
             if ((desc && !desc.writable && !desc.configurable) || opts.shallow) {
                 return value
             }
+            if (typeof value === "function") {
+                return new Proxy(value, {
+                    apply(target: any, thisArg: any, argArray?: any): any {
+                        return runInContext(context, getLifecycleHook(), function() {
+                            return target.apply(thisArg, argArray)
+                        })
+                    },
+                })
+            }
             if (typeof value === "object" && value !== null) {
                 if (cache.has(value)) {
                     return cache.get(value)
                 }
-                const state = reactiveFactory(value, opts)
+                const state = reactiveFactory(context, value, opts)
                 cache.set(value, state)
                 return state
-            } else return value
+            }
+            return value
         },
         set(target: T, p: PropertyKey, value: any, receiver: any): boolean {
             const success = Reflect.set(target, p, value, receiver)
-            check(context)
+            check(receiver)
             return success
         },
     })

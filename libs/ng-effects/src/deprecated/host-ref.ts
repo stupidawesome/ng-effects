@@ -1,6 +1,9 @@
 import { Observable } from "rxjs"
 import { State } from "./decorators"
 
+/**
+ * @deprecated Will be replaced by composition API in 10.0.0
+ */
 export abstract class HostRef<T = any> {
     /**
      * The component or directive instance.

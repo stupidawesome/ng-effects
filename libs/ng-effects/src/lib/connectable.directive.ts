@@ -18,7 +18,7 @@ export interface Connectable extends OnConnect {}
 export abstract class Connectable
     implements OnInit, DoCheck, AfterViewInit, AfterViewChecked, OnDestroy {
     constructor(@Inject(INJECTOR) injector: Injector) {
-        connect(this, injector)
+        return connect(this, injector)
     }
 
     ngOnInit() {
