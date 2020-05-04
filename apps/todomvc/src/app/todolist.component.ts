@@ -52,8 +52,8 @@ export const Todolist = connectable((ctx: TodolistComponent) => {
         label.textContent = todo.title
     })
 
-    toggleTodo: on(ctx.toggleTodo, (todo, onInvalidate) => {
-        return  todos
+    toggleTodo: on(ctx.toggleTodo, (todo) => {
+        return todos
             .update({
                 ...todo,
                 completed: !todo.completed,
@@ -66,8 +66,6 @@ export const Todolist = connectable((ctx: TodolistComponent) => {
                 // OR manually run change detection to update view
                 // markDirty(ctx)
             })
-
-        // onInvalidate(cancel)
     })
 
     clearCompleted: on(ctx.clearCompleted, () => {
@@ -88,7 +86,7 @@ export const Todolist = connectable((ctx: TodolistComponent) => {
             .subscribe()
     })
 
-    toggleAll: on(ctx.toggleAll, () => {
+    toggleAll: on(ctx.toggleAll, (value) => {
         if (ctx.todos.every((todo) => todo.completed)) {
             for (const todo of ctx.todos) {
                 ctx.toggleTodo(todo)
