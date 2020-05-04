@@ -1,4 +1,5 @@
 import {
+    AbstractType,
     AfterViewChecked,
     AfterViewInit,
     Directive,
@@ -8,18 +9,20 @@ import {
     Injector,
     OnDestroy,
     OnInit,
+    Type,
 } from "@angular/core"
 import { OnConnect } from "./interfaces"
 import { check, connect, destroy, init, viewChecked, viewInit } from "./connect"
 
 export interface Connectable extends OnConnect {}
 
-@Directive()
-export abstract class Connectable
+class Connect
     implements OnInit, DoCheck, AfterViewInit, AfterViewChecked, OnDestroy {
     constructor(@Inject(INJECTOR) injector: Injector) {
         return connect(this, injector)
     }
+
+    ngOnConnect?(): void
 
     ngOnInit() {
         init(this)
@@ -41,3 +44,5 @@ export abstract class Connectable
         destroy(this)
     }
 }
+
+export const Connectable: Type<OnConnect> = Connect

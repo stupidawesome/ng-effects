@@ -4,16 +4,21 @@ import {
     InjectFlags,
     InjectionToken,
     Injector,
-    IterableChanges,
     IterableDiffer,
     IterableDiffers,
-    KeyValueChanges,
     KeyValueDiffer,
     KeyValueDiffers,
     Type,
     ViewContainerRef,
+    inject as oinject,
 } from "@angular/core"
-import { Context, EffectHook, EffectOptions, LifecycleHook, OnConnect } from "./interfaces"
+import {
+    Context,
+    EffectHook,
+    EffectOptions,
+    LifecycleHook,
+    OnConnect,
+} from "./interfaces"
 import { CONNECTABLE } from "./constants"
 import { Subject, TeardownLogic } from "rxjs"
 import { getLifecycleHook, setLifecycleHook } from "./lifecycle"
@@ -54,12 +59,22 @@ export function getContext<T extends object>(): T {
     }
 }
 
-export function schedule(lifecycle: LifecycleHook, context: Context = getContext()) {
-    runInContext(context, lifecycle, () => getScheduler(context).next(lifecycle))
+export function schedule(
+    lifecycle: LifecycleHook,
+    context: Context = getContext(),
+) {
+    runInContext(context, lifecycle, () =>
+        getScheduler(context).next(lifecycle),
+    )
 }
 
-export function getScheduler(context = getContext()): Subject<LifecycleHook | undefined> {
-    return schedulerMap.get(context) || schedulerMap.set(context, new Subject()).get(context)!
+export function getScheduler(
+    context = getContext(),
+): Subject<LifecycleHook | undefined> {
+    return (
+        schedulerMap.get(context) ||
+        schedulerMap.set(context, new Subject()).get(context)!
+    )
 }
 
 export function setContext(context?: any) {
@@ -70,43 +85,53 @@ export function inject<T>(
     token: Type<T> | AbstractType<T> | InjectionToken<T>,
     flags: InjectFlags,
 ): T | null
-export function inject<T>(token: Type<T> | AbstractType<T> | InjectionToken<T>): T
+export function inject<T>(
+    token: Type<T> | AbstractType<T> | InjectionToken<T>,
+): T
 export function inject<T>(
     token: Type<T> | AbstractType<T> | InjectionToken<T>,
     flags?: InjectFlags,
 ): T | null {
     const nodeInjector = getInjector()
+    const optional =
+        flags && Boolean(flags & InjectFlags.Optional) ? null : undefined
     // Workaround for https://github.com/angular/angular/issues/31776
     if (flags) {
         let parent: Injector
-        try {
-            parent = nodeInjector.get(ViewContainerRef as Type<any>)?.parentInjector
-        } catch {
-            throw new Error(
-                "This injector is a temporary workaround that can only be used inside a `connectable()` or `ngOnConnect()` call. For other injection contexts, please import `inject()` from @angular/core. Related issue: https://github.com/angular/angular/issues/31776",
-            )
-        }
-        const optional = Boolean(flags & InjectFlags.Optional) ? null : undefined
-        if (Boolean(flags & InjectFlags.SkipSelf) && parent) {
-            return parent.get(token, optional)
-        }
-        if (Boolean(flags & InjectFlags.Self)) {
-            const current: T = nodeInjector.get(token as any, null)
-            const parentExists = parent ? parent.get(token, null) : null
-            if (optional === null && parentExists === current) {
-                return null
-            }
-            if (parentExists === null || parentExists !== current) {
-                return current
-            } else {
+        if (
+            Boolean(flags & InjectFlags.SkipSelf) ||
+            Boolean(flags & InjectFlags.Self)
+        ) {
+            try {
+                parent = nodeInjector.get(ViewContainerRef as Type<any>)
+                    ?.parentInjector
+            } catch {
                 throw new Error(
-                    `EXCEPTION: No provider for ${"name" in token ? token.name : token.toString()}`,
+                    "This injector is a temporary workaround that can only be used inside a `connectable()` or `ngOnConnect()` call. For other injection contexts, please import `inject()` from @angular/core. Related issue: https://github.com/angular/angular/issues/31776",
                 )
+            }
+            if (Boolean(flags & InjectFlags.SkipSelf) && parent) {
+                return parent.get(token, optional)
+            }
+            if (Boolean(flags & InjectFlags.Self)) {
+                const current: T = nodeInjector.get(token as any, null)
+                const parentExists = parent ? parent.get(token, null) : null
+                if (optional === null && parentExists === current) {
+                    return null
+                }
+                if (parentExists === null || parentExists !== current) {
+                    return current
+                } else {
+                    throw new Error(
+                        `EXCEPTION: No provider for ${
+                            "name" in token ? token.name : token.toString()
+                        }`,
+                    )
+                }
             }
         }
     }
-
-    return nodeInjector.get(token)
+    return nodeInjector.get(token, optional)
 }
 
 export function getHooks() {
@@ -124,13 +149,16 @@ const invalidationsMap = new WeakMap<Context, Map<Function, () => boolean>>()
 const previousValues = new WeakMap<Context, any[] | undefined>()
 
 function getInvalidations(context: Context) {
-    return invalidationsMap.get(context) || invalidationsMap.set(context, new Map()).get(context)!
+    return (
+        invalidationsMap.get(context) ||
+        invalidationsMap.set(context, new Map()).get(context)!
+    )
 }
 
 function getValues(deps: Map<any, Set<any>>) {
     const current: any = []
     Array.from(deps).map(([context, keys]) => {
-        Array.from(keys).map(key => {
+        Array.from(keys).map((key) => {
             current.push(context[key])
         })
     })
@@ -162,7 +190,12 @@ export function runEffect(
 ) {
     effects.delete(effect)
     collectDeps()
-    const teardown = effect()
+    const teardown = effect({
+        closed: false,
+        complete() {
+            this.closed = true
+        },
+    })
     const flushedDeps = flushDeps()
     const deps = options.watch ? flushedDeps : new Map()
     const invalidations = getInvalidations(context)
@@ -179,7 +212,7 @@ export function runEffect(
         invalidations.delete(invalidation)
         previousValues.delete(deps)
         unsubscribe(teardown)
-        return function() {
+        return function () {
             runEffect(context, effect, options, cleanup, differs)
         }
     }
@@ -203,18 +236,28 @@ export function runHooks(
     const context = getContext()
 
     scheduler.subscribe({
-        next: current => {
+        next: (current) => {
             if (current === lifecycle) {
                 flush(cleanup)
                 for (const hook of hooks) {
                     runInContext(context, lifecycle, () => {
-                        cleanup.add(hook())
+                        const teardown = hook({
+                            closed: false,
+                            complete() {
+                                if (!this.closed) {
+                                    cleanup.delete(teardown)
+                                    unsubscribe(teardown)
+                                }
+                                this.closed = true
+                            },
+                        })
+                        cleanup.add(teardown)
                         runEffects(context, cleanup)
                     })
                 }
             }
         },
-        error: error => {
+        error: (error) => {
             flush(cleanup)
             console.error(error)
         },
@@ -245,17 +288,22 @@ export function runScheduler() {
     const iterableDiffers = inject(KeyValueDiffers)
     const scheduler = getScheduler()
     const context: { [key: string]: any } = getContext()
-    const changeDetectorRef = inject(ChangeDetectorRef)
+    const changeDetectorRef = oinject(
+        ChangeDetectorRef as Type<any>,
+        InjectFlags.Optional,
+    )
     const differ = iterableDiffers.find(context).create()
     const hasOnChanges = Boolean(getHooks().get(LifecycleHook.OnChanges))
 
-    scheduler.subscribe(lifecycle => {
+    scheduler.subscribe((lifecycle) => {
         switch (lifecycle) {
             case LifecycleHook.DoCheck: {
                 const invalidated = invalidateEffects(context)
                 if (hasOnChanges || invalidated) {
                     if (hasChanges(differ, context)) {
-                        changeDetectorRef.markForCheck()
+                        if (changeDetectorRef) {
+                            changeDetectorRef.markForCheck()
+                        }
                         scheduler.next(LifecycleHook.OnChanges)
                     }
                 }
@@ -278,9 +326,15 @@ export function runScheduler() {
 }
 
 export function setup() {
-    const initializers = inject(CONNECTABLE, InjectFlags.Self | InjectFlags.Optional)
+    const initializers = inject(
+        CONNECTABLE,
+        InjectFlags.Self | InjectFlags.Optional,
+    )
     const context = getContext<Partial<OnConnect>>()
-    const cleanup = cleanupMap.get(context) as Map<LifecycleHook, Set<TeardownLogic>>
+    const cleanup = cleanupMap.get(context) as Map<
+        LifecycleHook,
+        Set<TeardownLogic>
+    >
 
     if (context.ngOnConnect) {
         context.ngOnConnect()
@@ -358,10 +412,7 @@ export function addEffect(fn: EffectHook, options: EffectOptions = {}) {
 }
 
 export function addHook(fn: EffectHook, lifecycle: LifecycleHook) {
-    hooksMap
-        .get(getContext())
-        ?.get(lifecycle)
-        ?.add(fn)
+    hooksMap.get(getContext())?.get(lifecycle)?.add(fn)
 }
 
 export const depsMap = new Map<{ [key: string]: any }, Set<string | number>>()
@@ -409,15 +460,22 @@ export function reactiveFactory<T extends object>(
             if (desc && desc.enumerable) {
                 addDeps(target, p)
             }
-            if ((desc && !desc.writable && !desc.configurable) || opts.shallow) {
+            if (
+                (desc && !desc.writable && !desc.configurable) ||
+                opts.shallow
+            ) {
                 return value
             }
             if (typeof value === "function") {
                 return new Proxy(value, {
                     apply(target: any, thisArg: any, argArray?: any): any {
-                        return runInContext(context, getLifecycleHook(), function() {
-                            return target.apply(thisArg, argArray)
-                        })
+                        return runInContext(
+                            context,
+                            getLifecycleHook(),
+                            function () {
+                                return target.apply(thisArg, argArray)
+                            },
+                        )
                     },
                 })
             }

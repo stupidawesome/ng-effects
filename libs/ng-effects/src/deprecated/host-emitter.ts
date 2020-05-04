@@ -4,8 +4,8 @@ import { Callable } from "./internals/callable"
 import { apply } from "./internals/apply"
 
 export interface HostEmitter<T> extends Subject<T> {
-    (value?: T): T
-    (...value: T extends Array<infer U> ? T : never[]): void
+    (): void
+    (...value: T extends Array<infer U> ? T : [T]): void
     emit(value?: T): void
 }
 
@@ -29,3 +29,6 @@ export class HostEmitter<T> extends Callable<(next: T) => void> {
         this.next(event)
     }
 }
+
+export type ActionEmitter<T> = HostEmitter<T>
+export const ActionEmitter = HostEmitter

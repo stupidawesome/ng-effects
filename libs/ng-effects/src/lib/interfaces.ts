@@ -1,12 +1,12 @@
-import { TeardownLogic } from "rxjs"
+import { PartialObserver, TeardownLogic } from "rxjs"
 
 export interface OnConnect {
-    ngOnConnect(): void
+    ngOnConnect?(): void
 }
 
 export type ConnectableFunction<T = any> = (ctx: T) => void
 
-export type EffectHook = () => TeardownLogic
+export type EffectHook = (stop: PartialObserver<any>) => TeardownLogic
 
 export type Context = { [key: string]: any }
 
@@ -23,3 +23,5 @@ export const enum LifecycleHook {
 export interface EffectOptions {
     watch?: boolean
 }
+
+export type OnInvalidateFn = (callback: TeardownLogic) => void
