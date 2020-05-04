@@ -53,7 +53,7 @@ export const Todolist = connectable((ctx: TodolistComponent) => {
     })
 
     toggleTodo: on(ctx.toggleTodo, (todo, onInvalidate) => {
-        const cancel = todos
+        return  todos
             .update({
                 ...todo,
                 completed: !todo.completed,
@@ -67,7 +67,7 @@ export const Todolist = connectable((ctx: TodolistComponent) => {
                 // markDirty(ctx)
             })
 
-        onInvalidate(cancel)
+        // onInvalidate(cancel)
     })
 
     clearCompleted: on(ctx.clearCompleted, () => {

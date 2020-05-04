@@ -5,19 +5,12 @@ import {
     targetSymbol,
     unsubscribe,
 } from "./connect"
-import {
-    Observable,
-    Observer,
-    PartialObserver,
-    Subscriber,
-    TeardownLogic,
-} from "rxjs"
+import { Observable, PartialObserver, TeardownLogic } from "rxjs"
 import {
     distinctUntilChanged,
     mergeMap,
     pairwise,
     startWith,
-    switchMap,
 } from "rxjs/operators"
 import { OnInvalidateFn } from "./interfaces"
 
@@ -25,8 +18,8 @@ function createStopper(
     fn: (
         teardown: (
             subscriber: PartialObserver<any>,
-            teardown: TeardownLogic,
-        ) => void,
+            start: () => TeardownLogic,
+        ) => () => void,
         onInvalidate: OnInvalidateFn,
     ) => void,
 ): Function {
@@ -38,7 +31,7 @@ function createStopper(
     }
 
     function stop() {
-        if (observer?.closed !== true) {
+        if (observer && observer.closed !== true) {
             observer.complete!()
         }
         for (const invalidation of invalidations) {
@@ -47,10 +40,14 @@ function createStopper(
         invalidations.length = 0
     }
 
-    fn((subscriber, teardown) => {
+    fn((subscriber, start) => {
+        stop()
         observer = subscriber
-        invalidations.push(teardown)
-        return stop
+        const teardown = start()
+        return function () {
+            stop()
+            unsubscribe(teardown)
+        }
     }, onInvalidate)
 
     return stop
@@ -79,7 +76,7 @@ export function watchEffect(
         addEffect(
             (subscriber) =>
                 new Observable(() => {
-                    return teardown(subscriber, fn(onInvalidate))
+                    return teardown(subscriber, () => fn(onInvalidate))
                 }).subscribe(),
             { watch: true },
         )
@@ -101,11 +98,10 @@ export function watch<T>(
                     distinctUntilChanged(),
                     startWith(undefined),
                     pairwise(),
-                    switchMap(
+                    mergeMap(
                         ([previous, current]) =>
                             new Observable(() => {
-                                return subscribe(
-                                    subscriber,
+                                return subscribe(subscriber, () =>
                                     fn(current!, previous, onInvalidate),
                                 )
                             }),
@@ -124,15 +120,11 @@ export function on<T>(
         addEffect((subscriber) =>
             source
                 .pipe(
-                    switchMap(
-                        (value) =>
-                            new Observable(() => {
-                                return teardown(
-                                    subscriber,
-                                    fn(value, onInvalidate),
-                                )
-                            }),
-                    ),
+                    mergeMap((value) => {
+                        return new Observable(() => {
+                            teardown(subscriber, () => fn(value, onInvalidate))
+                        })
+                    }),
                 )
                 .subscribe(),
         )
@@ -143,7 +135,7 @@ export function effect(fn: (onInvalidate: OnInvalidateFn) => TeardownLogic) {
     return createStopper((teardown, onInvalidate) => {
         addEffect((subscriber) =>
             new Observable(() => {
-                return teardown(subscriber, fn(onInvalidate))
+                return teardown(subscriber, () => fn(onInvalidate))
             }).subscribe(),
         )
     })
