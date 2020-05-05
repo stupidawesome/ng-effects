@@ -1,6 +1,7 @@
 import {
     AbstractType,
     ChangeDetectorRef,
+    inject as oinject,
     InjectFlags,
     InjectionToken,
     Injector,
@@ -10,7 +11,6 @@ import {
     KeyValueDiffers,
     Type,
     ViewContainerRef,
-    inject as oinject,
 } from "@angular/core"
 import {
     Context,
@@ -41,14 +41,31 @@ export function throwMissingContextError(): never {
     throw new Error("[ngfx] Invalid execution context")
 }
 
-export function getInjector(context: Context = getContext()) {
-    const injector = injectorMap.get(context)
+const globalInjector = {
+    get<T>(
+        token: Type<T> | AbstractType<T> | InjectionToken<T>,
+        notFoundValue?: T,
+        flags: InjectFlags = InjectFlags.Default,
+    ) {
+        return runInContext(undefined, undefined, () => {
+            const value = oinject(token as any, flags)
+            return value === null && Boolean(flags & InjectFlags.Optional)
+                ? notFoundValue
+                : value
+        })
+    },
+}
 
-    if (!injector) {
+export function getInjector(): Injector {
+    if (activeContext) {
+        const injector = injectorMap.get(getContext())
+        if (injector) {
+            return injector
+        }
         throwMissingInjectorError()
+    } else {
+        return globalInjector
     }
-
-    return injector
 }
 
 export function getContext<T extends object>(): T {
@@ -59,10 +76,15 @@ export function getContext<T extends object>(): T {
     }
 }
 
+export function toRaw<T extends object>(value: T): T {
+    return Reflect.get(value, targetSymbol) || value
+}
+
 export function schedule(
     lifecycle: LifecycleHook,
-    context: Context = getContext(),
+    source: Context = getContext(),
 ) {
+    const context = toRaw(source)
     runInContext(context, lifecycle, () =>
         getScheduler(context).next(lifecycle),
     )
@@ -92,7 +114,7 @@ export function inject<T>(
     token: Type<T> | AbstractType<T> | InjectionToken<T>,
     flags?: InjectFlags,
 ): T | null {
-    const nodeInjector = getInjector()
+    const injector = getInjector()
     const optional =
         flags && Boolean(flags & InjectFlags.Optional) ? null : undefined
     // Workaround for https://github.com/angular/angular/issues/31776
@@ -103,18 +125,20 @@ export function inject<T>(
             Boolean(flags & InjectFlags.Self)
         ) {
             try {
-                parent = nodeInjector.get(ViewContainerRef as Type<any>)
+                parent = injector.get(ViewContainerRef as Type<any>)
                     ?.parentInjector
             } catch {
                 throw new Error(
-                    "This injector is a temporary workaround that can only be used inside a `connectable()` or `ngOnConnect()` call. For other injection contexts, please import `inject()` from @angular/core. Related issue: https://github.com/angular/angular/issues/31776",
+                    "This injector is a temporary workaround that can only be used inside a `connectable()` or " +
+                        "`ngOnConnect()` call. For other injection contexts, please import `inject()` from @angular/core." +
+                        " Related issue: https://github.com/angular/angular/issues/31776",
                 )
             }
             if (Boolean(flags & InjectFlags.SkipSelf) && parent) {
                 return parent.get(token, optional)
             }
             if (Boolean(flags & InjectFlags.Self)) {
-                const current: T = nodeInjector.get(token as any, null)
+                const current: T = injector.get(token as any, null)
                 const parentExists = parent ? parent.get(token, null) : null
                 if (optional === null && parentExists === current) {
                     return null
@@ -131,7 +155,15 @@ export function inject<T>(
             }
         }
     }
-    return nodeInjector.get(token, optional)
+    try {
+        return injector.get(token, optional, flags)
+    } catch (e) {
+        if (optional === null) {
+            return optional
+        } else {
+            throw e
+        }
+    }
 }
 
 export function getHooks() {
@@ -220,8 +252,11 @@ export function runEffect(
     cleanup.add(teardown)
 }
 
-export function runEffects(context: Context, cleanup: Set<TeardownLogic>) {
-    const differs = inject(IterableDiffers)
+export function runEffects(
+    context: Context,
+    cleanup: Set<TeardownLogic>,
+    differs: IterableDiffers,
+) {
     for (const [effect, options] of effects) {
         runEffect(context, effect, options, cleanup, differs)
     }
@@ -234,6 +269,7 @@ export function runHooks(
 ) {
     const scheduler = getScheduler()
     const context = getContext()
+    const differs = inject(IterableDiffers)
 
     scheduler.subscribe({
         next: (current) => {
@@ -252,7 +288,7 @@ export function runHooks(
                             },
                         })
                         cleanup.add(teardown)
-                        runEffects(context, cleanup)
+                        runEffects(context, cleanup, differs)
                     })
                 }
             }
@@ -288,7 +324,7 @@ export function runScheduler() {
     const iterableDiffers = inject(KeyValueDiffers)
     const scheduler = getScheduler()
     const context: { [key: string]: any } = getContext()
-    const changeDetectorRef = oinject(
+    const changeDetectorRef = inject(
         ChangeDetectorRef as Type<any>,
         InjectFlags.Optional,
     )
@@ -317,7 +353,6 @@ export function runScheduler() {
             }
             case LifecycleHook.OnDestroy: {
                 scheduler.complete()
-                scheduler.unsubscribe()
             }
         }
     })
@@ -331,18 +366,19 @@ export function setup() {
         InjectFlags.Self | InjectFlags.Optional,
     )
     const context = getContext<Partial<OnConnect>>()
+    const reactive = reactiveFactory(context, context, { shallow: true })
     const cleanup = cleanupMap.get(context) as Map<
         LifecycleHook,
         Set<TeardownLogic>
     >
 
-    if (context.ngOnConnect) {
-        context.ngOnConnect()
+    if (reactive.ngOnConnect) {
+        reactive.ngOnConnect()
     }
 
     if (initializers) {
         for (const initializer of initializers) {
-            initializer(context)
+            initializer(reactive)
         }
     }
 
@@ -372,12 +408,22 @@ export function runInContext<T extends (...args: any[]) => any>(
     return returnValue
 }
 
-export function connect<T extends object>(source: T, injector: Injector): T {
-    const context = reactiveFactory<T>(source, source)
+export function connect<T extends object>(context: T, injector: Injector): T {
+    const reactive = reactiveFactory<T>(context, context)
     const cleanup = new Map()
     const lifecycle = new Map()
 
-    injectorMap.set(context, injector)
+    injectorMap.set(context, {
+        get<T>(
+            token: Type<T> | InjectionToken<T> | AbstractType<T>,
+            notFoundValue?: T,
+            flags?: InjectFlags,
+        ) {
+            return runInContext(undefined, undefined, () =>
+                injector.get(token, notFoundValue, flags),
+            )
+        },
+    })
     hooksMap.set(context, lifecycle)
     cleanupMap.set(context, cleanup)
 
@@ -387,12 +433,14 @@ export function connect<T extends object>(source: T, injector: Injector): T {
     }
 
     setContext(context)
+    setLifecycleHook(LifecycleHook.OnConnect)
 
-    return context
+    return reactive
 }
 
-export function init(context: any) {
-    const hostInjector = getInjector(context)
+export function init(source: any) {
+    const context = toRaw(source)
+    const hostInjector = getInjector()
     const injector = Injector.create({
         parent: hostInjector,
         providers: [
@@ -404,11 +452,17 @@ export function init(context: any) {
         ],
     })
 
+    setContext()
+    setLifecycleHook()
     runInContext(context, LifecycleHook.OnInit, () => injector.get(setup))
 }
 
 export function addEffect(fn: EffectHook, options: EffectOptions = {}) {
-    effects.set(fn, options)
+    if (getLifecycleHook()) {
+        effects.set(fn, options)
+    } else {
+        throw new Error("Cannot use effects here")
+    }
 }
 
 export function addHook(fn: EffectHook, lifecycle: LifecycleHook) {
@@ -461,28 +515,38 @@ export function reactiveFactory<T extends object>(
                 addDeps(target, p)
             }
             if (
-                (desc && !desc.writable && !desc.configurable) ||
-                opts.shallow
+                ((desc && !desc.writable && !desc.configurable) ||
+                    opts.shallow) &&
+                typeof value !== "function"
             ) {
                 return value
             }
+            if (cache.has(value)) {
+                return cache.get(value)
+            }
             if (typeof value === "function") {
-                return new Proxy(value, {
+                const fn = new Proxy(value, {
                     apply(target: any, thisArg: any, argArray?: any): any {
                         return runInContext(
-                            context,
+                            toRaw(thisArg),
                             getLifecycleHook(),
                             function () {
-                                return target.apply(thisArg, argArray)
+                                flushInvalidations(target)
+                                setExecutionContext(target)
+                                const returnValue = target.apply(
+                                    thisArg,
+                                    argArray,
+                                )
+                                setExecutionContext()
+                                return returnValue
                             },
                         )
                     },
                 })
+                cache.set(value, fn)
+                return fn
             }
             if (typeof value === "object" && value !== null) {
-                if (cache.has(value)) {
-                    return cache.get(value)
-                }
                 const state = reactiveFactory(context, value, opts)
                 cache.set(value, state)
                 return state
@@ -491,10 +555,45 @@ export function reactiveFactory<T extends object>(
         },
         set(target: T, p: PropertyKey, value: any, receiver: any): boolean {
             const success = Reflect.set(target, p, value, receiver)
-            check(receiver)
+            check(context)
             return success
         },
     })
+}
+
+let executionContext: Function | undefined
+
+export function getExecutionContext() {
+    if (executionContext) {
+        return executionContext
+    }
+    throw new Error("Invalid execution context")
+}
+
+export function setExecutionContext(context?: any) {
+    executionContext = context
+}
+
+export function flushInvalidations(context: any) {
+    for (const teardown of teardownCache.get(context) ?? []) {
+        unsubscribe(teardown)
+    }
+    teardownCache.delete(context)
+}
+
+const teardownCache = new WeakMap<any, Set<TeardownLogic>>()
+
+export function onInvalidate(teardown: TeardownLogic) {
+    const context = getExecutionContext()
+    const cache =
+        teardownCache.get(context) ||
+        teardownCache.set(context, new Set()).get(context)!
+    cache.add(() => {
+        unsubscribe(teardown)
+        cleanup.delete(teardown)
+    })
+    const cleanup = cleanupMap.get(getContext())!.get(LifecycleHook.OnDestroy)!
+    cleanup.add(teardown)
 }
 
 export function onChanges(fn: () => TeardownLogic) {
@@ -527,4 +626,6 @@ export function viewChecked(context: any) {
 
 export function destroy(context: any) {
     schedule(LifecycleHook.OnDestroy, context)
+    setContext()
+    setLifecycleHook()
 }

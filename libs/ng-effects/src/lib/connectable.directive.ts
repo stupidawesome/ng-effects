@@ -16,7 +16,7 @@ import { check, connect, destroy, init, viewChecked, viewInit } from "./connect"
 
 export interface Connectable extends OnConnect {}
 
-class Connect
+export class Connectable
     implements OnInit, DoCheck, AfterViewInit, AfterViewChecked, OnDestroy {
     constructor(@Inject(INJECTOR) injector: Injector) {
         return connect(this, injector)
@@ -44,5 +44,3 @@ class Connect
         destroy(this)
     }
 }
-
-export const Connectable: Type<OnConnect> = Connect

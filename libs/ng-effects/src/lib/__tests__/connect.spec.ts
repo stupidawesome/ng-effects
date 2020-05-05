@@ -1,6 +1,5 @@
-import { getInjector, runInContext } from "../connect"
+import { inject, runInContext, toRaw } from "../connect"
 import { connectable } from "../providers"
-import fn = jest.fn
 import {
     ConnectedComponent,
     createConnectedComponent,
@@ -9,7 +8,9 @@ import {
     FAKE_INJECTOR,
     provide,
 } from "./utils"
-import { ChangeDetectorRef, ViewContainerRef } from "@angular/core"
+import { ChangeDetectorRef, INJECTOR, ViewContainerRef } from "@angular/core"
+import { LifecycleHook } from "../interfaces"
+import fn = jest.fn
 
 describe("connect", () => {
     beforeEach(() => declare(ConnectedComponent))
@@ -38,7 +39,11 @@ describe("connect", () => {
 
         when: {
             subject.detectChanges()
-            result = runInContext(subject.componentInstance, undefined, () => getInjector())
+            result = runInContext(
+                toRaw(subject.componentInstance),
+                LifecycleHook.OnConnect,
+                () => inject(INJECTOR),
+            )
         }
 
         then: expect(result).toBe(expected)

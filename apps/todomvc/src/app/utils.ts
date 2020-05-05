@@ -1,12 +1,11 @@
-import { ActionEmitter } from "@ng9/ng-effects"
+import { Observable, Observer } from "rxjs"
 
-export function action<T1, T2, T3, T4, T5>(): ActionEmitter<
-    [T1, T2, T3, T4, T5]
->
-export function action<T1, T2, T3, T4>(): ActionEmitter<[T1, T2, T3, T4]>
-export function action<T1, T2, T3>(): ActionEmitter<[T1, T2, T3]>
-export function action<T1, T2>(): ActionEmitter<[T1, T2]>
-export function action<T1>(): ActionEmitter<T1>
-export function action<T>() {
-    return new ActionEmitter<T>()
+export function subscribe<T>(
+    source: Observable<T>,
+    observer: (value: T) => void | Observer<T> = () => {},
+): () => void {
+    const sub = source.subscribe(observer)
+    return function () {
+        sub.unsubscribe()
+    }
 }

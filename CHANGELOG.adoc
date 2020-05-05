@@ -1,5 +1,58 @@
 = Changelog
 
+== 9.1.0-rc.1
+
+This release adds side effect invalidation hooks. These hooks can be called inside the top level of an effect or connected component method to register side effect invalidations, such as cancelling a http call. There are two global hooks available: `onInvalidate` and `onDestroy`.
+
+`OnInvalidate` is called each time an effect or connected component method is invoked, as well as when the component is destroyed.
+
+`OnDestroy` is only called when the component is destroyed.
+
+[source, typescript]
+----
+@Component()
+export class MyComponent extends Connectable {
+    private http = inject(HttpClient)
+    count = 0
+
+    asyncMethod() {
+        const sub = this.http.get("/api/count").subscribe((count) => {
+            this.count = count
+        })
+
+        onDestroy(() => {
+            sub.unsubscribe()
+        })
+    }
+
+    ngOnConnect() {
+        const asyncLogger = inject(AsyncLogger)
+
+        watchEffect(() => {
+            const cancel  = asyncLogger.logAfterDelay(this.count, 500)
+
+            onInvalidate(() => {
+                cancel() // called each time watchEffect deps change
+            })
+        })
+    }
+}
+----
+
+=== Features
+
+- allow onInvalidate and onDestroy in component methods
+- add side effect invalidation callbacks
+- fall back to global injector when `inject` is called outside of component context
+
+=== Bug fixes
+
+- prevent injection context leaking to injected tokens
+
+=== Misc
+
+- add todomvc example app
+
 == 9.1.0-rc.0
 
 This release introduces a composition/hooks model based on Vue 3's Composition API. This will replace the decorator API, which has been deprecated.

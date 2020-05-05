@@ -1,8 +1,11 @@
 import {
     addEffect,
+    flushInvalidations,
     getContext,
     reactiveFactory,
+    setExecutionContext,
     targetSymbol,
+    toRaw,
     unsubscribe,
 } from "./connect"
 import { Observable, PartialObserver, TeardownLogic } from "rxjs"
@@ -15,40 +18,34 @@ import {
 import { OnInvalidateFn } from "./interfaces"
 
 function createStopper(
-    fn: (
+    effect: Function,
+    subscribe: (
         teardown: (
             subscriber: PartialObserver<any>,
             start: () => TeardownLogic,
         ) => () => void,
-        onInvalidate: OnInvalidateFn,
     ) => void,
 ): Function {
     let observer: PartialObserver<any>
-    const invalidations: TeardownLogic[] = []
-
-    function onInvalidate(fn: TeardownLogic) {
-        invalidations.push(fn)
-    }
 
     function stop() {
         if (observer && observer.closed !== true) {
             observer.complete!()
         }
-        for (const invalidation of invalidations) {
-            unsubscribe(invalidation)
-        }
-        invalidations.length = 0
+        flushInvalidations(effect)
     }
 
-    fn((subscriber, start) => {
+    subscribe((subscriber, callback) => {
         stop()
         observer = subscriber
-        const teardown = start()
+        setExecutionContext(effect)
+        const teardown = callback()
+        setExecutionContext()
         return function () {
             stop()
             unsubscribe(teardown)
         }
-    }, onInvalidate)
+    })
 
     return stop
 }
@@ -69,14 +66,12 @@ export function shallowReactive<T extends object>(value: T): T {
     return reactiveFactory(getContext(), value)
 }
 
-export function watchEffect(
-    fn: (onInvalidate: OnInvalidateFn) => TeardownLogic,
-) {
-    return createStopper((teardown, onInvalidate) => {
+export function watchEffect(runEffect: () => TeardownLogic) {
+    return createStopper(runEffect, (subscribe) => {
         addEffect(
             (subscriber) =>
                 new Observable(() => {
-                    return teardown(subscriber, () => fn(onInvalidate))
+                    return subscribe(subscriber, () => runEffect())
                 }).subscribe(),
             { watch: true },
         )
@@ -85,13 +80,9 @@ export function watchEffect(
 
 export function watch<T>(
     source: Observable<T>,
-    fn: (
-        currentValue: T,
-        previousValue: T | undefined,
-        onInvalidate: OnInvalidateFn,
-    ) => TeardownLogic,
+    runEffect: (currentValue: T, previousValue: T | undefined) => TeardownLogic,
 ) {
-    return createStopper((subscribe, onInvalidate) => {
+    return createStopper(runEffect, (subscribe) => {
         addEffect((subscriber) =>
             source
                 .pipe(
@@ -102,7 +93,7 @@ export function watch<T>(
                         ([previous, current]) =>
                             new Observable(() => {
                                 return subscribe(subscriber, () =>
-                                    fn(current!, previous, onInvalidate),
+                                    runEffect(current!, previous),
                                 )
                             }),
                     ),
@@ -114,15 +105,15 @@ export function watch<T>(
 
 export function on<T>(
     source: Observable<T>,
-    fn: (value: T, onInvalidate: OnInvalidateFn) => TeardownLogic,
+    runEffect: (value: T) => TeardownLogic,
 ) {
-    return createStopper((teardown, onInvalidate) => {
+    return createStopper(runEffect, (subscribe) => {
         addEffect((subscriber) =>
             source
                 .pipe(
                     mergeMap((value) => {
                         return new Observable(() => {
-                            teardown(subscriber, () => fn(value, onInvalidate))
+                            return subscribe(subscriber, () => runEffect(value))
                         })
                     }),
                 )
@@ -131,11 +122,11 @@ export function on<T>(
     })
 }
 
-export function effect(fn: (onInvalidate: OnInvalidateFn) => TeardownLogic) {
-    return createStopper((teardown, onInvalidate) => {
+export function effect(runEffect: () => TeardownLogic) {
+    return createStopper(runEffect, (subscribe) => {
         addEffect((subscriber) =>
             new Observable(() => {
-                return teardown(subscriber, () => fn(onInvalidate))
+                return subscribe(subscriber, () => runEffect())
             }).subscribe(),
         )
     })
@@ -143,8 +134,4 @@ export function effect(fn: (onInvalidate: OnInvalidateFn) => TeardownLogic) {
 
 export function isProxy(value: any) {
     return Reflect.get(value, targetSymbol) === value
-}
-
-export function toRaw<T extends object>(value: T): T {
-    return Reflect.get(value, targetSymbol) || value
 }

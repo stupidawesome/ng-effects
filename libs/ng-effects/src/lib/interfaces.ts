@@ -11,6 +11,7 @@ export type EffectHook = (stop: PartialObserver<any>) => TeardownLogic
 export type Context = { [key: string]: any }
 
 export const enum LifecycleHook {
+    OnConnect,
     OnInit,
     OnChanges,
     AfterViewInit,
