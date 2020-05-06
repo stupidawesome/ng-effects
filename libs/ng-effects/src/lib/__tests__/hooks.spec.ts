@@ -37,10 +37,10 @@ describe("lifecycle hooks", () => {
             given: subject.componentInstance.ngOnConnect = connect
 
             when: {
-                subject.detectChanges()
-                await subject.whenRenderingDone()
                 // simulate input change
                 subject.componentInstance.ngOnChanges({})
+                subject.detectChanges()
+                await subject.whenRenderingDone()
 
                 subject.destroy()
             }

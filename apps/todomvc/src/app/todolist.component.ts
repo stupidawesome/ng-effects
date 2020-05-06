@@ -9,6 +9,7 @@ import {
     Connectable,
     effect,
     inject,
+    isProxy,
     onChanges,
     onDestroy,
     onInvalidate,
@@ -230,5 +231,6 @@ export class TodolistComponent extends Connectable {
             },
         ]),
     ],
+    exports: [TodolistComponent],
 })
 export class TodolistModule {}

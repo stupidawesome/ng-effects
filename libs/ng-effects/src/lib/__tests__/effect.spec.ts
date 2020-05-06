@@ -31,8 +31,8 @@ export function detectChangesAfterEach(
 ) {
     for (const value of values) {
         fixture.componentInstance.fakeProp = value
-        fixture.detectChanges()
         fixture.componentInstance.ngOnChanges({})
+        fixture.detectChanges()
     }
 }
 
@@ -214,6 +214,7 @@ describe("effect", () => {
         given: subject = TestBed.createComponent(ParentComponent)
 
         when: {
+            // simulate input change on parent component
             subject.componentInstance.ngOnChanges({})
             subject.detectChanges()
             subject.destroy()
@@ -224,8 +225,9 @@ describe("effect", () => {
             [2],
             [3],
             [10],
-            [11],
-            [12],
+            // onChanges only called if inputs change
+            // [11],
+            // [12],
             [13],
             [14],
             [15],

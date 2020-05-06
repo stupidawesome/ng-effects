@@ -35,5 +35,5 @@ export function effect(effect: () => TeardownLogic): StopHandler {
 }
 
 export function isProxy(value: any) {
-    return Reflect.get(value, targetSymbol) === value
+    return Reflect.get(value, targetSymbol) !== undefined
 }

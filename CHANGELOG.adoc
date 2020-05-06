@@ -1,5 +1,13 @@
 = Changelog
 
+== 9.1.0-rc.3
+
+=== Bug fixes
+
+- fix unintended calls to onChanges
+- reuse proxy ref in connectable providers
+- fix `isProxy` util
+
 == 9.1.0-rc.2
 
 This release adds reactive hooks for Angular component lifecycle methods:

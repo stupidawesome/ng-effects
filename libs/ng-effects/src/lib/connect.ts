@@ -12,13 +12,7 @@ import {
     Type,
     ViewContainerRef,
 } from "@angular/core"
-import {
-    Context,
-    EffectHook,
-    EffectOptions,
-    LifecycleHook,
-    OnConnect,
-} from "./interfaces"
+import { Context, EffectHook, EffectOptions, LifecycleHook } from "./interfaces"
 import { CONNECTABLE } from "./constants"
 import { Subject, TeardownLogic } from "rxjs"
 import { getLifecycleHook, setLifecycleHook } from "./lifecycle"
@@ -364,25 +358,29 @@ export function runScheduler() {
     schedule(LifecycleHook.OnInit)
 }
 
-export function setup() {
+export function createSetup(context: Context) {
+    return function () {
+        setup(context)
+    }
+}
+
+export function setup(context: Context) {
     const initializers = inject(
         CONNECTABLE,
         InjectFlags.Self | InjectFlags.Optional,
     )
-    const context = getContext<Partial<OnConnect>>()
-    const reactive = reactiveFactory(context, context, { shallow: true })
-    const cleanup = cleanupMap.get(context) as Map<
+    const cleanup = cleanupMap.get(toRaw(context)) as Map<
         LifecycleHook,
         Set<TeardownLogic>
     >
 
-    if (reactive.ngOnConnect) {
-        reactive.ngOnConnect()
+    if (context.ngOnConnect) {
+        context.ngOnConnect()
     }
 
     if (initializers) {
         for (const initializer of initializers) {
-            initializer(reactive)
+            initializer(context)
         }
     }
 
@@ -436,7 +434,6 @@ export function connect<T extends object>(context: T, injector: Injector): T {
         lifecycle.set(index, new Set<EffectHook>())
     }
 
-    getOrSetChanges(undefined)
     setContext(context)
     setLifecycleHook(LifecycleHook.OnConnect)
 
@@ -451,7 +448,7 @@ export function init(source: any) {
         providers: [
             {
                 provide: setup,
-                useFactory: setup,
+                useFactory: createSetup(source),
                 deps: [],
             },
         ],
@@ -463,6 +460,7 @@ export function init(source: any) {
 
     if (activeChanges) {
         changes(context, activeChanges)
+        getOrSetChanges(undefined)
     }
 }
 
