@@ -9,6 +9,7 @@ import {
     Connectable,
     effect,
     inject,
+    isOnDestroy,
     isProxy,
     onChanges,
     onDestroy,
@@ -202,19 +203,18 @@ export class TodolistComponent extends Connectable {
             }),
         )
 
+        // watchEffect is called once immediately after ngOnConnect and
+        // each time the dependencies change, _after_ the component has updated
         logChanges: watchEffect(() => {
             // emits whenever the todos ref changes
-            // NOTE: by default only shallow props are watched
+            // NOTE: by default only shallow props are watched on `this`
             console.log("todos changed", this.todos)
-        })
 
-        nestedEffect: onChanges((changes) => {
-            console.log("changes!", changes)
-            effect(() => {
-                // resets every time onChanges hook fires
-                onInvalidate(() => {
-                    console.log("invalidate!")
-                })
+            // this.todos = [] // this will cause expression change after check error
+
+            onInvalidate(() => {
+                // called when `this.todos` changes
+                console.log("invalidate!", isOnDestroy())
             })
         })
     }

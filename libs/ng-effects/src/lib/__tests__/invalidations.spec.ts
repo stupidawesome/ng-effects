@@ -23,22 +23,27 @@ describe("invalidations", () => {
                     })
                 })
                 onChanges(() => {
-                    onInvalidate(expected) // x1
+                    effect(() => {
+                        onInvalidate(expected) // x2
+                    })
                 })
                 watchEffect(() => {
                     void ctx.inputValue
-                    onInvalidate(expected) // x1
+                    onInvalidate(expected) // x2
                 })
             }),
         )
 
         when: {
-            subject.detectChanges()
-            subject.componentInstance.ngOnChanges({})
+            subject.detectChanges() // effect x1 watchEffect x1 afterViewInit x1
+            subject.componentInstance.ngOnChanges({}) // onChanges x1
+            subject.componentInstance.ngOnChanges({}) // onChanges x1
+            subject.componentInstance.inputValue = 10
+            subject.detectChanges() // watchEffect x1
             subject.destroy()
         }
 
-        expect(expected).toHaveBeenCalledTimes(4)
+        expect(expected).toHaveBeenCalledTimes(6)
     })
 
     it("should invalidate methods", () => {

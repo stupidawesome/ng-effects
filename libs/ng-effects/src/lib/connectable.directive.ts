@@ -3,7 +3,6 @@ import {
     AfterContentInit,
     AfterViewChecked,
     AfterViewInit,
-    DoCheck,
     Inject,
     INJECTOR,
     Injector,
@@ -15,7 +14,6 @@ import {
 import { OnConnect } from "./interfaces"
 import {
     changes,
-    check,
     connect,
     contentChecked,
     contentInit,
@@ -31,7 +29,6 @@ export class Connectable
     implements
         OnChanges,
         OnInit,
-        DoCheck,
         AfterViewInit,
         AfterViewChecked,
         AfterContentInit,
@@ -45,10 +42,6 @@ export class Connectable
 
     ngOnInit() {
         init(this)
-    }
-
-    ngDoCheck() {
-        check(this)
     }
 
     ngOnChanges(simpleChanges: SimpleChanges) {

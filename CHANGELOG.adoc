@@ -1,5 +1,17 @@
 = Changelog
 
+== 9.1.0-rc.4
+
+=== Performance improvements
+
+- flush `watchEffect` after component view is checked
+- remove `ngDoCheck` hook in `Connectable`
+- remove redundant diff checks
+
+=== Bug fixes
+
+- track deps for uninitialised fields
+
 == 9.1.0-rc.3
 
 === Bug fixes

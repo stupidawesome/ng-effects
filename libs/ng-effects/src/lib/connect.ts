@@ -175,7 +175,6 @@ const invalidationsMap = new WeakMap<
     Context,
     Map<Function, [Function, () => boolean]>
 >()
-const previousValues = new WeakMap<Context, any[] | undefined>()
 
 function getInvalidations(context: Context) {
     return (
@@ -194,7 +193,7 @@ function getValues(deps: Map<any, Set<any>>) {
     return current
 }
 
-export function invalidateEffects(target: Context) {
+export function invalidateEffects(target: Context, rerun?: boolean) {
     const invalidations = getInvalidations(target)
     const effectsToRun = new Set<Function>()
     let changed = false
@@ -204,10 +203,12 @@ export function invalidateEffects(target: Context) {
             effectsToRun.add(invalidate())
         }
     }
-    for (const effect of effectsToRun) {
-        effect()
+    if (rerun) {
+        for (const effect of effectsToRun) {
+            effect()
+        }
     }
-    return changed
+    effectsToRun.clear()
 }
 
 export function runInExecutionContext<T, U extends any[]>(
@@ -234,31 +235,33 @@ export function runEffect(
     cleanup: Set<TeardownLogic>,
     differs: IterableDiffers,
 ) {
-    effects.delete(effect)
+    const invalidations = getInvalidations(context)
     collectDeps()
     const teardown = effect()
     const flushedDeps = flushDeps()
-    const deps = options.watch ? flushedDeps : new Map()
-    const invalidations = getInvalidations(context)
-    const differ = differs.find([]).create()
 
-    differ.diff(getValues(deps))
-
-    function detectChanges() {
-        return hasChanges(differ, getValues(deps))
-    }
+    effects.delete(effect)
 
     const invalidation = () => {
         flushInvalidations(effect)
         cleanup.delete(invalidation)
         invalidations.delete(effect)
-        previousValues.delete(deps)
         unsubscribe(teardown)
         return function () {
             runEffect(context, effect, options, cleanup, differs)
         }
     }
-    invalidations.set(effect, [invalidation, detectChanges])
+
+    if (options.watch) {
+        function detectChanges() {
+            return hasChanges(differ, getValues(deps))
+        }
+        const deps = options.watch ? flushedDeps : new Map()
+        const differ = differs.find([]).create()
+        differ.diff(getValues(deps))
+        invalidations.set(effect, [invalidation, detectChanges])
+    }
+
     cleanup.add(invalidation)
 }
 
@@ -335,21 +338,27 @@ export function runScheduler() {
     const scheduler = getScheduler()
     const context: { [key: string]: any } = getContext()
     const changeDetectorRef = inject(
-        ChangeDetectorRef as Type<any>,
+        ChangeDetectorRef as Type<ChangeDetectorRef>,
         InjectFlags.Optional,
     )
+    let doCheck = false
 
     scheduler.subscribe((lifecycle) => {
         switch (lifecycle) {
             case LifecycleHook.DoCheck: {
-                if (invalidateEffects(context)) {
-                    if (changeDetectorRef) {
-                        changeDetectorRef.markForCheck()
-                    }
+                changeDetectorRef?.markForCheck()
+                doCheck = true
+                break
+            }
+            case LifecycleHook.AfterViewChecked: {
+                if (doCheck) {
+                    invalidateEffects(context, true)
+                    doCheck = false
                 }
                 break
             }
             case LifecycleHook.OnDestroy: {
+                invalidateEffects(context)
                 scheduler.complete()
             }
         }
@@ -411,7 +420,10 @@ export function runInContext<T extends (...args: any[]) => any>(
 }
 
 export function connect<T extends object>(context: T, injector: Injector): T {
-    const reactive = reactiveFactory<T>(context, context)
+    const reactive = reactiveFactory<T>(context, context, {
+        shallow: true,
+        methods: true,
+    })
     const cleanup = new Map()
     const lifecycle = new Map()
 
@@ -520,7 +532,7 @@ const cache = new WeakMap()
 export function reactiveFactory<T extends object>(
     context: any,
     source: T,
-    opts: any = { shallow: true },
+    opts: { shallow?: boolean; methods?: boolean } = {},
 ): T {
     return new Proxy<T>(source, {
         get(target: T, p: PropertyKey, receiver: any): any {
@@ -532,7 +544,11 @@ export function reactiveFactory<T extends object>(
             if (p === "__ngContext__") {
                 return value
             }
-            if (desc && desc.enumerable) {
+            if (
+                (desc && desc.enumerable) ||
+                value === null ||
+                value === undefined
+            ) {
                 addDeps(target, p)
             }
             if (
@@ -545,7 +561,7 @@ export function reactiveFactory<T extends object>(
             if (cache.has(value)) {
                 return cache.get(value)
             }
-            if (typeof value === "function") {
+            if (typeof value === "function" && opts.methods) {
                 const fn = new Proxy(value, {
                     apply(target: any, thisArg: any, argArray?: any): any {
                         flushInvalidations(target)
