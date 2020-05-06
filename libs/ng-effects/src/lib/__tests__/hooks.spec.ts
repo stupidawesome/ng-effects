@@ -1,10 +1,26 @@
 import { ConnectedComponent, createConnectedComponent, declare } from "./utils"
 import fn = jest.fn
 import Mock = jest.Mock
-import { afterViewInit, onChanges, onDestroy, whenRendered } from "../connect"
+import {
+    afterViewInit,
+    onChanges,
+    onDestroy,
+    afterViewChecked,
+    afterContentInit,
+    afterContentChecked,
+} from "../connect"
 import { effect, watchEffect } from "../utils"
 
-const hooks = [watchEffect, effect, onChanges, afterViewInit, whenRendered, onDestroy]
+const hooks = [
+    watchEffect,
+    effect,
+    onChanges,
+    afterContentInit,
+    afterContentChecked,
+    afterViewInit,
+    afterViewChecked,
+    onDestroy,
+]
 
 describe("lifecycle hooks", () => {
     beforeEach(() => declare(ConnectedComponent))
@@ -23,6 +39,9 @@ describe("lifecycle hooks", () => {
             when: {
                 subject.detectChanges()
                 await subject.whenRenderingDone()
+                // simulate input change
+                subject.componentInstance.ngOnChanges({})
+
                 subject.destroy()
             }
 

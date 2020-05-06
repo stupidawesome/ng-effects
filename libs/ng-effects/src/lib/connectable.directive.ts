@@ -1,23 +1,42 @@
 import {
-    AbstractType,
+    AfterContentChecked,
+    AfterContentInit,
     AfterViewChecked,
     AfterViewInit,
-    Directive,
     DoCheck,
     Inject,
     INJECTOR,
     Injector,
+    OnChanges,
     OnDestroy,
     OnInit,
-    Type,
+    SimpleChanges,
 } from "@angular/core"
 import { OnConnect } from "./interfaces"
-import { check, connect, destroy, init, viewChecked, viewInit } from "./connect"
+import {
+    changes,
+    check,
+    connect,
+    contentChecked,
+    contentInit,
+    destroy,
+    init,
+    viewChecked,
+    viewInit,
+} from "./connect"
 
 export interface Connectable extends OnConnect {}
 
 export class Connectable
-    implements OnInit, DoCheck, AfterViewInit, AfterViewChecked, OnDestroy {
+    implements
+        OnChanges,
+        OnInit,
+        DoCheck,
+        AfterViewInit,
+        AfterViewChecked,
+        AfterContentInit,
+        AfterContentChecked,
+        OnDestroy {
     constructor(@Inject(INJECTOR) injector: Injector) {
         return connect(this, injector)
     }
@@ -30,6 +49,18 @@ export class Connectable
 
     ngDoCheck() {
         check(this)
+    }
+
+    ngOnChanges(simpleChanges: SimpleChanges) {
+        changes(this, simpleChanges)
+    }
+
+    ngAfterContentInit() {
+        contentInit(this)
+    }
+
+    ngAfterContentChecked() {
+        contentChecked(this)
     }
 
     ngAfterViewInit() {

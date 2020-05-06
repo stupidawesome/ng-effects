@@ -4,6 +4,7 @@ import {
     InjectionToken,
     INJECTOR,
     Injector,
+    Input,
     Optional,
     Provider,
     StaticProvider,
@@ -20,6 +21,9 @@ export const FAKE_INJECTOR = new InjectionToken<Injector>("FAKE_INJECTOR")
     template: ``,
 })
 export class ConnectedComponent extends Connectable {
+    @Input()
+    inputValue: any;
+
     [key: string]: any
 
     ngOnConnect(): void {}

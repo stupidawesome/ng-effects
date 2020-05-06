@@ -8,7 +8,7 @@ import {
     IterableDiffer,
     IterableDiffers,
     KeyValueDiffer,
-    KeyValueDiffers,
+    SimpleChanges,
     Type,
     ViewContainerRef,
 } from "@angular/core"
@@ -177,7 +177,10 @@ export function flush(cleanup: Set<TeardownLogic>) {
     cleanup.clear()
 }
 
-const invalidationsMap = new WeakMap<Context, Map<Function, () => boolean>>()
+const invalidationsMap = new WeakMap<
+    Context,
+    Map<Function, [Function, () => boolean]>
+>()
 const previousValues = new WeakMap<Context, any[] | undefined>()
 
 function getInvalidations(context: Context) {
@@ -201,7 +204,7 @@ export function invalidateEffects(target: Context) {
     const invalidations = getInvalidations(target)
     const effectsToRun = new Set<Function>()
     let changed = false
-    for (const [invalidate, detectChanges] of invalidations) {
+    for (const [invalidate, detectChanges] of invalidations.values()) {
         if (detectChanges()) {
             changed = true
             effectsToRun.add(invalidate())
@@ -213,6 +216,23 @@ export function invalidateEffects(target: Context) {
     return changed
 }
 
+export function runInExecutionContext<T, U extends any[]>(
+    context: any,
+    factory: Function,
+) {
+    setExecutionContext(context)
+    const result = factory()
+    setExecutionContext()
+    return result
+}
+
+export function stopEffect(context: Context, effect: Function) {
+    const [invalidate] = getInvalidations(context).get(effect) || []
+    if (invalidate) {
+        invalidate()
+    }
+}
+
 export function runEffect(
     context: Context,
     effect: EffectHook,
@@ -222,12 +242,7 @@ export function runEffect(
 ) {
     effects.delete(effect)
     collectDeps()
-    const teardown = effect({
-        closed: false,
-        complete() {
-            this.closed = true
-        },
-    })
+    const teardown = effect()
     const flushedDeps = flushDeps()
     const deps = options.watch ? flushedDeps : new Map()
     const invalidations = getInvalidations(context)
@@ -240,16 +255,17 @@ export function runEffect(
     }
 
     const invalidation = () => {
-        cleanup.delete(teardown)
-        invalidations.delete(invalidation)
+        flushInvalidations(effect)
+        cleanup.delete(invalidation)
+        invalidations.delete(effect)
         previousValues.delete(deps)
         unsubscribe(teardown)
         return function () {
             runEffect(context, effect, options, cleanup, differs)
         }
     }
-    invalidations.set(invalidation, detectChanges)
-    cleanup.add(teardown)
+    invalidations.set(effect, [invalidation, detectChanges])
+    cleanup.add(invalidation)
 }
 
 export function runEffects(
@@ -260,6 +276,16 @@ export function runEffects(
     for (const [effect, options] of effects) {
         runEffect(context, effect, options, cleanup, differs)
     }
+}
+
+let activeChanges: any
+
+export function getOrSetChanges(simpleChanges?: SimpleChanges) {
+    const isOnChanges = getLifecycleHook() === LifecycleHook.OnChanges
+    if (arguments.length === 1) {
+        activeChanges = simpleChanges
+    }
+    return isOnChanges ? activeChanges : undefined
 }
 
 export function runHooks(
@@ -277,16 +303,7 @@ export function runHooks(
                 flush(cleanup)
                 for (const hook of hooks) {
                     runInContext(context, lifecycle, () => {
-                        const teardown = hook({
-                            closed: false,
-                            complete() {
-                                if (!this.closed) {
-                                    cleanup.delete(teardown)
-                                    unsubscribe(teardown)
-                                }
-                                this.closed = true
-                            },
-                        })
+                        const teardown = hook(getOrSetChanges())
                         cleanup.add(teardown)
                         runEffects(context, cleanup, differs)
                     })
@@ -321,34 +338,21 @@ export function hasChanges(
 }
 
 export function runScheduler() {
-    const iterableDiffers = inject(KeyValueDiffers)
     const scheduler = getScheduler()
     const context: { [key: string]: any } = getContext()
     const changeDetectorRef = inject(
         ChangeDetectorRef as Type<any>,
         InjectFlags.Optional,
     )
-    const differ = iterableDiffers.find(context).create()
-    const hasOnChanges = Boolean(getHooks().get(LifecycleHook.OnChanges))
 
     scheduler.subscribe((lifecycle) => {
         switch (lifecycle) {
             case LifecycleHook.DoCheck: {
-                const invalidated = invalidateEffects(context)
-                if (hasOnChanges || invalidated) {
-                    if (hasChanges(differ, context)) {
-                        if (changeDetectorRef) {
-                            changeDetectorRef.markForCheck()
-                        }
-                        scheduler.next(LifecycleHook.OnChanges)
+                if (invalidateEffects(context)) {
+                    if (changeDetectorRef) {
+                        changeDetectorRef.markForCheck()
                     }
                 }
-                break
-            }
-            case LifecycleHook.AfterViewChecked: {
-                runInContext(context, LifecycleHook.WhenRendered, () =>
-                    scheduler.next(LifecycleHook.WhenRendered),
-                )
                 break
             }
             case LifecycleHook.OnDestroy: {
@@ -427,11 +431,12 @@ export function connect<T extends object>(context: T, injector: Injector): T {
     hooksMap.set(context, lifecycle)
     cleanupMap.set(context, cleanup)
 
-    for (const index of Array.from({ length: 6 }).keys()) {
+    for (const index of Array.from({ length: 9 }).keys()) {
         cleanup.set(index, new Set<TeardownLogic>())
         lifecycle.set(index, new Set<EffectHook>())
     }
 
+    getOrSetChanges(undefined)
     setContext(context)
     setLifecycleHook(LifecycleHook.OnConnect)
 
@@ -455,13 +460,31 @@ export function init(source: any) {
     setContext()
     setLifecycleHook()
     runInContext(context, LifecycleHook.OnInit, () => injector.get(setup))
+
+    if (activeChanges) {
+        changes(context, activeChanges)
+    }
+}
+
+export function createEffect(
+    factory: () => TeardownLogic,
+    opts?: { watch: boolean },
+) {
+    const context = getContext()
+    const effect = () => runInExecutionContext(effect, factory)
+
+    addEffect(effect, opts)
+
+    return function stop() {
+        stopEffect(context, effect)
+    }
 }
 
 export function addEffect(fn: EffectHook, options: EffectOptions = {}) {
     if (getLifecycleHook()) {
         effects.set(fn, options)
     } else {
-        throw new Error("Cannot use effects here")
+        throw new Error("Effects cannot be used here")
     }
 }
 
@@ -527,11 +550,11 @@ export function reactiveFactory<T extends object>(
             if (typeof value === "function") {
                 const fn = new Proxy(value, {
                     apply(target: any, thisArg: any, argArray?: any): any {
+                        flushInvalidations(target)
                         return runInContext(
                             toRaw(thisArg),
                             getLifecycleHook(),
                             function () {
-                                flushInvalidations(target)
                                 setExecutionContext(target)
                                 const returnValue = target.apply(
                                     thisArg,
@@ -588,24 +611,36 @@ export function onInvalidate(teardown: TeardownLogic) {
     const cache =
         teardownCache.get(context) ||
         teardownCache.set(context, new Set()).get(context)!
-    cache.add(() => {
-        unsubscribe(teardown)
-        cleanup.delete(teardown)
-    })
-    const cleanup = cleanupMap.get(getContext())!.get(LifecycleHook.OnDestroy)!
-    cleanup.add(teardown)
+
+    function invalidate() {
+        if (cache.has(invalidate)) {
+            unsubscribe(teardown)
+            cache.delete(invalidate)
+        }
+    }
+
+    cache.add(invalidate)
+    onDestroy(invalidate)
 }
 
-export function onChanges(fn: () => TeardownLogic) {
+export function onChanges(fn: (changes: SimpleChanges) => TeardownLogic) {
     addHook(fn, LifecycleHook.OnChanges)
+}
+
+export function afterContentInit(fn: () => TeardownLogic) {
+    addHook(fn, LifecycleHook.AfterContentInit)
+}
+
+export function afterContentChecked(fn: () => TeardownLogic) {
+    addHook(fn, LifecycleHook.AfterContentChecked)
 }
 
 export function afterViewInit(fn: () => TeardownLogic) {
     addHook(fn, LifecycleHook.AfterViewInit)
 }
 
-export function whenRendered(fn: () => TeardownLogic) {
-    addHook(fn, LifecycleHook.WhenRendered)
+export function afterViewChecked(fn: () => TeardownLogic) {
+    addHook(fn, LifecycleHook.AfterViewChecked)
 }
 
 export function onDestroy(fn: () => TeardownLogic) {
@@ -614,6 +649,19 @@ export function onDestroy(fn: () => TeardownLogic) {
 
 export function check(context: any) {
     schedule(LifecycleHook.DoCheck, context)
+}
+
+export function changes(context: any, changes: SimpleChanges) {
+    getOrSetChanges(changes)
+    schedule(LifecycleHook.OnChanges, context)
+}
+
+export function contentInit(context: any) {
+    schedule(LifecycleHook.AfterContentInit, context)
+}
+
+export function contentChecked(context: any) {
+    schedule(LifecycleHook.AfterContentChecked, context)
 }
 
 export function viewInit(context: any) {

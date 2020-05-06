@@ -29,6 +29,3 @@ export class HostEmitter<T> extends Callable<(next: T) => void> {
         this.next(event)
     }
 }
-
-export type ActionEmitter<T> = HostEmitter<T>
-export const ActionEmitter = HostEmitter

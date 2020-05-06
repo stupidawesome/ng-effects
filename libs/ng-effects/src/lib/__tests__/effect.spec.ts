@@ -1,7 +1,23 @@
-import { ConnectedComponent, createConnectedComponent, declare, provide } from "./utils"
-import { afterViewInit, inject, onChanges, onDestroy, whenRendered } from "../connect"
+import {
+    ConnectedComponent,
+    createConnectedComponent,
+    declare,
+    provide,
+} from "./utils"
+import {
+    afterViewInit,
+    inject,
+    onChanges,
+    onDestroy,
+    afterViewChecked,
+} from "../connect"
 import { connectable } from "../providers"
-import { ComponentFixture, fakeAsync, TestBed, tick } from "@angular/core/testing"
+import {
+    ComponentFixture,
+    fakeAsync,
+    TestBed,
+    tick,
+} from "@angular/core/testing"
 import { timer } from "rxjs"
 import { Component, InjectionToken } from "@angular/core"
 import { Connectable } from "../connectable.directive"
@@ -9,10 +25,14 @@ import fn = jest.fn
 import Mock = jest.Mock
 import { watchEffect } from "../utils"
 
-export function detectChangesAfterEach(fixture: ComponentFixture<any>, values: any[]) {
+export function detectChangesAfterEach(
+    fixture: ComponentFixture<any>,
+    values: any[],
+) {
     for (const value of values) {
         fixture.componentInstance.fakeProp = value
         fixture.detectChanges()
+        fixture.componentInstance.ngOnChanges({})
     }
 }
 
@@ -38,7 +58,7 @@ export class ParentComponent extends Connectable {
             spy(4)
             watchEffect(() => spy(5))
         })
-        whenRendered(() => {
+        afterViewChecked(() => {
             spy(6)
             watchEffect(() => spy(7))
         })
@@ -51,9 +71,7 @@ export class ParentComponent extends Connectable {
 
 @Component({
     selector: "count",
-    template: `
-        {{ count }}
-    `,
+    template: ` {{ count }} `,
 })
 export class CountComponent extends Connectable {
     count = 0
@@ -74,7 +92,7 @@ export class CountComponent extends Connectable {
             spy(13)
             watchEffect(() => spy(14))
         })
-        whenRendered(() => {
+        afterViewChecked(() => {
             spy(15)
             watchEffect(() => spy(16))
         })
@@ -86,7 +104,9 @@ export class CountComponent extends Connectable {
 }
 
 describe("effect", () => {
-    beforeEach(() => declare(ConnectedComponent, ParentComponent, CountComponent))
+    beforeEach(() =>
+        declare(ConnectedComponent, ParentComponent, CountComponent),
+    )
     beforeEach(() =>
         provide({
             provide: SPY,
@@ -118,7 +138,7 @@ describe("effect", () => {
         given: connect = () => {
             onChanges(expected)
             afterViewInit(expected)
-            whenRendered(expected)
+            afterViewChecked(expected)
             onDestroy(expected)
         }
         given: subject = createConnectedComponent()
@@ -126,6 +146,7 @@ describe("effect", () => {
 
         when: {
             subject.detectChanges()
+            subject.componentInstance.ngOnChanges({})
             subject.destroy()
         }
 
@@ -143,7 +164,7 @@ describe("effect", () => {
         given: connect = () => {
             onChanges(() => watchEffect(expected)) // x10
             afterViewInit(() => watchEffect(expected)) // x2)
-            whenRendered(() => watchEffect(expected)) // x10
+            afterViewChecked(() => watchEffect(expected)) // x10
             onDestroy(() => watchEffect(expected)) // x2
         }
         given: subject = createConnectedComponent(connectable(connect))
@@ -162,7 +183,7 @@ describe("effect", () => {
         let subject, expected: any, connect
 
         given: expected = fn()
-        given: connect = function(this: any, state?: any) {
+        given: connect = function (this: any, state?: any) {
             watchEffect(() => {
                 expected()
                 // ngOnConnect receives a reactive `this` context.
@@ -193,6 +214,7 @@ describe("effect", () => {
         given: subject = TestBed.createComponent(ParentComponent)
 
         when: {
+            subject.componentInstance.ngOnChanges({})
             subject.detectChanges()
             subject.destroy()
         }

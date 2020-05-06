@@ -1,5 +1,57 @@
 = Changelog
 
+== 9.1.0-rc.2
+
+This release adds reactive hooks for Angular component lifecycle methods:
+
+[source, typescript]
+----
+@Component()
+export class MyComponent extends Connectable {
+    ngOnConnect() {
+        // called during ngOnInit
+
+        onChanges((changes) => {
+            // when inputs change
+        })
+        afterContentInit(() => {
+            // content children initialised
+        })
+        afterViewInit(() => {
+            // after first render
+            effect(() => {
+                // starts after component mounted
+            })
+        })
+        afterContentChecked(() => {
+            // after content children updated
+        })
+        afterViewChecked(() => {
+            // after each render
+        })
+        onDestroy(() => {
+            // when component destroyed
+        })
+    }
+}
+----
+
+=== Features
+
+- add more lifecycle hooks
+- rework `onChanges` hook so it only fires when inputs are changed
+- return stop handler from effects
+
+=== Bug fixes
+
+- fix invalidations for effects inside lifecycle hooks
+- export `onInvalidate` hook
+- ensure invalidations are only called once on destroy
+
+=== Misc
+
+- rename `whenRendered` to `afterViewChecked`
+
 == 9.1.0-rc.1
 
 This release adds side effect invalidation hooks. These hooks can be called inside the top level of an effect or connected component method to register side effect invalidations, such as cancelling a http call. There are two global hooks available: `onInvalidate` and `onDestroy`.

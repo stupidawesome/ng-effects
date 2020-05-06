@@ -1,19 +1,23 @@
-import { ChangeDetectionStrategy, Component, NgModule } from "@angular/core"
+import {
+    ChangeDetectionStrategy,
+    Component,
+    Input,
+    NgModule,
+} from "@angular/core"
 import { CommonModule } from "@angular/common"
 import {
-    afterViewInit,
     Connectable,
     effect,
     inject,
+    onChanges,
     onDestroy,
+    onInvalidate,
     watchEffect,
-    whenRendered,
 } from "@ng9/ng-effects"
 import { RouterModule } from "@angular/router"
 import { TodosService } from "./todos.service"
 import { Todo } from "./interfaces"
 import { HttpClient } from "@angular/common/http"
-import { onInvalidate } from "../../../../libs/ng-effects/src/lib/connect"
 import { subscribe } from "./utils"
 
 @Component({
@@ -105,6 +109,9 @@ export class TodolistComponent extends Connectable {
     activeTodo: Todo | undefined
     http = inject(HttpClient)
     svc = inject(TodosService)
+
+    @Input()
+    count = 0
 
     get remaining() {
         return this.todos.filter((todo) => !todo.completed).length
@@ -198,6 +205,16 @@ export class TodolistComponent extends Connectable {
             // emits whenever the todos ref changes
             // NOTE: by default only shallow props are watched
             console.log("todos changed", this.todos)
+        })
+
+        nestedEffect: onChanges((changes) => {
+            console.log("changes!", changes)
+            effect(() => {
+                // resets every time onChanges hook fires
+                onInvalidate(() => {
+                    console.log("invalidate!")
+                })
+            })
         })
     }
 }
