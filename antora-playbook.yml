@@ -1,0 +1,14 @@
+site:
+    title: My Demo Site
+    url: https://ngfx.io/
+content:
+    sources:
+        - url: .
+          branches: HEAD
+          start_path: ./docs
+output:
+    dir: ./dist/docs
+ui:
+    bundle:
+        url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/master/raw/build/ui-bundle.zip?job=bundle-stable
+        snapshot: true

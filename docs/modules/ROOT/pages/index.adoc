@@ -1,0 +1,79 @@
+= Basic2 Inline Text Formatting
+// Settings
+:idprefix:
+:idseparator: -
+:example-caption!:
+
+You can add the following inline styles to your content:
+
+* Bold
+* Italic
+* Monospace
+* Highlight
+
+== Bold & Italic
+
+You can bold and italic entire phrases, a word, and characters in a word.
+
+.Bold and italic inline formatting
+[source,asciidoc]
+----
+*bold phrase* & **char**acter**s**
+
+_italic phrase_ & __char__acter__s__
+
+*_bold italic phrase_* & **__char__**acter**__s__**
+----
+
+.Result
+====
+*bold phrase* & **char**acter**s**
+
+_italic phrase_ & __char__acter__s__
+
+*_bold italic phrase_* & **__char__**acter**__s__**
+====
+
+== Monospace
+
+You can monospace entire phrases, a word, and characters in a word.
+
+.Monospace inline formatting
+[source,asciidoc]
+----
+`monospace phrase` & ``char``acter``s``
+
+`*monospace bold phrase*` & ``**char**``acter``**s**``
+
+`_monospace italic phrase_` & ``__char__``acter``__s__``
+
+`*_monospace bold italic phrase_*` &
+``**__char__**``acter``**__s__**``
+----
+
+.Result
+====
+`monospace phrase` & ``char``acter``s``
+
+`*monospace bold phrase*` & ``**char**``acter``**s**``
+
+`_monospace italic phrase_` & ``__char__``acter``__s__``
+
+`*_monospace bold italic phrase_*` &
+``**__char__**``acter``**__s__**``
+====
+
+== Highlight
+
+You can highlight entire phrases, a word, and characters in a word.
+
+.Highlight inline formatting
+[source,asciidoc]
+----
+Let's #highlight this phrase# and part of th##is##.
+----
+
+.Result
+====
+Let's #highlight this phrase# and part of th##is##.
+====
