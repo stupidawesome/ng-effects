@@ -16,7 +16,7 @@ This releases reintroduces `Effect` as a reactive type and adds support for comp
         <div>Offset: {{ offset(1) }}</div>
     `
 })
-export class NgComponent {
+export class NgComponent extends Connectable {
     @Input()
     count = 0
 
