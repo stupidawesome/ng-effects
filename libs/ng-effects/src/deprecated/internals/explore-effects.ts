@@ -1,11 +1,18 @@
-import { DefaultEffectOptions, EffectMetadata, EffectOptions } from "../interfaces"
+import {
+    DefaultEffectOptions,
+    EffectMetadata,
+    EffectOptions,
+} from "../interfaces"
 import { Type } from "@angular/core"
-import { Context, Effect, Observe, State } from "../decorators"
+import { Context, Observe, State } from "../decorators"
 import { getMetadata } from "./metadata"
+import { Effect } from "../../lib/effect"
 
 export const effectMetadata = new Map<Type<any>, Set<EffectMetadata>>()
 
-export function exploreEffects(defaults: DefaultEffectOptions): Generator<EffectMetadata> {
+export function exploreEffects(
+    defaults: DefaultEffectOptions,
+): Generator<EffectMetadata> {
     const metadata = getMetadata(Effect)
     for (const [type, effects] of metadata) {
         if (effectMetadata.has(type)) {
@@ -20,7 +27,9 @@ export function exploreEffects(defaults: DefaultEffectOptions): Generator<Effect
             const path = `${type.name} -> ${name}`
             const adapter = locals && locals.adapter
             const options = mergeOptions(defaults, locals)
-            const args = [State, Context, Observe].map(key => getMetadata(key, type, name))
+            const args = [State, Context, Observe].map((key) =>
+                getMetadata(key, type, name),
+            )
             const metadata = {
                 path,
                 type,
@@ -36,14 +45,22 @@ export function exploreEffects(defaults: DefaultEffectOptions): Generator<Effect
     return metadata
 }
 
-export function mergeOptions(defaults: DefaultEffectOptions, options: EffectOptions<any> = {}) {
+export function mergeOptions(
+    defaults: DefaultEffectOptions,
+    options: EffectOptions<any> = {},
+) {
     if (options.adapter) {
         const adapterOptions = options.adapterOptions
-        return adapterOptions && adapterOptions.length === 1 ? adapterOptions[0] : adapterOptions
+        return adapterOptions && adapterOptions.length === 1
+            ? adapterOptions[0]
+            : adapterOptions
     }
     // default to `markDirty: true` for bound effects unless explicitly set
     const merged = Object.assign({}, defaults, options)
-    if (merged.markDirty === undefined && Boolean(options.bind || options.assign)) {
+    if (
+        merged.markDirty === undefined &&
+        Boolean(options.bind || options.assign)
+    ) {
         merged.markDirty = true
     }
     return merged

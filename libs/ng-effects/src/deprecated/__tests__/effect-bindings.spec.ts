@@ -3,8 +3,9 @@ import { createDirective } from "./test-utils"
 import { Effects } from "../providers"
 import { Type } from "@angular/core"
 import { fakeAsync, tick } from "@angular/core/testing"
-import { Effect, State } from "../decorators"
+import { State } from "../decorators"
 import { Connect } from "../connect"
+import { Effect } from "../../lib/effect"
 import objectContaining = jasmine.objectContaining
 
 describe("How to use effect bindCount using decorators", () => {
@@ -81,7 +82,11 @@ describe("How to use effect bindCount using decorators", () => {
             AppEffects = MockAppEffects
         }
 
-        when: result = createDirective(AppDirective, [Connect], [Effects, AppEffects])
+        when: result = createDirective(
+            AppDirective,
+            [Connect],
+            [Effects, AppEffects],
+        )
 
         then: expect(result.count).toBe(expected)
     })
@@ -106,7 +111,11 @@ describe("How to use effect bindCount using decorators", () => {
             AppEffects = MockAppEffects
         }
 
-        when: result = createDirective(AppDirective, [Connect], [Effects, AppEffects])
+        when: result = createDirective(
+            AppDirective,
+            [Connect],
+            [Effects, AppEffects],
+        )
 
         then: expect(result.count).toBe(expected)
     })
@@ -133,7 +142,11 @@ describe("How to use effect bindCount using decorators", () => {
             AppEffects = MockAppEffects
         }
 
-        when: result = createDirective(AppDirective, [Connect], [Effects, AppEffects])
+        when: result = createDirective(
+            AppDirective,
+            [Connect],
+            [Effects, AppEffects],
+        )
 
         then: expect(result).toEqual(objectContaining({ name, age }))
     })

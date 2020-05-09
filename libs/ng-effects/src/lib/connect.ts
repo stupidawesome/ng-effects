@@ -12,7 +12,13 @@ import {
     Type,
     ViewContainerRef,
 } from "@angular/core"
-import { Context, EffectHook, EffectOptions, LifecycleHook } from "./interfaces"
+import {
+    Context,
+    EffectHook,
+    EffectOptions,
+    LifecycleHook,
+    OnInvalidate,
+} from "./interfaces"
 import { CONNECTABLE } from "./constants"
 import { Subject, TeardownLogic } from "rxjs"
 import { getLifecycleHook, setLifecycleHook } from "./lifecycle"
@@ -173,7 +179,7 @@ export function flush(cleanup: Set<TeardownLogic>) {
 
 const invalidationsMap = new WeakMap<
     Context,
-    Map<Function, [Function, () => boolean]>
+    Map<Function, [Function, () => boolean, EffectOptions]>
 >()
 
 function getInvalidations(context: Context) {
@@ -183,8 +189,8 @@ function getInvalidations(context: Context) {
     )
 }
 
-function getValues(deps: Map<any, Set<any>>) {
-    const current: any = []
+export function getValues(deps: Map<any, Set<any>>): any[] {
+    const current: any[] = []
     Array.from(deps).map(([context, keys]) => {
         Array.from(keys).map((key) => {
             current.push(context[key])
@@ -193,32 +199,23 @@ function getValues(deps: Map<any, Set<any>>) {
     return current
 }
 
-export function invalidateEffects(target: Context, rerun?: boolean) {
+export function invalidateEffects(
+    target: Context,
+    flush?: "pre" | "post" | "sync",
+) {
     const invalidations = getInvalidations(target)
     const effectsToRun = new Set<Function>()
-    let changed = false
-    for (const [invalidate, detectChanges] of invalidations.values()) {
-        if (detectChanges()) {
-            changed = true
+    for (const [invalidate, detectChanges, opts] of invalidations.values()) {
+        if (!flush || (opts.flush === flush && detectChanges())) {
             effectsToRun.add(invalidate())
         }
     }
-    if (rerun) {
+    if (flush) {
         for (const effect of effectsToRun) {
             effect()
         }
     }
     effectsToRun.clear()
-}
-
-export function runInExecutionContext<T, U extends any[]>(
-    context: any,
-    factory: Function,
-) {
-    setExecutionContext(context)
-    const result = factory()
-    setExecutionContext()
-    return result
 }
 
 export function stopEffect(context: Context, effect: Function) {
@@ -231,7 +228,7 @@ export function stopEffect(context: Context, effect: Function) {
 export function runEffect(
     context: Context,
     effect: EffectHook,
-    options: EffectOptions,
+    config: EffectOptions,
     cleanup: Set<TeardownLogic>,
     differs: IterableDiffers,
 ) {
@@ -243,23 +240,23 @@ export function runEffect(
     effects.delete(effect)
 
     const invalidation = () => {
-        flushInvalidations(effect)
+        config.invalidate()
         cleanup.delete(invalidation)
         invalidations.delete(effect)
         unsubscribe(teardown)
         return function () {
-            runEffect(context, effect, options, cleanup, differs)
+            runEffect(context, effect, config, cleanup, differs)
         }
     }
 
-    if (options.watch) {
+    if (config.watch) {
         function detectChanges() {
             return hasChanges(differ, getValues(deps))
         }
-        const deps = options.watch ? flushedDeps : new Map()
+        const deps = config.watch ? flushedDeps : new Map()
         const differ = differs.find([]).create()
         differ.diff(getValues(deps))
-        invalidations.set(effect, [invalidation, detectChanges])
+        invalidations.set(effect, [invalidation, detectChanges, config])
     }
 
     cleanup.add(invalidation)
@@ -346,13 +343,20 @@ export function runScheduler() {
     scheduler.subscribe((lifecycle) => {
         switch (lifecycle) {
             case LifecycleHook.DoCheck: {
+                invalidateEffects(context, "sync")
                 changeDetectorRef?.markForCheck()
                 doCheck = true
                 break
             }
+            case LifecycleHook.AfterContentChecked: {
+                if (doCheck) {
+                    invalidateEffects(context, "pre")
+                }
+                break
+            }
             case LifecycleHook.AfterViewChecked: {
                 if (doCheck) {
-                    invalidateEffects(context, true)
+                    invalidateEffects(context, "post")
                     doCheck = false
                 }
                 break
@@ -422,7 +426,6 @@ export function runInContext<T extends (...args: any[]) => any>(
 export function connect<T extends object>(context: T, injector: Injector): T {
     const reactive = reactiveFactory<T>(context, context, {
         shallow: true,
-        methods: true,
     })
     const cleanup = new Map()
     const lifecycle = new Map()
@@ -477,20 +480,36 @@ export function init(source: any) {
 }
 
 export function createEffect(
-    factory: () => TeardownLogic,
-    opts?: { watch: boolean },
+    factory: (onInvalidate: OnInvalidate) => TeardownLogic,
+    opts?: { watch?: boolean; flush: "pre" | "post" | "sync" },
 ) {
     const context = getContext()
-    const effect = () => runInExecutionContext(effect, factory)
+    const invalidations = new Set<TeardownLogic>()
+    const effect = () => factory(onInvalidate)
 
-    addEffect(effect, opts)
+    function onInvalidate(teardown: TeardownLogic) {
+        invalidations.add(teardown)
+    }
+
+    function invalidate() {
+        for (const invalidation of invalidations) {
+            unsubscribe(invalidation)
+        }
+        invalidations.clear()
+    }
+
+    addEffect(effect, {
+        ...opts,
+        invalidate,
+    })
+    onDestroy(invalidate)
 
     return function stop() {
         stopEffect(context, effect)
     }
 }
 
-export function addEffect(fn: EffectHook, options: EffectOptions = {}) {
+export function addEffect(fn: EffectHook, options: EffectOptions) {
     if (getLifecycleHook()) {
         effects.set(fn, options)
     } else {
@@ -532,7 +551,7 @@ const cache = new WeakMap()
 export function reactiveFactory<T extends object>(
     context: any,
     source: T,
-    opts: { shallow?: boolean; methods?: boolean } = {},
+    opts: { shallow?: boolean } = {},
 ): T {
     return new Proxy<T>(source, {
         get(target: T, p: PropertyKey, receiver: any): any {
@@ -552,38 +571,15 @@ export function reactiveFactory<T extends object>(
                 addDeps(target, p)
             }
             if (
-                ((desc && !desc.writable && !desc.configurable) ||
-                    opts.shallow) &&
-                typeof value !== "function"
+                (desc && !desc.writable && !desc.configurable) ||
+                opts.shallow
             ) {
                 return value
             }
-            if (cache.has(value)) {
-                return cache.get(value)
-            }
-            if (typeof value === "function" && opts.methods) {
-                const fn = new Proxy(value, {
-                    apply(target: any, thisArg: any, argArray?: any): any {
-                        flushInvalidations(target)
-                        return runInContext(
-                            toRaw(thisArg),
-                            getLifecycleHook(),
-                            function () {
-                                setExecutionContext(target)
-                                const returnValue = target.apply(
-                                    thisArg,
-                                    argArray,
-                                )
-                                setExecutionContext()
-                                return returnValue
-                            },
-                        )
-                    },
-                })
-                cache.set(value, fn)
-                return fn
-            }
             if (typeof value === "object" && value !== null) {
+                if (cache.has(value)) {
+                    return cache.get(value)
+                }
                 const state = reactiveFactory(context, value, opts)
                 cache.set(value, state)
                 return state
@@ -596,45 +592,6 @@ export function reactiveFactory<T extends object>(
             return success
         },
     })
-}
-
-let executionContext: Function | undefined
-
-export function getExecutionContext() {
-    if (executionContext) {
-        return executionContext
-    }
-    throw new Error("Invalid execution context")
-}
-
-export function setExecutionContext(context?: any) {
-    executionContext = context
-}
-
-export function flushInvalidations(context: any) {
-    for (const teardown of teardownCache.get(context) ?? []) {
-        unsubscribe(teardown)
-    }
-    teardownCache.delete(context)
-}
-
-const teardownCache = new WeakMap<any, Set<TeardownLogic>>()
-
-export function onInvalidate(teardown: TeardownLogic) {
-    const context = getExecutionContext()
-    const cache =
-        teardownCache.get(context) ||
-        teardownCache.set(context, new Set()).get(context)!
-
-    function invalidate() {
-        if (cache.has(invalidate)) {
-            unsubscribe(teardown)
-            cache.delete(invalidate)
-        }
-    }
-
-    cache.add(invalidate)
-    onDestroy(invalidate)
 }
 
 export function onChanges(fn: (changes: SimpleChanges) => TeardownLogic) {

@@ -1,10 +1,18 @@
-import { Component, ContentChildren, InjectionToken, Input, Output, QueryList } from "@angular/core"
+import {
+    Component,
+    ContentChildren,
+    InjectionToken,
+    Input,
+    Output,
+    QueryList,
+} from "@angular/core"
 import {
     afterViewInit,
-    connectable,
+    $,
     Connectable,
+    connectable,
     effect,
-    HostEmitter,
+    Effect,
     inject,
     reactive,
     watchEffect,
@@ -12,7 +20,7 @@ import {
 import { interval, timer } from "rxjs"
 import { HttpClient } from "@angular/common/http"
 
-export const MyConnectable = connectable<ConnectableComponent>(ctx => {
+export const MyConnectable = connectable<ConnectableComponent>((ctx) => {
     const test = reactive({
         test: {
             test: 1,
@@ -37,12 +45,11 @@ export const MyConnectable = connectable<ConnectableComponent>(ctx => {
     })
 
     watchEffect(() => {
-        ctx.offset = ctx.count + 1
-        ctx.countChange.emit(ctx.count)
+        ctx.countChange(ctx.count)
         return timer(1000).subscribe(() => {
             ctx.incrementCount()
         })
-    })
+    }, { flush: "sync" })
 })
 
 export const TEST = new InjectionToken<number>("TEST")
@@ -51,7 +58,7 @@ export const TEST = new InjectionToken<number>("TEST")
     selector: "app-connectable",
     template: `
         <div>Count: {{ count }}</div>
-        <div>Count + 1: {{ offset }}</div>
+        <div>Count + 1: {{ offset() }}</div>
         <br />
         <div>Count2: {{ count2 }}</div>
         <app-connectable-child [count]="count2"></app-connectable-child>
@@ -70,12 +77,13 @@ export class ConnectableComponent extends Connectable {
     @Input()
     count = 0
     count2 = 1
-    offset = 2
+
+    offset = $(() => this.count + 1)
 
     http = inject(HttpClient)
 
     @Output()
-    countChange = new HostEmitter<number>()
+    countChange = new Effect<number>()
 
     @ContentChildren("test")
     children: QueryList<any> = new QueryList()

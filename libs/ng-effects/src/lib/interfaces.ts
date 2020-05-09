@@ -24,6 +24,10 @@ export const enum LifecycleHook {
 
 export interface EffectOptions {
     watch?: boolean
+    flush?: "pre" | "post" | "sync"
+    invalidate: Function
 }
 
 export type StopHandler = () => void
+
+export type OnInvalidate = (teardown: TeardownLogic) => void

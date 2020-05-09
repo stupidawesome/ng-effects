@@ -3,16 +3,22 @@ import { changes } from "../utils"
 import { from } from "rxjs"
 import { mergeAll } from "rxjs/operators"
 import { Connect } from "../connect"
-import { Effect, State } from "../decorators"
+import { State } from "../decorators"
 import { Effects } from "../providers"
 import { Directive } from "@angular/core"
+import { Effect } from "../../lib/effect"
 import fn = jest.fn
 import Mock = jest.Mock
 
 describe("Some use cases for the operators exported by this library", () => {
     describe("How to use the `changes` operator", () => {
         it("should skip the initial value [3 overloads]", () => {
-            let AppDirective, expected: number[][], spy1: Mock, spy2: Mock, spy3: Mock, spy4: Mock
+            let AppDirective,
+                expected: number[][],
+                spy1: Mock,
+                spy2: Mock,
+                spy3: Mock,
+                spy4: Mock
 
             given: spy1 = fn()
             given: spy2 = fn()

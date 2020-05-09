@@ -7,8 +7,8 @@ export {
     afterViewInit,
     afterViewChecked,
     onDestroy,
-    onInvalidate,
 } from "./connect"
 export * from "./constants"
 export * from "./providers"
 export * from "./utils"
+export { Effect } from "./effect"

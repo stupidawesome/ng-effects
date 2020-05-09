@@ -10,10 +10,7 @@ import {
     effect,
     inject,
     isOnDestroy,
-    isProxy,
-    onChanges,
     onDestroy,
-    onInvalidate,
     watchEffect,
 } from "@ng9/ng-effects"
 import { RouterModule } from "@angular/router"
@@ -167,8 +164,6 @@ export class TodolistComponent extends Connectable {
         const cancel = subscribe(this.svc.delete(...completed), () => {
             this.todos = this.todos.filter((todo) => !completed.includes(todo))
         })
-
-        onInvalidate(cancel)
     }
 
     updateTodo(title: string, todo: Todo) {
@@ -205,7 +200,7 @@ export class TodolistComponent extends Connectable {
 
         // watchEffect is called once immediately after ngOnConnect and
         // each time the dependencies change, _after_ the component has updated
-        logChanges: watchEffect(() => {
+        logChanges: watchEffect((onInvalidate) => {
             // emits whenever the todos ref changes
             // NOTE: by default only shallow props are watched on `this`
             console.log("todos changed", this.todos)

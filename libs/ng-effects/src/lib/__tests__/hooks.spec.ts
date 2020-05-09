@@ -1,15 +1,15 @@
 import { ConnectedComponent, createConnectedComponent, declare } from "./utils"
-import fn = jest.fn
-import Mock = jest.Mock
 import {
+    afterContentChecked,
+    afterContentInit,
+    afterViewChecked,
     afterViewInit,
     onChanges,
     onDestroy,
-    afterViewChecked,
-    afterContentInit,
-    afterContentChecked,
 } from "../connect"
 import { effect, watchEffect } from "../utils"
+import fn = jest.fn
+import Mock = jest.Mock
 
 const hooks = [
     watchEffect,

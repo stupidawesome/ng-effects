@@ -4,17 +4,23 @@ import { EffectMetadata, NextEffectAdapter } from "../interfaces"
 import { Directive, Type } from "@angular/core"
 import { of } from "rxjs"
 import { createDirective } from "./test-utils"
-import { Effect } from "../decorators"
 import { Connect } from "../connect"
 import { Effects } from "../providers"
+import { Effect } from "../../lib/effect"
 
 describe("How to use Adapters to hook into effects", () => {
     it("should observe values emitted by effects", () => {
-        let LogAdapter: Type<NextEffectAdapter<any, { prefix: string }>>, AppDirective, spy: Mock
+        let LogAdapter: Type<NextEffectAdapter<any, { prefix: string }>>,
+            AppDirective,
+            spy: Mock
 
         given: spy = fn()
-        given: LogAdapter = class implements NextEffectAdapter<any, { prefix: string }> {
-            next(value: string, metadata: EffectMetadata<{ prefix: string }>): void {
+        given: LogAdapter = class
+            implements NextEffectAdapter<any, { prefix: string }> {
+            next(
+                value: string,
+                metadata: EffectMetadata<{ prefix: string }>,
+            ): void {
                 spy(`${metadata.options.prefix}: ${value}`)
             }
         }
@@ -34,6 +40,8 @@ describe("How to use Adapters to hook into effects", () => {
 
         when: createDirective(AppDirective, [Connect], [LogAdapter, Effects])
 
-        then: expect(spy).toBeCalledWith("[LogAdapter]: this value should be logged")
+        then: expect(spy).toBeCalledWith(
+            "[LogAdapter]: this value should be logged",
+        )
     })
 })

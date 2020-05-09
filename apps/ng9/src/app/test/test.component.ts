@@ -12,7 +12,14 @@ import {
     ViewChild,
     ViewChildren,
 } from "@angular/core"
-import { interval, merge, MonoTypeOperatorFunction, Observable, of, OperatorFunction } from "rxjs"
+import {
+    interval,
+    merge,
+    MonoTypeOperatorFunction,
+    Observable,
+    of,
+    OperatorFunction,
+} from "rxjs"
 import {
     changes,
     Connect,
@@ -47,23 +54,27 @@ interface TestState {
     ageChange: HostEmitter<number>
 }
 
-function toggleSwitch(source: Observable<boolean>): OperatorFunction<any, boolean> {
-    return stream =>
+function toggleSwitch(
+    source: Observable<boolean>,
+): OperatorFunction<any, boolean> {
+    return (stream) =>
         stream.pipe(
             switchMapTo(source),
             take(1),
-            map(value => !value),
+            map((value) => !value),
             repeat(),
         )
 }
 function repeatInterval<T>(time: number): MonoTypeOperatorFunction<T> {
-    return function(source) {
+    return function (source) {
         return source.pipe(repeatWhen(() => interval(time)))
     }
 }
 
-export function select<T, U>(selector: (state: T) => U): OperatorFunction<T, U> {
-    return function(source) {
+export function select<T, U>(
+    selector: (state: T) => U,
+): OperatorFunction<T, U> {
+    return function (source) {
         return source.pipe(map(selector), distinctUntilChanged())
     }
 }
@@ -77,16 +88,20 @@ export function Select<T extends any, U extends any>() {
 }
 
 @Injectable({ providedIn: "root" })
-export class SelectAdapter<T, U> implements EffectAdapter<() => MapStateToProps<T, U>> {
+export class SelectAdapter<T, U>
+    implements EffectAdapter<() => MapStateToProps<T, U>> {
     constructor(private store: Store<any>) {}
 
-    public create(mapState: () => MapStateToProps<any, any>, metadata: EffectMetadata) {
+    public create(
+        mapState: () => MapStateToProps<any, any>,
+        metadata: EffectMetadata,
+    ) {
         metadata.options.assign = true
 
         const sources = Object.entries(mapState()).map(([prop, selector]) =>
             this.store.pipe(
                 select(selector!),
-                map(value => ({ [prop]: value })),
+                map((value) => ({ [prop]: value })),
             ),
         )
 
@@ -246,7 +261,7 @@ export class TestEffects {
     @Effect()
     public imperative(state: State<TestState>) {
         const sub = state.age.subscribe()
-        return function() {
+        return function () {
             // teardown logic
             sub.unsubscribe()
         }

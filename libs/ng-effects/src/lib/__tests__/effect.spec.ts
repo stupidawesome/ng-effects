@@ -5,11 +5,11 @@ import {
     provide,
 } from "./utils"
 import {
+    afterViewChecked,
     afterViewInit,
     inject,
     onChanges,
     onDestroy,
-    afterViewChecked,
 } from "../connect"
 import { connectable } from "../providers"
 import {
@@ -21,9 +21,11 @@ import {
 import { timer } from "rxjs"
 import { Component, InjectionToken } from "@angular/core"
 import { Connectable } from "../connectable.directive"
+import { watchEffect } from "../utils"
+import { Effect } from "../effect"
+import { map } from "rxjs/operators"
 import fn = jest.fn
 import Mock = jest.Mock
-import { watchEffect } from "../utils"
 
 export function detectChangesAfterEach(
     fixture: ComponentFixture<any>,
@@ -241,5 +243,67 @@ describe("effect", () => {
             [8],
             [9],
         ])
+    })
+})
+
+describe("Effect", () => {
+    beforeEach(() => declare(ConnectedComponent))
+
+    it("should emit when called like a function", () => {
+        let subject, expected
+
+        given: expected = fn()
+        given: subject = new Effect()
+
+        when: {
+            subject.subscribe(expected)
+            subject()
+        }
+
+        then: expect(expected).toHaveBeenCalledTimes(1)
+    })
+
+    it("should emit single arguments", () => {
+        let subject, expected
+
+        given: expected = fn()
+        given: subject = new Effect<string>()
+
+        when: {
+            subject.subscribe(expected)
+            subject("BOGUS")
+        }
+
+        then: expect(expected).toHaveBeenCalledWith("BOGUS")
+    })
+
+    it("should emit multiple arguments as an array", () => {
+        let subject, expected
+
+        given: expected = fn()
+        given: subject = new Effect<string, number>()
+
+        when: {
+            subject.subscribe(expected)
+            subject("BOGUS", 1337)
+        }
+
+        then: expect(expected).toHaveBeenCalledWith(["BOGUS", 1337])
+    })
+
+    it("should use pipeable operators", () => {
+        let subject, expected
+
+        given: expected = fn()
+        given: subject = new Effect<string, number>((source) =>
+            source.pipe(map((value) => +value)),
+        )
+
+        when: {
+            subject.subscribe(expected)
+            subject("1337")
+        }
+
+        then: expect(expected).toHaveBeenCalledWith(1337)
     })
 })

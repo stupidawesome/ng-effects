@@ -9,9 +9,9 @@ import {
 import { globalDefaults } from "../internals/constants"
 import { EMPTY } from "rxjs"
 import { Connect } from "../connect"
-import { Effect } from "../decorators"
 import { Directive } from "@angular/core"
 import { effectMetadata } from "../internals/explore-effects"
+import { Effect } from "../../lib/effect"
 
 describe("How to init effects", () => {
     it("should instantiate one effect on directives", () => {
@@ -82,7 +82,11 @@ describe("How to init effects", () => {
         given: effectOptions = { markDirty: !globalDefaults.markDirty }
         given: expected = Object.assign({}, globalDefaults, effectOptions)
         given: effectsClass = createEffectsClass()
-        when: createSimpleDirective([Effects, effectsClass, effects(effectOptions)])
+        when: createSimpleDirective([
+            Effects,
+            effectsClass,
+            effects(effectOptions),
+        ])
 
         then: [{ options }] = effectMetadata.get(effectsClass) as any
         then: expect(options).toEqual(expected)
@@ -92,17 +96,29 @@ describe("How to init effects", () => {
         let effectOptions, localDefaults, expected, effectsClass: any, options
 
         given: effectOptions = { assign: true, whenRendered: false }
-        given: localDefaults = { markDirty: !globalDefaults.markDirty, whenRendered: true }
-        given: expected = Object.assign({}, globalDefaults, localDefaults, effectOptions)
+        given: localDefaults = {
+            markDirty: !globalDefaults.markDirty,
+            whenRendered: true,
+        }
+        given: expected = Object.assign(
+            {},
+            globalDefaults,
+            localDefaults,
+            effectOptions,
+        )
         given: effectsClass = createEffectsClass(effectOptions)
 
-        when: createSimpleDirective([Effects, effectsClass, effects(localDefaults)])
+        when: createSimpleDirective([
+            Effects,
+            effectsClass,
+            effects(localDefaults),
+        ])
 
         then: [{ options }] = effectMetadata.get(effectsClass) as any
         then: expect(options).toEqual(expected)
     })
 
-    it("should init with host effects", function() {
+    it("should init with host effects", function () {
         let fixture
 
         when: fixture = createSimpleComponent([Effects, effects()])
@@ -140,7 +156,9 @@ describe("How to init effects", () => {
             AppDirective = MockAppDirective
         }
 
-        then: expect(() => createDirective(AppDirective, [Connect], [Effects])).not.toThrow()
+        then: expect(() =>
+            createDirective(AppDirective, [Connect], [Effects]),
+        ).not.toThrow()
     })
 
     it("should throw an error when an effect returns an unexpected value", () => {
@@ -160,7 +178,9 @@ describe("How to init effects", () => {
             AppDirective = MockAppDirective
         }
 
-        then: expect(() => createDirective(AppDirective, [Connect], [Effects])).toThrowError(
+        then: expect(() =>
+            createDirective(AppDirective, [Connect], [Effects]),
+        ).toThrowError(
             "[ng-effects] MockAppDirective -> badReturnType must either return an observable, subscription, or void",
         )
     })

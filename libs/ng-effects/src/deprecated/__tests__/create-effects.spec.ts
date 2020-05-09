@@ -1,10 +1,14 @@
-import { Effect } from "../decorators"
 import { Injectable } from "@angular/core"
 import { getMetadata } from "../internals/metadata"
+import { Effect } from "../../lib/effect"
 
 describe("How to create effects", () => {
     it("should create an effects using the effect decorator", () => {
-        let defineEffects, effects, expectedEffects, expectedOptions: any, options: any
+        let defineEffects,
+            effects,
+            expectedEffects,
+            expectedOptions: any,
+            options: any
 
         given: expectedOptions = {}
 

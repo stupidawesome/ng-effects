@@ -12,12 +12,16 @@ import {
     Type,
 } from "@angular/core"
 import { ComponentFixture, TestBed } from "@angular/core/testing"
-import { Effect } from "../decorators"
 import { EffectOptions } from "../interfaces"
 import { Connect } from "../connect"
+import { Effect } from "../../lib/effect"
 import fn = jest.fn
 
-export function createDirective(directive: Type<any>, deps?: any[], providers?: Provider[]) {
+export function createDirective(
+    directive: Type<any>,
+    deps?: any[],
+    providers?: Provider[],
+) {
     void TestBed.configureTestingModule({
         providers: [
             {
@@ -52,7 +56,9 @@ interface ComponentDef extends Partial<Component> {
     imports?: any[]
 }
 
-export function createComponent<T extends any = any>(def: ComponentDef): ComponentFixture<T> {
+export function createComponent<T extends any = any>(
+    def: ComponentDef,
+): ComponentFixture<T> {
     // noinspection AngularMissingOrInvalidDeclarationInModule
     @Component({
         ...def,
@@ -60,12 +66,15 @@ export function createComponent<T extends any = any>(def: ComponentDef): Compone
     })
     class MockComponent {
         constructor(@Inject(Injector) injector: Injector) {
-            const deps = (def.deps || []).map(token => injector.get(token))
+            const deps = (def.deps || []).map((token) => injector.get(token))
             return new def.component(...deps)
         }
     }
     void TestBed.configureTestingModule({
-        declarations: [MockComponent, ...(def.declarations ? def.declarations : [])],
+        declarations: [
+            MockComponent,
+            ...(def.declarations ? def.declarations : []),
+        ],
         imports: def.imports || [],
         providers: def.rootProviders || [],
     }).compileComponents()
@@ -99,7 +108,9 @@ export function createSimpleDirective(providers: Provider[]) {
     }).inject(SimpleDirective)
 }
 
-export function createSimpleComponent(providers: Provider[] = []): ComponentFixture<any> {
+export function createSimpleComponent(
+    providers: Provider[] = [],
+): ComponentFixture<any> {
     // noinspection AngularMissingOrInvalidDeclarationInModule
     @Component({
         template: "",

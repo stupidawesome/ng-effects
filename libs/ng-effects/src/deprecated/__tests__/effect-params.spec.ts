@@ -1,9 +1,10 @@
 import { Directive } from "@angular/core"
-import { Context, Effect, Observe, State } from "../decorators"
+import { Context, Observe, State } from "../decorators"
 import { Connect } from "../connect"
 import { createDirective } from "./test-utils"
 import { Effects } from "../providers"
 import { Observable } from "rxjs"
+import { Effect } from "../../lib/effect"
 import Mock = jest.Mock
 import fn = jest.fn
 
@@ -19,7 +20,11 @@ describe("How to use decorators to select effect parameters", () => {
                 name = "stupidawesome"
 
                 @Effect()
-                anyEffect(state: State<any>, context: Context<any>, observe: Observable<any>) {
+                anyEffect(
+                    state: State<any>,
+                    context: Context<any>,
+                    observe: Observable<any>,
+                ) {
                     observe.subscribe(spy).unsubscribe()
                     state.count.subscribe(spy).unsubscribe()
                     spy(context.name)

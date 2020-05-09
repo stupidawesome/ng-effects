@@ -1,4 +1,9 @@
-import { ConnectedComponent, createConnectedComponent, declare, provide } from "./utils"
+import {
+    ConnectedComponent,
+    createConnectedComponent,
+    declare,
+    provide,
+} from "./utils"
 import { inject } from "../connect"
 import { connectable } from "../providers"
 import {
@@ -22,7 +27,9 @@ const TEST = new InjectionToken("TEST")
 export class DI extends Connectable {
     ngOnConnect() {
         expect(() => inject(DI, InjectFlags.SkipSelf)).toThrow()
-        expect(inject(DI, InjectFlags.SkipSelf | InjectFlags.Optional)).toBe(null)
+        expect(inject(DI, InjectFlags.SkipSelf | InjectFlags.Optional)).toBe(
+            null,
+        )
         expect(inject(DI, InjectFlags.Self)).toBeInstanceOf(DI)
         expect(() => inject(TEST, InjectFlags.Self)).toThrow()
         expect(inject(TEST, InjectFlags.Self | InjectFlags.Optional)).toBe(null)
@@ -30,7 +37,10 @@ export class DI extends Connectable {
         expect(inject(DI, InjectFlags.Host)).toBeInstanceOf(DI)
     }
 
-    constructor(@Inject(INJECTOR) injector: Injector, viewContainerRef: ViewContainerRef) {
+    constructor(
+        @Inject(INJECTOR) injector: Injector,
+        viewContainerRef: ViewContainerRef,
+    ) {
         super(injector)
     }
 }

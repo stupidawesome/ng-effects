@@ -1,8 +1,8 @@
 import { createSimpleComponent } from "./test-utils"
 import { ElementRef, Injectable, Provider, Renderer2 } from "@angular/core"
 import { Effects } from "../providers"
-import { Effect } from "../decorators"
 import { HostRef } from "../host-ref"
+import { Effect } from "../../lib/effect"
 
 @Injectable()
 class EffectsWithSpecialTokens {
@@ -29,6 +29,8 @@ describe("How to use injection tokens", () => {
         when: fixture = createSimpleComponent(providers)
 
         then: hostRef = fixture.debugElement.injector.get(HostRef)
-        then: expect(hostRef.context).toBe(fixture.debugElement.componentInstance)
+        then: expect(hostRef.context).toBe(
+            fixture.debugElement.componentInstance,
+        )
     })
 })

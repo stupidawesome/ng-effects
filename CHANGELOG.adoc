@@ -1,5 +1,73 @@
 = Changelog
 
+== 9.1.0-rc.5
+
+This releases reintroduces `Effect` as a reactive type and adds support for computed properties with `Computed` (alias: `$`). It also adds options to control when `watchEffect` is flushed.
+
+`Effect` works much the same as `HostEmitter` in 9.0.0 except it now takes an optional `OperatorFunction` argument. This makes it simple to delay or transform value emissions from the source. Users can bypass this operator by subscribing to `new Effect(fn).source`.
+
+`Computed` properties are implemented as a function setter/getter. Calling the method without arguments will return the memoized value or recompute the value if reactive dependencies have changed. Optional arguments can also be passed in as part of the value computation. These arguments are also memoized. Only the most recent deps/arguments are cached.
+
+[source, typescript]
+----
+@Component({
+    template: `
+        <button (click)="increment(1)">Click</button>
+        <div>Offset: {{ offset(1) }}</div>
+    `
+})
+export class NgComponent {
+    @Input()
+    count = 0
+
+    @Output()
+    countChange = new Effect<number>(delay(500))
+
+    increment = new Effect<number>()
+
+    offset = $((offset: number) => this.count + offset)
+
+    ngOnConnect() {
+        const { increment, countChange } = this
+
+        effect((onInvalidate) => {
+            const cleanup = increment.subscribe((num) => {
+                this.count += num
+                countChange(this.count)
+            })
+            onInvalidate(cleanup)
+        })
+    }
+}
+----
+
+You can now configure `watchEffect` to be flushed before the component view updates. The current timings are:
+
+|===
+|Option|Lifecycle
+
+|sync| Whenever a reactive property changes.
+|pre| After all `afterContentChecked` hooks have run.
+|post (default)| After all `afterViewChecked` hooks have run.
+
+|===
+
+=== Features
+
+- support `pre` and `sync` options for `watchEffect`
+- add new `Effect` and `Computed` types
+- rework `onInvalidate` as an injected argument to effects
+- remove global `onInvalidate hook`
+- reactive no longer wraps methods in an execution context
+
+=== Misc
+
+- add more tests
+
+=== Deprecations
+
+deprecate `HostEmitter`
+
 == 9.1.0-rc.4
 
 === Performance improvements

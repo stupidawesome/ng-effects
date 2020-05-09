@@ -1,4 +1,9 @@
-import { ChangeDetectorRef, Injector, NgZone, ViewContainerRef } from "@angular/core"
+import {
+    ChangeDetectorRef,
+    Injector,
+    NgZone,
+    ViewContainerRef,
+} from "@angular/core"
 import { isObservable, Observable, Subject } from "rxjs"
 import { ViewRenderer } from "../view-renderer"
 import {
@@ -8,7 +13,11 @@ import {
     NextEffectAdapter,
 } from "../interfaces"
 import { take } from "rxjs/operators"
-import { assertPropertyExists, isTeardownLogic, throwBadReturnTypeError } from "./utils"
+import {
+    assertPropertyExists,
+    isTeardownLogic,
+    throwBadReturnTypeError,
+} from "./utils"
 import { DestroyObserver } from "./destroy-observer"
 import { HostRef } from "./host-ref"
 import { effectMetadata } from "./explore-effects"
@@ -36,7 +45,8 @@ function effectRunner(
                 // then it the service was not provided in the current
                 // component, so it should be skipped.
                 try {
-                    maybeParent = parentInjector && parentInjector.get(type, null)
+                    maybeParent =
+                        parentInjector && parentInjector.get(type, null)
                 } catch (e) {
                     throw new Error(
                         `[ng-effects] ${type.name} cannot be created because of a dangling provider in a parent injector. See https://github.com/stupidawesome/ng-effects/issues/3 for more details.`,
@@ -51,7 +61,8 @@ function effectRunner(
                     const initMode = metadata.options.whenRendered || false
                     if (initMode === whenRendered) {
                         const maybeAdapter = metadata.adapter
-                        const adapter = maybeAdapter && injector.get(maybeAdapter)
+                        const adapter =
+                            maybeAdapter && injector.get(maybeAdapter)
                         runEffect(
                             state,
                             context,
@@ -136,7 +147,9 @@ function runEffect(
                     notifier.next(options)
                 },
                 error(error: any) {
-                    console.error(`[ng-effects] Uncaught error in effect: ${path}`)
+                    console.error(
+                        `[ng-effects] Uncaught error in effect: ${path}`,
+                    )
                     console.error(error)
                 },
             }),
@@ -173,7 +186,7 @@ export function runEffects(
         viewContainerRef && viewContainerRef.parentInjector,
     )
 
-    const detectChanges = async function(opts: EffectOptions | void) {
+    const detectChanges = async function (opts: EffectOptions | void) {
         hostRef.tick()
         if (!opts) {
             return
