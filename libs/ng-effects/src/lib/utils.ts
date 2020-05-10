@@ -1,19 +1,16 @@
 import {
-    collectDeps,
+    addDeps,
     createEffect,
-    flushDeps,
+    depsMap,
     getContext,
     getValues,
     inject,
     reactiveFactory,
+    runWithDeps,
     targetSymbol,
 } from "./connect"
 import { TeardownLogic } from "rxjs"
-import {
-    LifecycleHook,
-    OnInvalidate,
-    StopHandler,
-} from "./interfaces"
+import { LifecycleHook, OnInvalidate, StopHandler } from "./interfaces"
 import { getLifecycleHook } from "./lifecycle"
 import { IterableDiffers } from "@angular/core"
 
@@ -55,16 +52,16 @@ export function isOnDestroy() {
     return getLifecycleHook() === LifecycleHook.OnDestroy
 }
 
-export const $: Computed = function computed<T extends (...args: any[]) => any>(fn: T) {
+export const $: Computed = function computed<T extends (...args: any[]) => any>(
+    fn: T,
+) {
     const differs = inject(IterableDiffers)
     const differ = differs.find([]).create()
-    let deps = new Map()
+    let deps: typeof depsMap
     let value: any
 
     function read(args: any[]) {
-        collectDeps()
-        value = fn(...args)
-        deps = flushDeps()
+        ;[deps, value] = runWithDeps(() => fn(...args))
     }
 
     function detectChanges(args: any[]) {
@@ -72,11 +69,16 @@ export const $: Computed = function computed<T extends (...args: any[]) => any>(
     }
 
     return function compute(...args: any[]) {
-        if (deps.size === 0) {
+        if (!deps) {
             read(args)
             detectChanges(args)
         } else if (detectChanges(args)) {
             read(args)
+        }
+        for (const [key, val] of deps) {
+            for (const dep of val) {
+                addDeps(key, dep)
+            }
         }
         return value
     }

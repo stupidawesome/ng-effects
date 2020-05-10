@@ -1,5 +1,5 @@
 import { ConnectedComponent, createConnectedComponent, declare } from "./utils"
-import { $, Computed } from "../utils"
+import { $, Computed, reactive } from "../utils"
 import { ComponentFixture } from "@angular/core/testing"
 import fn = jest.fn
 import Mock = jest.Mock
@@ -78,5 +78,45 @@ describe("lifecycle hooks", () => {
         }
 
         then: expect(expected).toHaveBeenCalledTimes(4)
+    })
+
+    it("should chain compute values and recalculate when any dependency changes", () => {
+        let subject: any, expected, a: any, b: any, c: any, spy: Mock
+
+        given: spy = fn()
+        given: createConnectedComponent()
+        given: subject = reactive({ value: 10, bogus: "BOGUS" })
+        given: a = $(() => {
+            spy()
+            return subject.value * 2
+        })
+        given: b = $(() => {
+            spy()
+            subject.bogus
+            return 20
+        })
+        given: c = $(() => {
+            spy()
+            return a() * 2 + b()
+        })
+
+        when: {
+            c() // ax1 bx1 cx1
+            c()
+            expected = c()
+            then: expect(expected).toBe(60)
+            then: expect(spy).toHaveBeenCalledTimes(3)
+
+            subject.value = 20
+            c() // ax1 bx0 cx1
+            c()
+            subject.bogus = "bogus"
+            c() // ax0 bx1 cx1
+            c()
+            expected = c()
+        }
+
+        then: expect(spy).toHaveBeenCalledTimes(7)
+        then: expect(expected).toBe(100)
     })
 })

@@ -233,9 +233,7 @@ export function runEffect(
     differs: IterableDiffers,
 ) {
     const invalidations = getInvalidations(context)
-    collectDeps()
-    const teardown = effect()
-    const flushedDeps = flushDeps()
+    const [flushedDeps, teardown] = runWithDeps(effect)
 
     effects.delete(effect)
 
@@ -521,29 +519,25 @@ export function addHook(fn: EffectHook, lifecycle: LifecycleHook) {
     hooksMap.get(getContext())?.get(lifecycle)?.add(fn)
 }
 
-export const depsMap = new Map<{ [key: string]: any }, Set<string | number>>()
-
-let depsEnabled = false
+export let depsMap: Map<{ [key: string]: any }, Set<string | number>>
 
 export function getDeps(object: object) {
     return depsMap.get(object) || depsMap.set(object, new Set()).get(object)!
 }
 
-export function collectDeps() {
-    depsEnabled = true
+export function runWithDeps(fn: Function): [typeof depsMap, any] {
+    const previousDeps = depsMap
+    const deps = new Map()
+    depsMap = deps
+    const value = fn()
+    depsMap = previousDeps
+    return [deps, value]
 }
 
 export function addDeps(object: Context, key: any) {
-    if (depsEnabled) {
+    if (depsMap) {
         getDeps(object).add(key)
     }
-}
-
-export function flushDeps() {
-    const deps = new Map(depsMap)
-    depsEnabled = false
-    depsMap.clear()
-    return deps
 }
 
 const cache = new WeakMap()

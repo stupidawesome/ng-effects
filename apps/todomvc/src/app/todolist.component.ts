@@ -6,6 +6,7 @@ import {
 } from "@angular/core"
 import { CommonModule } from "@angular/common"
 import {
+    $, Computed,
     Connectable,
     effect,
     inject,
@@ -83,8 +84,8 @@ import { subscribe } from "./utils"
             <footer class="footer" *ngIf="todos.length">
                 <!-- This should be \`0 items left\` by default -->
                 <span class="todo-count"
-                    ><strong>{{ remaining }}</strong> item{{
-                        remaining === 1 ? "s" : ""
+                    ><strong>{{ remaining() }}</strong> item{{
+                        remaining() === 1 ? "" : "s"
                     }}
                     left</span
                 >
@@ -104,20 +105,18 @@ import { subscribe } from "./utils"
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TodolistComponent extends Connectable {
+    private Todos = inject(TodosService)
+
     todos: Todo[] = []
     activeTodo: Todo | undefined
-    http = inject(HttpClient)
-    svc = inject(TodosService)
 
     @Input()
     count = 0
 
-    get remaining() {
-        return this.todos.filter((todo) => !todo.completed).length
-    }
+    remaining = Computed(() => this.todos.filter((todo) => !todo.completed).length)
 
     createTodo(input: HTMLInputElement) {
-        this.svc.create(input.value).subscribe((todo) => {
+        this.Todos.create(input.value).subscribe((todo) => {
             this.todos.unshift({
                 ...todo,
                 completed: false,
@@ -127,7 +126,7 @@ export class TodolistComponent extends Connectable {
     }
 
     deleteTodo(todo: Todo) {
-        subscribe(this.svc.delete(todo), () => {
+        subscribe(this.Todos.delete(todo), () => {
             this.todos = this.todos.filter((item) => item.id !== todo.id)
         })
     }
@@ -141,8 +140,8 @@ export class TodolistComponent extends Connectable {
     }
 
     toggleTodo(todo: Todo) {
-        const cancel = subscribe(
-            this.svc.update({
+        subscribe(
+            this.Todos.update({
                 ...todo,
                 completed: !todo.completed,
             }),
@@ -155,13 +154,11 @@ export class TodolistComponent extends Connectable {
                 // markDirty(this)
             },
         )
-
-        onDestroy(cancel)
     }
 
     clearCompleted() {
         const completed = this.todos.filter((todo) => todo.completed)
-        const cancel = subscribe(this.svc.delete(...completed), () => {
+        subscribe(this.Todos.delete(...completed), () => {
             this.todos = this.todos.filter((todo) => !completed.includes(todo))
         })
     }
@@ -169,12 +166,10 @@ export class TodolistComponent extends Connectable {
     updateTodo(title: string, todo: Todo) {
         todo.title = title
         this.activeTodo = undefined
-        return this.svc
-            .update({
-                ...todo,
-                title,
-            })
-            .subscribe()
+        return this.Todos.update({
+            ...todo,
+            title,
+        }).subscribe()
     }
 
     toggleAll() {
