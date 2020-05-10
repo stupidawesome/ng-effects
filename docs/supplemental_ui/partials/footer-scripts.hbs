@@ -9,5 +9,8 @@
 <script src="{{uiRootPath}}/js/vendor/search.js"></script>
 <script async src="{{uiRootPath}}/../search-index.js"></script>
 {{/if}}
-<script src="{{uiRootPath}}/js/vendor/highlight.js"></script>
-<!--<script>hljs.initHighlighting()</script>-->
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js"></script>
+<!-- and it's easy to individually load additional languages -->
+<script charset="UTF-8"
+        src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/typescript.min.js"></script>
+<script>hljs.initHighlightingOnLoad()</script>

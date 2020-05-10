@@ -27,7 +27,7 @@
         "help": "nx help",
         "postinstall": "ngcc --properties es2015 browser module main --first-only --create-ivy-entry-points",
         "docs": "rimraf ./dist/docs/_ && antora ./antora-playbook.yml --generator antora-site-generator-lunr",
-        "docs:serve": "concurrently \"watch \\\"npm run docs\\\" ./docs --interval=0.5\" \"cd dist/docs && live-server --open=./component/1.0.0/index.html --watch=./component\""
+        "docs:serve": "concurrently \"watch \\\"npm run docs\\\" ./docs --interval=0.5\" \"cd dist/docs && live-server --open=./api/9.1.0-next/index.html --watch=./component\""
     },
     "private": true,
     "dependencies": {

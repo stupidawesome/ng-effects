@@ -18,12 +18,13 @@ import {
     EffectOptions,
     LifecycleHook,
     OnInvalidate,
+    Teardown,
 } from "./interfaces"
 import { CONNECTABLE } from "./constants"
-import { Subject, TeardownLogic } from "rxjs"
+import { Subject } from "rxjs"
 import { getLifecycleHook, setLifecycleHook } from "./lifecycle"
 
-type CleanupMap = Map<LifecycleHook, Set<TeardownLogic>>
+type CleanupMap = Map<LifecycleHook, Set<Teardown>>
 
 const injectorMap = new WeakMap<Context, Injector>()
 const cleanupMap = new WeakMap<Context, CleanupMap>()
@@ -170,7 +171,7 @@ export function getHooks() {
     return hooksMap.get(getContext())!
 }
 
-export function flush(cleanup: Set<TeardownLogic>) {
+export function flush(cleanup: Set<Teardown>) {
     for (const teardown of cleanup) {
         unsubscribe(teardown)
     }
@@ -229,7 +230,7 @@ export function runEffect(
     context: Context,
     effect: EffectHook,
     config: EffectOptions,
-    cleanup: Set<TeardownLogic>,
+    cleanup: Set<Teardown>,
     differs: IterableDiffers,
 ) {
     const invalidations = getInvalidations(context)
@@ -262,7 +263,7 @@ export function runEffect(
 
 export function runEffects(
     context: Context,
-    cleanup: Set<TeardownLogic>,
+    cleanup: Set<Teardown>,
     differs: IterableDiffers,
 ) {
     for (const [effect, options] of effects) {
@@ -283,7 +284,7 @@ export function getOrSetChanges(simpleChanges?: SimpleChanges) {
 export function runHooks(
     lifecycle: LifecycleHook,
     hooks: Set<EffectHook>,
-    cleanup: Set<TeardownLogic>,
+    cleanup: Set<Teardown>,
 ) {
     const scheduler = getScheduler()
     const context = getContext()
@@ -310,9 +311,13 @@ export function runHooks(
     })
 }
 
-export function unsubscribe(teardown: TeardownLogic) {
+export async function unsubscribe(teardown: Teardown) {
     if (typeof teardown === "function") {
-        teardown()
+        try {
+            await teardown()
+        } catch (e) {
+            console.error(e)
+        }
     } else if (teardown && "unsubscribe" in teardown) {
         teardown.unsubscribe()
     }
@@ -382,7 +387,7 @@ export function setup(context: Context) {
     )
     const cleanup = cleanupMap.get(toRaw(context)) as Map<
         LifecycleHook,
-        Set<TeardownLogic>
+        Set<Teardown>
     >
 
     if (context.ngOnConnect) {
@@ -443,7 +448,7 @@ export function connect<T extends object>(context: T, injector: Injector): T {
     cleanupMap.set(context, cleanup)
 
     for (const index of Array.from({ length: 9 }).keys()) {
-        cleanup.set(index, new Set<TeardownLogic>())
+        cleanup.set(index, new Set<Teardown>())
         lifecycle.set(index, new Set<EffectHook>())
     }
 
@@ -478,14 +483,14 @@ export function init(source: any) {
 }
 
 export function createEffect(
-    factory: (onInvalidate: OnInvalidate) => TeardownLogic,
+    factory: (onInvalidate: OnInvalidate) => Teardown,
     opts?: { watch?: boolean; flush: "pre" | "post" | "sync" },
 ) {
     const context = getContext()
-    const invalidations = new Set<TeardownLogic>()
+    const invalidations = new Set<Teardown>()
     const effect = () => factory(onInvalidate)
 
-    function onInvalidate(teardown: TeardownLogic) {
+    function onInvalidate(teardown: Teardown) {
         invalidations.add(teardown)
     }
 
@@ -588,27 +593,27 @@ export function reactiveFactory<T extends object>(
     })
 }
 
-export function onChanges(fn: (changes: SimpleChanges) => TeardownLogic) {
+export function onChanges(fn: (changes: SimpleChanges) => Teardown) {
     addHook(fn, LifecycleHook.OnChanges)
 }
 
-export function afterContentInit(fn: () => TeardownLogic) {
+export function afterContentInit(fn: () => Teardown) {
     addHook(fn, LifecycleHook.AfterContentInit)
 }
 
-export function afterContentChecked(fn: () => TeardownLogic) {
+export function afterContentChecked(fn: () => Teardown) {
     addHook(fn, LifecycleHook.AfterContentChecked)
 }
 
-export function afterViewInit(fn: () => TeardownLogic) {
+export function afterViewInit(fn: () => Teardown) {
     addHook(fn, LifecycleHook.AfterViewInit)
 }
 
-export function afterViewChecked(fn: () => TeardownLogic) {
+export function afterViewChecked(fn: () => Teardown) {
     addHook(fn, LifecycleHook.AfterViewChecked)
 }
 
-export function onDestroy(fn: () => TeardownLogic) {
+export function onDestroy(fn: () => Teardown) {
     addHook(fn, LifecycleHook.OnDestroy)
 }
 

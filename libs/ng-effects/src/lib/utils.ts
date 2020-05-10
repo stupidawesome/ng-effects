@@ -9,8 +9,7 @@ import {
     runWithDeps,
     targetSymbol,
 } from "./connect"
-import { TeardownLogic } from "rxjs"
-import { LifecycleHook, OnInvalidate, StopHandler } from "./interfaces"
+import { LifecycleHook, OnInvalidate, StopHandle, Teardown } from "./interfaces"
 import { getLifecycleHook } from "./lifecycle"
 import { IterableDiffers } from "@angular/core"
 
@@ -27,11 +26,11 @@ export function shallowReactive<T extends object>(value: T): T {
 }
 
 export function watchEffect(
-    effect: (onInvalidate: OnInvalidate) => TeardownLogic,
+    effect: (onInvalidate: OnInvalidate) => Teardown,
     opts?: {
         flush?: "pre" | "post" | "sync"
     },
-): StopHandler {
+): StopHandle {
     return createEffect(effect, {
         watch: true,
         flush: opts?.flush || "post",
@@ -39,8 +38,8 @@ export function watchEffect(
 }
 
 export function effect(
-    effect: (onInvalidate: OnInvalidate) => TeardownLogic,
-): StopHandler {
+    effect: (onInvalidate: OnInvalidate) => Teardown,
+): StopHandle {
     return createEffect(effect)
 }
 

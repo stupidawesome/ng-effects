@@ -1,79 +1,598 @@
-= Basic2 Inline Text Formatting
+= API Reference
 // Settings
 :idprefix:
 :idseparator: -
 :example-caption!:
 
-You can add the following inline styles to your content:
+NOTE: For brevity, this document only refers to components. Most of these APIs can be applied to directives as well.
 
-* Bold
-* Italic
-* Monospace
-* Highlight
+== `Connectable`
 
-== Bold & Italic
+Angular Effects relies on components extending this base class to work with the Composition API.
 
-You can bold and italic entire phrases, a word, and characters in a word.
+*Usage*
 
-.Bold and italic inline formatting
-[source,asciidoc]
+[source, typescript]
 ----
-*bold phrase* & **char**acter**s**
+import { Component, Injector } from "@angular/core"
+import { Connectable } from "ng-effects"
 
-_italic phrase_ & __char__acter__s__
-
-*_bold italic phrase_* & **__char__**acter**__s__**
+@Component()
+export class NgComponent extends Connectable {}
 ----
 
-.Result
-====
-*bold phrase* & **char**acter**s**
+== `ngOnConnect`
 
-_italic phrase_ & __char__acter__s__
+The `ngOnConnect` function is the main entry point for using the Composition API inside components.
 
-*_bold italic phrase_* & **__char__**acter**__s__**
-====
+- *Invocation timing*
 
-== Monospace
+`ngOnConnect` is called after initial `@Input()` bindings and static queries such as `@ViewChild()` have been resolved. Lifecycle-wise, it is called during the `ngOnInit` hook.
 
-You can monospace entire phrases, a word, and characters in a word.
+- *Arguments*
 
-.Monospace inline formatting
-[source,asciidoc]
+The `ngOnConnect` function takes no arguments and return values are ignored.
+
+[source, typescript]
 ----
-`monospace phrase` & ``char``acter``s``
-
-`*monospace bold phrase*` & ``**char**``acter``**s**``
-
-`_monospace italic phrase_` & ``__char__``acter``__s__``
-
-`*_monospace bold italic phrase_*` &
-``**__char__**``acter``**__s__**``
+export interface OnConnect {
+    ngOnConnect(): void
+}
 ----
 
-.Result
-====
-`monospace phrase` & ``char``acter``s``
+- *Usage*
 
-`*monospace bold phrase*` & ``**char**``acter``**s**``
+Extending a component with `Connectable` creates a shallow reactive `this` context. Component properties are simply defined in the class initializer.
 
-`_monospace italic phrase_` & ``__char__``acter``__s__``
-
-`*_monospace bold italic phrase_*` &
-``**__char__**``acter``**__s__**``
-====
-
-== Highlight
-
-You can highlight entire phrases, a word, and characters in a word.
-
-.Highlight inline formatting
-[source,asciidoc]
+[source, typescript]
 ----
-Let's #highlight this phrase# and part of th##is##.
+import { Component, Injector } from "@angular/core"
+import { Connectable } from "ng-effects"
+
+@Component()
+export class NgComponent extends Connectable {
+    count = 0
+    object = reactive({ foo: "bar" })
+
+    ngOnConnect() {
+        watchEffect(() =>
+            console.log(`count is ${ this.count }`)
+        )
+    }
+}
 ----
 
-.Result
-====
-Let's #highlight this phrase# and part of th##is##.
-====
+== Reactivity APIs
+
+=== `reactive`
+
+Takes an object and returns a reactive proxy of the original.
+
+[source, typescript]
+----
+const obj = reactive({ count: 0 })
+----
+
+The reactive conversion is "deep": it affects all nested properties. In the ES2015 Proxy based implementation, the returned proxy is not equal to the original object. It is recommended to work exclusively with the reactive proxy and avoid relying on the original object.
+
+- *Typing*
+
+[source, typescript]
+----
+declare function reactive<T extends object>(value: T): T
+----
+
+=== `Computed` (alias: `$`)
+
+Takes a getter function and returns a memoized reactive getter/setter.
+
+[source, typescript]
+----
+const plusOne = $(() => this.count + 1)
+
+console.log(plusOne()) // 2
+----
+
+If arguments are supplied, these are also memoized.
+
+[source, typescript]
+----
+const plusOne = $((val?: number) => {
+    if (arguments.length) {
+        return val - 1
+    }
+    return this.count + 1
+})
+
+console.log(plusOne(1)) // 0
+----
+
+- *Typings*
+
+[source, typescript]
+----
+export interface Computed {
+    new <T extends (...args: any[]) => any>(fn: T): T
+    <T extends (...args: any[]) => any>(fn: T): T
+}
+----
+
+=== `watchEffect`
+
+Run a function while reactively tracking its dependencies, and re-run it whenever the dependencies have changed.
+
+[source, typescript]
+----
+watchEffect(() => console.log(this.count))
+// -> logs 0
+
+setTimeout(() => {
+    object.value++
+    // -> logs 1
+}, 100)
+----
+
+*Stopping the Watcher*
+
+When watchEffect is called during a component's ngOnConnect() function or lifecycle hooks, the watcher is linked to the component's lifecycle, and will be automatically stopped when the component is destroyed.
+
+It also returns a stop handle which can be called to explicitly stop the watcher:
+
+[source, typescript]
+----
+const stop = watchEffect(() => {
+    /* ... */
+})
+
+// later
+stop()
+----
+
+*Async Effect Invalidation*
+
+Sometimes the watched effect function will perform async side effects that need to be cleaned up when it is invalidated (i.e state changed before the effects can be completed). The effect function receives an `onInvalidate` function that can be used to register a invalidation callback. The invalidation callback is called when:
+
+- the effect is about to re-run
+- the watcher is stopped (i.e. when the component is unmounted if watchEffect is used inside `ngOnConnect()`, `connectable()` or lifecycle hooks)
+
+[source, typescript]
+----
+watchEffect(onInvalidate => {
+    const token = performAsyncOperation(this.id)
+    onInvalidate(() => {
+        // id has changed or watcher is stopped.
+        // invalidate previously pending async operation
+        token.cancel()
+    })
+})
+----
+
+We are registering the invalidation callback via a passed-in function instead of returning it from the callback.
+
+[source, typescript]
+----
+watchEffect(async () => {
+    data.value = await fetchData(this.id)
+})
+----
+
+An async function implicitly returns a Promise, but the cleanup function needs to be registered immediately before the Promise resolves.
+
+#Effect Flush Timing
+
+Angular Effects buffers invalidated effects and flushes them asynchronously to avoid unnecessary duplicate invocation when there are many state mutations happening in the same "tick". When a user effect is queued, it is always invoked after all component update effects:
+
+[source, typescript]
+----
+@Component({
+    template: `
+        <div>{{ count }}</div>
+    `
+})
+export class NgComponent extends Connectable {
+    count = 0
+
+    ngOnConnect() {
+        watchEffect(() => {
+            console.log(this.count)
+        })
+    }
+}
+----
+In this example:
+
+- The count will be logged on initial run.
+- When count is mutated, the callback will be called after the component has updated.
+
+Note the first run is executed before the component is mounted. So if you wish to access the DOM (or template refs) in a watched effect, do it in the `afterViewInit` hook:
+
+[source, typescript]
+----
+afterViewInit(() => {
+    watchEffect(() => {
+        // access the DOM or template refs
+    })
+})
+----
+
+In cases where a watcher effect needs to be re-run synchronously or before component updates, we can pass an additional options object with the flush option (default is "post"):
+
+[source, typescript]
+----
+// fire synchronously
+watchEffect(
+    () => {
+        /* ... */
+    },
+    {
+        flush: "sync"
+    }
+)
+
+// fire before component updates
+watchEffect(
+    () => {
+        /* ... */
+    },
+    {
+        flush: "pre"
+    }
+)
+----
+
+- Typing
+
+[source, typescript]
+----
+declare function watchEffect(
+    effect: (onInvalidate: OnInvalidate) => Teardown,
+    options?: {
+        flush?: "pre" | "post" | "sync"
+    }
+): StopHandle
+
+type OnInvalidate = (teardown: Teardown) => void
+
+type StopHandle = () => void
+----
+
+=== `effect`
+
+The `effect` API is the same as `watchEffect`, except reactive dependencies aren't tracked.
+
+[source, typescript]
+----
+// effect won't be invalidated when id changes
+effect(() => service.getData(this.id)
+    .subscribe(res =>
+         this.data = res.data
+    )
+)
+----
+
+- Typing
+
+[source, typescript]
+----
+declare function effect(
+    effect: (onInvalidate: OnInvalidate) => Teardown,
+): StopHandle
+----
+
+== Lifecycle Hooks
+
+Lifecycle hooks can be registered with functions equivalent to a subset of the Angular component lifecycle.
+
+[source, typescript]
+----
+import { onChanges, afterViewInit, onDestroy } from "ng-effects"
+
+export class NgComponent extends Connectable {
+    ngOnConnect() {
+        onChanges(() => {
+            console.log("ngOnChanges!")
+        })
+        afterViewInit(() => {
+            console.log("ngAfterViewInit!")
+        })
+        onDestroy(() => {
+            console.log("onDestroy!")
+        })
+    }
+}
+----
+
+These lifecycle hook registration functions can only be used synchronously inside `ngOnConnect()` or `connectable()`, since they rely on internal global state to locate the current active instance (the component instance being called right now). Calling them without a current active instance will result in an error.
+
+The component instance context is also set during the synchronous execution of lifecycle hooks, so watchers and computed properties created inside synchronously inside lifecycle hooks are also automatically tore down when the component unmounts.
+
+- Typing
+
+[source, typescript]
+----
+declare function onChanges(fn: (changes: SimpleChanges) => Teardown)
+
+declare function afterContentInit(fn: () => Teardown)
+
+declare function afterContentChecked(fn: () => Teardown)
+
+declare function afterViewInit(fn: () => Teardown)
+
+declare function afterViewChecked(fn: () => Teardown)
+
+declare function onDestroy(fn: () => Teardown)
+----
+
+== Dependency Injection
+
+Angular Effects creates an injection context when a `Connectable` component is created. Dependencies can be injected using `inject()`.
+
+[source, typescript]
+----
+import { Component } from "@angular/core"
+import { Connectable, inject } from "ng-effects"
+
+@Component({
+    providers: [Theme]
+})
+export class Ancestor {}
+
+@Component()
+export class Descendant extends Connectable {
+    // valid injection context
+    private theme = inject(Theme)
+
+    ngOnConnect() {
+        // valid injection context
+        const theme = inject(Theme)
+    }
+}
+----
+
+`inject` accepts optional `InjectFlags` as a second argument. These are used to control dependency resolution or allow providers to be optional.
+
+[source, typescript]
+----
+@Component()
+export class Descendant extends Connectable {
+    private theme = inject(
+        Theme,
+        InjectFlags.SkipSelf | InjectFlags.Optional
+    ) || "dark"
+}
+----
+
+- Typing
+
+[source, typescript]
+----
+declare function inject<T>(
+    token: Type<T> | AbstractType<T> | InjectionToken<T>,
+    flags: InjectFlags,
+): T | null
+declare function inject<T>(
+    token: Type<T> | AbstractType<T> | InjectionToken<T>,
+): T
+
+declare enum InjectFlags {
+    Default = 0,
+    Host = 1,
+    Self = 2,
+    SkipSelf = 4,
+    Optional = 8
+}
+----
+
+== Template Refs
+
+Angular has several options for querying the template or content children of a component. These are attached through decorated properties, which in turn can be observed for reactive changes with Angular Effects.
+
+[source, typescript]
+----
+import { afterContentInit } from "./connect"
+@Component({
+    template: `
+        <div #ref></div>
+    `
+})
+export class NgComponent extends Connectable {
+    @ViewChild("ref")
+    staticRef?: HTMLDivElement
+
+    @ViewChildren("ref")
+    dynamicRef?: QueryList<HTMLDivElement>
+
+    // static quries populated
+    ngOnConnect() {
+        watchEffect(() => {
+            if (this.staticRef) {
+                console.log(this.staticRef)
+            }
+        })
+
+        // dynamic content queries populated
+        afterContentInit(() => {
+            // ...
+        })
+
+        // dynamic view queries populated
+        afterViewInit(() => {
+            // make query list array reactive
+            const dynamicRef = shallowReactive(this.dynamicRef)
+
+            watchEffect(() => {
+                for (const div of dynamicRef) {
+                    console.log(div)
+                }
+            })
+        })
+    }
+}
+----
+
+Static queries are immediately available within the `ngOnConnect()` function. Access static `@ViewChild()` and `@ContentChild()` queries here.
+
+Dynamic queries are attached just before their repective lifecycle hook is called. For dynamic `@ContentChild()` and `@ContentChildren()` queries, these first become available within the `afterContentInit()` hook. For dynamic `@ViewChild()` and `@ViewChildren()` queries, these first become available in the `afterViewInit()` hook. Once attached to the component, updates to and `QueryList` arrays mutate the original array rather than replacing it. Make this array reactive with `shallowReactive()` before using it with watch effect.
+
+== Effect
+
+`Effect` is a new reactive primitive that acts like an invokable, customisable RxJS `Subject`. It has some useful properties:
+
+- Callable like a function. More ergonomic than `subject.next()`
+- Can be used to observe `HostListener`
+- Can be used with pipeable operators to control how or when values are emitted at the source.
+
+[source, typescript]
+----
+import { Component, Input, Output } from "angular/core"
+import { debounceTime, delay } from "rxjs/operators"
+import { Effect, effect, watchEffect } from "ng-effects"
+
+@Component({
+    template: `
+        <button (click)="increment(1)">Click</button>
+    `
+})
+export class NgComponent extends Connectable {
+    @Input()
+    count = 0
+
+    @Output()
+    countChange = new Effect<number>(delay(500))
+
+    increment = new Effect<number>(debounceTime(250))
+
+    ngOnConnect() {
+        const { increment, countChange } = this
+
+        effect(() => increment.subscribe((num) =>
+            this.count += num
+        ))
+
+        watchEffect(() => {
+            countChange(this.count)
+        }, { flush: "sync" })
+    }
+}
+----
+
+In this example we have a simple counter with a button that triggers an `increment` effect. This effect debounces clicks for 250ms before `count` is incremented by 1. Whenever `count` changes, its value is synchronously emitted to `countChange` by the watch effect until finally, after a 500ms delay, the component emits the outputted value to the parent component. Note that the `count` input could change at any time in this process and the value will still be incremented.
+
+Use `Effect` when you want to want the power of `Subject` and pipes with the ergonomics of `Function`.
+
+*Multiple arguments*
+
+The function produced by `Effect` supports passing multiple arguments based on the number of type parameters.
+
+[source, typescript]
+----
+increment = new Effect<string, number>()
+
+// requires two arguments: [string, number]
+increment("1", 1)
+----
+
+*Custom operator*
+
+`Effect` only accepts a single `OperatorFunction`. To compose multiple operators, compose them in a factory function.
+
+[source, typescript]
+----
+// When an operator function is supplied
+// The last type argument is the observed return value
+increment = new Effect<number, number>(
+    (source) => {
+        return source.pipe(
+            delay(500),
+            map((value) => value * 2)
+        )
+    }
+)
+
+increment(2) // -> emits 4 after 500ms
+----
+
+- Typing
+
+[source, typescript]
+----
+export type NextFn<T> = T extends void
+    ? () => void
+    : T extends any[]
+    ? (...args: T) => void
+    : (arg: T) => void
+
+// plus many overloads
+export type Effect<T, U = T> = Subject<U>
+    & NextFn<T>
+    & {
+        source: Observable<T>
+        destination: Observable<U>
+    }
+----
+
+== Advanced Reactivity APIs
+
+=== `connectable`
+
+Creates a connectable provider that is eagerly instantiated  when a `Connectable` component is created. These providers aren't inherited and must be provided in the local components  `providers` or `viewProviders` array.
+
+[source, typescript]
+----
+import { Component } from "@angular/core"
+import { Connectable, connectable, watchEffect } from "ng-effects"
+
+// runs after `ngOnConnect`
+export const NgConnectable = connectable<NgComponent>(ctx => {
+    watchEffect(() => {
+        console.log(ctx.count)
+    })
+})
+
+@Component({
+    providers: [NgConnectable]
+})
+export class NgComponent extends Connectable {
+    count = 0
+
+    ngOnConnect() {
+        // optional, runs before connected providers
+    }
+}
+----
+
+=== `shallowReactive`
+
+Create a reactive proxy that tracks reactivity of its own properties, but does not perform deep reactive conversion of nested objects (exposes raw values).
+
+[source, typescript]
+----
+const state = shallowReactive({
+    foo: 1,
+    nested: {
+        bar: 2
+    }
+})
+
+// mutating state's own properties is reactive
+state.foo++
+// ...but does not convert nested objects
+isProxy(state.nested) // false
+state.nested.bar++ // non-reactive
+----
+
+=== `toRaw`
+
+Return the raw, original object of a reactive proxy. This is an escape hatch that can be used to temporarily read without incurring proxy access / tracking overhead or write without triggering changes. It is not recommended to hold a persistent reference to the original object. Use with caution.
+
+[source, typescript]
+----
+const foo = {}
+const reactiveFoo = reactive(foo)
+
+console.log(toRaw(reactiveFoo) === foo) // true
+----
+
+=== `isProxy`
+
+Check if an object is a proxy created by reactive or readonly.

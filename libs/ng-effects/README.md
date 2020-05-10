@@ -11,7 +11,7 @@ Reactive hooks for Angular.
 })
 export class AppComponent extends Connectable {
     @Input()
-    count: number = 0
+    count = 0
 
     ngOnConnect() {
         effect(() =>

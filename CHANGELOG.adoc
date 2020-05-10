@@ -1,5 +1,16 @@
 = Changelog
 
+== 9.1.0-rc.6
+
+=== Features
+
+- allow async/await in effects
+- include computed values in tracked dependencies
+
+=== Misc
+
+- launch api reference docs site (https://ngfx.io)
+
 == 9.1.0-rc.5
 
 This releases reintroduces `Effect` as a reactive type and adds support for computed properties with `Computed` (alias: `$`). It also adds options to control when `watchEffect` is flushed.

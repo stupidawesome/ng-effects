@@ -6,7 +6,7 @@ export interface OnConnect {
 
 export type ConnectableFunction<T = any> = (ctx: T) => void
 
-export type EffectHook = (...args: any[]) => TeardownLogic
+export type EffectHook = (...args: any[]) => Teardown
 
 export type Context = { [key: string]: any }
 
@@ -28,6 +28,8 @@ export interface EffectOptions {
     invalidate: Function
 }
 
-export type StopHandler = () => void
+export type StopHandle = () => void
 
-export type OnInvalidate = (teardown: TeardownLogic) => void
+export type OnInvalidate = (teardown: Teardown) => void
+
+export type Teardown = TeardownLogic | Promise<void>

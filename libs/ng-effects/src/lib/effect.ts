@@ -126,6 +126,22 @@ export class EffectFactory<T extends any, U = T> extends Callable<NextFn<T>> {
         return (<any>this.destination.pipe)(...operations)
     }
 
+    next(value: T) {
+        this.source.next(value)
+    }
+
+    complete() {
+        this.source.complete()
+    }
+
+    error(err: any) {
+        this.source.error(err)
+    }
+
+    unsubscribe() {
+        this.source.unsubscribe()
+    }
+
     subscribe<V = U extends unknown ? T : U>(
         observer?: PartialObserver<V> | ((value: V) => void),
     ): Subscription
@@ -135,43 +151,32 @@ export class EffectFactory<T extends any, U = T> extends Callable<NextFn<T>> {
 }
 
 // prettier-ignore
-export type EffectType<T, U = T> = Subscribable<U> &
+export type Effect<T, U = T> = Subject<U> &
     NextFn<T> & {
-        pipe(): Observable<T>;
-        pipe<A>(op1: OperatorFunction<T, A>): Observable<A>;
-        pipe<A, B>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>): Observable<B>;
-        pipe<A, B, C>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>): Observable<C>;
-        pipe<A, B, C, D>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>, op4: OperatorFunction<C, D>): Observable<D>;
-        pipe<A, B, C, D, E>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>, op4: OperatorFunction<C, D>, op5: OperatorFunction<D, E>): Observable<E>;
-        pipe<A, B, C, D, E, F>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>, op4: OperatorFunction<C, D>, op5: OperatorFunction<D, E>, op6: OperatorFunction<E, F>): Observable<F>;
-        pipe<A, B, C, D, E, F, G>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>, op4: OperatorFunction<C, D>, op5: OperatorFunction<D, E>, op6: OperatorFunction<E, F>, op7: OperatorFunction<F, G>): Observable<G>;
-        pipe<A, B, C, D, E, F, G, H>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>, op4: OperatorFunction<C, D>, op5: OperatorFunction<D, E>, op6: OperatorFunction<E, F>, op7: OperatorFunction<F, G>, op8: OperatorFunction<G, H>): Observable<H>;
-        pipe<A, B, C, D, E, F, G, H, I>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>, op4: OperatorFunction<C, D>, op5: OperatorFunction<D, E>, op6: OperatorFunction<E, F>, op7: OperatorFunction<F, G>, op8: OperatorFunction<G, H>, op9: OperatorFunction<H, I>): Observable<I>;
-        pipe<A, B, C, D, E, F, G, H, I>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>, op4: OperatorFunction<C, D>, op5: OperatorFunction<D, E>, op6: OperatorFunction<E, F>, op7: OperatorFunction<F, G>, op8: OperatorFunction<G, H>, op9: OperatorFunction<H, I>, ...operations: OperatorFunction<any, any>[]): Observable<{}>;
         source: Observable<T>
         destination: Observable<U>
     }
 
 // prettier-ignore
 type InteropEffect = typeof EffectDecorator & {
-    new<T, R>(lift: OperatorFunction<T, R>): EffectType<T, R>
-    new<T1, T2, R>(lift: OperatorFunction<[T1, T2], R>): EffectType<[T1, T2], R>
-    new<T1, T2, T3, R>(lift: OperatorFunction<[T1, T2, T3], R>): EffectType<[T1, T2, T3], R>
-    new<T1, T2, T3, T4, R>(lift: OperatorFunction<[T1, T2, T3, T4], R>): EffectType<[T1, T2, T3, T4], R>
-    new<T1, T2, T3, T4, T5, R>(lift: OperatorFunction<[T1, T2, T3, T4, T5], R>): EffectType<[T1, T2, T3, T4, T5], R>
-    new<T1, T2, T3, T4, T5, T6, R>(lift: OperatorFunction<[T1, T2, T3, T4, T5, T6], R>): EffectType<[T1, T2, T3, T4, T5, T6], R>
-    new<T1, T2, T3, T4, T5, T6, T7, R>(lift: OperatorFunction<[T1, T2, T3, T4, T5, T6, T7], R>): EffectType<[T1, T2, T3, T4, T5, T6, T7], R>
-    new<T1, T2, T3, T4, T5, T6, T7, T8, R>(lift: OperatorFunction<[T1, T2, T3, T4, T5, T6, T7, T8], R>): EffectType<[T1, T2, T3, T4, T5, T6, T7, T8], R>
-    new<T1, T2, T3, T4, T5, T6, T7, T8, T9, R>(lift: OperatorFunction<[T1, T2, T3, T4, T5, T6, T7, T8], R>): EffectType<[T1, T2, T3, T4, T5, T6, T7, T8, T9], R>
-    new<T = void>(): EffectType<T>
-    new<T1, T2>(): EffectType<[T1, T2]>
-    new<T1, T2, T3>(): EffectType<[T1, T2, T3]>
-    new<T1, T2, T3, T4>(): EffectType<[T1, T2, T3, T4]>
-    new<T1, T2, T3, T4, T5>(): EffectType<[T1, T2, T3, T4, T5]>
-    new<T1, T2, T3, T4, T5, T6>(): EffectType<[T1, T2, T3, T4, T5, T6]>
-    new<T1, T2, T3, T4, T5, T6, T7>(): EffectType<[T1, T2, T3, T4, T5, T6, T7]>
-    new<T1, T2, T3, T4, T5, T6, T7, T8>(): EffectType<[T1, T2, T3, T4, T5, T6, T7, T8]>
-    new<T1, T2, T3, T4, T5, T6, T7, T8, T9>(): EffectType<[T1, T2, T3, T4, T5, T6, T7, T9]>
+    new<T, R>(lift: OperatorFunction<T, R>): Effect<T, R>
+    new<T1, T2, R>(lift: OperatorFunction<[T1, T2], R>): Effect<[T1, T2], R>
+    new<T1, T2, T3, R>(lift: OperatorFunction<[T1, T2, T3], R>): Effect<[T1, T2, T3], R>
+    new<T1, T2, T3, T4, R>(lift: OperatorFunction<[T1, T2, T3, T4], R>): Effect<[T1, T2, T3, T4], R>
+    new<T1, T2, T3, T4, T5, R>(lift: OperatorFunction<[T1, T2, T3, T4, T5], R>): Effect<[T1, T2, T3, T4, T5], R>
+    new<T1, T2, T3, T4, T5, T6, R>(lift: OperatorFunction<[T1, T2, T3, T4, T5, T6], R>): Effect<[T1, T2, T3, T4, T5, T6], R>
+    new<T1, T2, T3, T4, T5, T6, T7, R>(lift: OperatorFunction<[T1, T2, T3, T4, T5, T6, T7], R>): Effect<[T1, T2, T3, T4, T5, T6, T7], R>
+    new<T1, T2, T3, T4, T5, T6, T7, T8, R>(lift: OperatorFunction<[T1, T2, T3, T4, T5, T6, T7, T8], R>): Effect<[T1, T2, T3, T4, T5, T6, T7, T8], R>
+    new<T1, T2, T3, T4, T5, T6, T7, T8, T9, R>(lift: OperatorFunction<[T1, T2, T3, T4, T5, T6, T7, T8], R>): Effect<[T1, T2, T3, T4, T5, T6, T7, T8, T9], R>
+    new<T = void>(): Effect<T>
+    new<T1, T2>(): Effect<[T1, T2]>
+    new<T1, T2, T3>(): Effect<[T1, T2, T3]>
+    new<T1, T2, T3, T4>(): Effect<[T1, T2, T3, T4]>
+    new<T1, T2, T3, T4, T5>(): Effect<[T1, T2, T3, T4, T5]>
+    new<T1, T2, T3, T4, T5, T6>(): Effect<[T1, T2, T3, T4, T5, T6]>
+    new<T1, T2, T3, T4, T5, T6, T7>(): Effect<[T1, T2, T3, T4, T5, T6, T7]>
+    new<T1, T2, T3, T4, T5, T6, T7, T8>(): Effect<[T1, T2, T3, T4, T5, T6, T7, T8]>
+    new<T1, T2, T3, T4, T5, T6, T7, T8, T9>(): Effect<[T1, T2, T3, T4, T5, T6, T7, T9]>
 }
 
 export const Effect: InteropEffect = EffectDecorator as InteropEffect

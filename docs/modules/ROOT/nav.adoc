@@ -1,5 +1,4 @@
-.List title and top level item
-* List item
+* xref:index.adoc[API Reference]
 
 //* inline-text-formatting.adoc[Basic Inline Text Formatting]
 //* xref:special-characters.adoc[Special Characters & Symbols]

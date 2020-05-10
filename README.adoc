@@ -1,7 +1,7 @@
 :toc:
 :toc-placement!:
-
-image::https://i.imgur.com/A1924dn.png[Angular Effects]
+[.text-center]
+image::https://i.imgur.com/A1924dn.png[alt=Angular Effects, width=67%]
 
 == NgFx
 
@@ -17,7 +17,7 @@ Reactive hooks for Angular.
 })
 export class AppComponent extends Connectable {
     @Input()
-    count: number = 0
+    count = 0
 
     ngOnConnect() {
         effect(() =>
@@ -39,10 +39,6 @@ link:https://www.npmjs.com/package/ng-effects[Install via NPM]
 npm install ng-effects@next
 ```
 
-== Getting Started
+## Usage
 
-Coming soon.
-
-== Api Reference
-
-Coming soon.
+[Read the docs](https://ngfx.io)
