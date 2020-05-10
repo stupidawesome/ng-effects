@@ -41,4 +41,4 @@ npm install ng-effects@next
 
 ## Usage
 
-[Read the docs](https://ngfx.io)
+https://ngfx.io[Read the docs]
