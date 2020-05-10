@@ -26,7 +26,7 @@
         "workspace-schematic": "nx workspace-schematic",
         "help": "nx help",
         "postinstall": "ngcc --properties es2015 browser module main --first-only --create-ivy-entry-points",
-        "docs": "rimraf ./dist/docs/_ && antora ./antora-playbook.yml",
+        "docs": "rimraf ./dist/docs/_ && antora ./antora-playbook.yml --generator antora-site-generator-lunr",
         "docs:serve": "concurrently \"watch \\\"npm run docs\\\" ./docs --interval=0.5\" \"cd dist/docs && live-server --open=./component/1.0.0/index.html --watch=./component\""
     },
     "private": true,
@@ -40,6 +40,7 @@
         "@angular/platform-browser-dynamic": "~9.1.0",
         "@angular/router": "^9.1.4",
         "@antora/site-generator-default": "^2.3.0",
+        "antora-site-generator-lunr": "^0.4.0",
         "core-js": "^2.5.4",
         "rxjs": "~6.5.4",
         "todomvc-app-css": "^2.3.0",

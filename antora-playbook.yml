@@ -1,5 +1,5 @@
 site:
-    title: My Demo Site
+    title: Angular Effects
     url: https://ngfx.io/
 content:
     sources:
@@ -10,5 +10,6 @@ output:
     dir: ./dist/docs
 ui:
     bundle:
-        url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/master/raw/build/ui-bundle.zip?job=bundle-stable
+        url: https://github.com/stupidawesome/antora-default-ui/raw/master/build/ui-bundle.zip
         snapshot: true
+    supplemental_files: ./docs/supplemental_ui
