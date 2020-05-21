@@ -15,16 +15,21 @@ import {
     DefaultEffectDecorator,
 } from "../deprecated/internals/interfaces"
 import {
+    ConnectableObservable,
+    EMPTY,
+    from,
+    merge,
+    NEVER,
     Observable,
     OperatorFunction,
     PartialObserver,
     Subject,
     Subscribable,
-    Subscription,
+    Unsubscribable,
 } from "rxjs"
 import { defineMetadata } from "../deprecated/internals/metadata"
 import { NextFn } from "./utils"
-import { Callable } from "../deprecated/internals/callable"
+import { share } from "rxjs/operators"
 
 /**
  * @deprecated Will be replaced by composition API in 10.0.0
@@ -90,7 +95,7 @@ function EffectDecorator<
  */
 function EffectDecorator(...args: any[]): any {
     if (new.target) {
-        return new EffectFactory(args[0])
+        return new EffectFactory(...args)
     }
     let options: EffectOptions
     if (typeof args[0] === "string") {
@@ -105,78 +110,102 @@ function EffectDecorator(...args: any[]): any {
     }
 }
 
-export class EffectFactory<T extends any, U = T> extends Callable<NextFn<T>> {
-    source = new Subject<T>()
-    private destination: Observable<U>
-    constructor(lift?: OperatorFunction<T, U>) {
-        super(function (...args: any[]) {
-            self.source.next(args.length === 1 ? args[0] : args)
-        } as NextFn<T>)
-        const self = this
-        this.destination = (lift
-            ? this.source.pipe(lift)
-            : this.source) as Observable<U>
-    }
+export type ActionConstructor<T extends unknown[], R extends object> = (
+    ...args: T
+) => R
+export type ActionArgs<T> = T extends ActionConstructor<infer R, any>
+    ? R
+    : never
+export type ActionType<T> = T extends ActionConstructor<any, infer R>
+    ? R
+    : never
+export interface ActionCreator<U extends unknown, V extends any = object> extends Action {
+    asObservable: () => Observable<V>
+    (arg: U): V & Action
+    (...args: U extends unknown[] ? U : never): V & Action
+}
+export interface Action {
+    readonly type: string
+}
 
-    pipe(...operations: OperatorFunction<any, any>[]): Observable<any> {
-        if (operations.length === 0) {
-            return this as any
+export const noop: any = () => {}
+
+const REJECT = Symbol()
+
+export function reject(): never {
+    throw REJECT
+}
+
+export function Action<T extends ActionConstructor<any[], any> = ActionConstructor<unknown[], object>>(
+    create: T = noop,
+): ActionCreator<ActionArgs<T>, ActionType<T>> {
+    const subject = new Subject()
+    const symbol = Symbol()
+    function Action(...args: any[]) {
+        try {
+            const action = create(...args) ?? {}
+            Object.defineProperty(action, "type", {
+                value: symbol,
+            })
+            subject.next(action)
+            return action
+        } catch(e) {
+            if (e !== REJECT) {
+                throw e
+            }
         }
-
-        return (<any>this.destination.pipe)(...operations)
+    }
+    Action.type = symbol
+    Action.asObservable = function () {
+        return subject.asObservable()
     }
 
-    next(value: T) {
-        this.source.next(value)
+    return Action as ActionType<T>
+}
+
+export class EffectFactory<T extends any> extends Observable<T> {
+    source: Observable<T>
+
+    constructor(...actions: (Observable<T> | ActionCreator<any, T>)[]) {
+        actions = actions.map(action => "asObservable" in action ? action.asObservable() : action);
+        super((subscriber) => this.source.subscribe(subscriber));
+        const source = actions.length ? merge(...actions) : NEVER;
+        this.source = source.pipe<any>(share())
     }
 
-    complete() {
-        this.source.complete()
-    }
-
-    error(err: any) {
-        this.source.error(err)
-    }
-
-    unsubscribe() {
-        this.source.unsubscribe()
-    }
-
-    subscribe<V = U extends unknown ? T : U>(
-        observer?: PartialObserver<V> | ((value: V) => void),
-    ): Subscription
-    subscribe(observer?: any): Subscription {
-        return this.destination.subscribe(observer)
+    // prettier-ignore
+    pipe(): EffectFactory<T>;
+    // prettier-ignore
+    pipe<A>(op1: OperatorFunction<T, A>): EffectFactory<A>;
+    // prettier-ignore
+    pipe<A, B>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>): EffectFactory<B>;
+    // prettier-ignore
+    pipe<A, B, C>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>): EffectFactory<C>;
+    // prettier-ignore
+    pipe<A, B, C, D>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>, op4: OperatorFunction<C, D>): EffectFactory<D>;
+    // prettier-ignore
+    pipe<A, B, C, D, E>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>, op4: OperatorFunction<C, D>, op5: OperatorFunction<D, E>): EffectFactory<E>;
+    // prettier-ignore
+    pipe<A, B, C, D, E, F>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>, op4: OperatorFunction<C, D>, op5: OperatorFunction<D, E>, op6: OperatorFunction<E, F>): EffectFactory<F>;
+    // prettier-ignore
+    pipe<A, B, C, D, E, F, G>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>, op4: OperatorFunction<C, D>, op5: OperatorFunction<D, E>, op6: OperatorFunction<E, F>, op7: OperatorFunction<F, G>): EffectFactory<G>;
+    // prettier-ignore
+    pipe<A, B, C, D, E, F, G, H>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>, op4: OperatorFunction<C, D>, op5: OperatorFunction<D, E>, op6: OperatorFunction<E, F>, op7: OperatorFunction<F, G>, op8: OperatorFunction<G, H>): EffectFactory<H>;
+    // prettier-ignore
+    pipe<A, B, C, D, E, F, G, H, I>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>, op4: OperatorFunction<C, D>, op5: OperatorFunction<D, E>, op6: OperatorFunction<E, F>, op7: OperatorFunction<F, G>, op8: OperatorFunction<G, H>, op9: OperatorFunction<H, I>): EffectFactory<I>;
+    // prettier-ignore
+    pipe<A, B, C, D, E, F, G, H, I>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>, op4: OperatorFunction<C, D>, op5: OperatorFunction<D, E>, op6: OperatorFunction<E, F>, op7: OperatorFunction<F, G>, op8: OperatorFunction<G, H>, op9: OperatorFunction<H, I>, ...operations: OperatorFunction<any, any>[]): EffectFactory<{}>;
+    pipe(...operators: OperatorFunction<any, any>[]): EffectFactory<any> {
+        const source = operators.reduce(
+            (source, operator) => operator(source),
+            from(this),
+        )
+        return new EffectFactory(source)
     }
 }
 
-// prettier-ignore
-export type Effect<T, U = T> = Subject<U> &
-    NextFn<T> & {
-        source: Observable<T>
-        destination: Observable<U>
-    }
+export type Effect<T = unknown> = EffectFactory<T>
 
-// prettier-ignore
-type InteropEffect = typeof EffectDecorator & {
-    new<T, R>(lift: OperatorFunction<T, R>): Effect<T, R>
-    new<T1, T2, R>(lift: OperatorFunction<[T1, T2], R>): Effect<[T1, T2], R>
-    new<T1, T2, T3, R>(lift: OperatorFunction<[T1, T2, T3], R>): Effect<[T1, T2, T3], R>
-    new<T1, T2, T3, T4, R>(lift: OperatorFunction<[T1, T2, T3, T4], R>): Effect<[T1, T2, T3, T4], R>
-    new<T1, T2, T3, T4, T5, R>(lift: OperatorFunction<[T1, T2, T3, T4, T5], R>): Effect<[T1, T2, T3, T4, T5], R>
-    new<T1, T2, T3, T4, T5, T6, R>(lift: OperatorFunction<[T1, T2, T3, T4, T5, T6], R>): Effect<[T1, T2, T3, T4, T5, T6], R>
-    new<T1, T2, T3, T4, T5, T6, T7, R>(lift: OperatorFunction<[T1, T2, T3, T4, T5, T6, T7], R>): Effect<[T1, T2, T3, T4, T5, T6, T7], R>
-    new<T1, T2, T3, T4, T5, T6, T7, T8, R>(lift: OperatorFunction<[T1, T2, T3, T4, T5, T6, T7, T8], R>): Effect<[T1, T2, T3, T4, T5, T6, T7, T8], R>
-    new<T1, T2, T3, T4, T5, T6, T7, T8, T9, R>(lift: OperatorFunction<[T1, T2, T3, T4, T5, T6, T7, T8], R>): Effect<[T1, T2, T3, T4, T5, T6, T7, T8, T9], R>
-    new<T = void>(): Effect<T>
-    new<T1, T2>(): Effect<[T1, T2]>
-    new<T1, T2, T3>(): Effect<[T1, T2, T3]>
-    new<T1, T2, T3, T4>(): Effect<[T1, T2, T3, T4]>
-    new<T1, T2, T3, T4, T5>(): Effect<[T1, T2, T3, T4, T5]>
-    new<T1, T2, T3, T4, T5, T6>(): Effect<[T1, T2, T3, T4, T5, T6]>
-    new<T1, T2, T3, T4, T5, T6, T7>(): Effect<[T1, T2, T3, T4, T5, T6, T7]>
-    new<T1, T2, T3, T4, T5, T6, T7, T8>(): Effect<[T1, T2, T3, T4, T5, T6, T7, T8]>
-    new<T1, T2, T3, T4, T5, T6, T7, T8, T9>(): Effect<[T1, T2, T3, T4, T5, T6, T7, T9]>
-}
+type InteropEffect = typeof EffectDecorator & typeof EffectFactory
 
 export const Effect: InteropEffect = EffectDecorator as InteropEffect

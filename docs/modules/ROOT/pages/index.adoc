@@ -389,7 +389,6 @@ Angular has several options for querying the template or content children of a c
 
 [source, typescript]
 ----
-import { afterContentInit } from "./connect"
 @Component({
     template: `
         <div #ref></div>
@@ -397,34 +396,23 @@ import { afterContentInit } from "./connect"
 })
 export class NgComponent extends Connectable {
     @ViewChild("ref")
-    staticRef?: HTMLDivElement
+    staticRef!: HTMLDivElement
 
     @ViewChildren("ref")
-    dynamicRef?: QueryList<HTMLDivElement>
+    dynamicRef = QueryList<HTMLDivElement>()
 
     // static quries populated
-    ngOnConnect() {
+    ngOnConnect(props, refs) {
+        const { staticRef, dynamicRef } = refs
+
         watchEffect(() => {
-            if (this.staticRef) {
-                console.log(this.staticRef)
+            console.log(staticRef.value)
+        })
+
+        watchEffect(() => {
+            for (const div of dynamicRef.value) {
+                console.log(div)
             }
-        })
-
-        // dynamic content queries populated
-        afterContentInit(() => {
-            // ...
-        })
-
-        // dynamic view queries populated
-        afterViewInit(() => {
-            // make query list array reactive
-            const dynamicRef = shallowReactive(this.dynamicRef)
-
-            watchEffect(() => {
-                for (const div of dynamicRef) {
-                    console.log(div)
-                }
-            })
         })
     }
 }

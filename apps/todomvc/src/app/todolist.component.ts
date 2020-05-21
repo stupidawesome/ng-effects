@@ -3,22 +3,28 @@ import {
     Component,
     Input,
     NgModule,
+    ViewChild,
 } from "@angular/core"
 import { CommonModule } from "@angular/common"
 import {
-    $, Computed,
+    ActionCreator,
+    Computed,
     Connectable,
     effect,
+    Effect,
     inject,
     isOnDestroy,
-    onDestroy,
+    Ref,
+    Refs,
     watchEffect,
 } from "@ng9/ng-effects"
 import { RouterModule } from "@angular/router"
 import { TodosService } from "./todos.service"
 import { Todo } from "./interfaces"
-import { HttpClient } from "@angular/common/http"
 import { subscribe } from "./utils"
+import { observe } from "../../../../libs/ng-effects/src/lib/utils"
+import { delay, pluck } from "rxjs/operators"
+import { Action } from "../../../../libs/ng-effects/src/lib/effect"
 
 @Component({
     selector: "ngfx-todolist",
@@ -113,7 +119,9 @@ export class TodolistComponent extends Connectable {
     @Input()
     count = 0
 
-    remaining = Computed(() => this.todos.filter((todo) => !todo.completed).length)
+    remaining = Computed(
+        () => this.todos.filter((todo) => !todo.completed).length,
+    )
 
     createTodo(input: HTMLInputElement) {
         this.Todos.create(input.value).subscribe((todo) => {
@@ -184,7 +192,7 @@ export class TodolistComponent extends Connectable {
         }
     }
 
-    ngOnConnect() {
+    ngOnConnect(props: this, refs: Refs<this>) {
         const todos = inject(TodosService)
 
         loadTodos: effect(() =>
@@ -224,3 +232,72 @@ export class TodolistComponent extends Connectable {
     exports: [TodolistComponent],
 })
 export class TodolistModule {}
+
+type Constructable<T> = new () => T
+
+type UnwrapRefs<T extends any> = {
+    [key in keyof T]: T[key] extends Ref<infer R> ? R : T[key]
+}
+
+export function Constructor<T extends (refs: any) => any>(
+    trait: T,
+): Constructable<UnwrapRefs<ReturnType<T>>> {
+    class Trait extends Connectable {
+        ngOnConnect = trait as any
+    }
+    return Trait as any
+}
+
+@Component({
+    selector: "app-trait",
+    template: `
+        <div>Count: {{ count }}</div>
+<!--        <button (click)="increment(2)" #button>Increment</button>-->
+    `,
+    providers: [],
+})
+export class TestComponent extends Hook() {
+    @Input()
+    count = 10
+
+    @ViewChild("button")
+    button?: HTMLDivElement
+}
+
+export function Hook() {
+    return class {
+        constructor() {
+            return {
+                ngOnInit() {
+                    console.log('init!')
+                }
+            } as any
+        }
+        ngDoCheck() {
+            console.log('check')
+        }
+    }
+}
+
+export function Test(this: Refs<TestComponent>) {
+    const increment = Action((value: number) => ({ value }))
+    const onIncrement = new Effect(increment).pipe(delay(1000), pluck("value"))
+
+    observe(increment, {
+        next(value) {
+            console.log("increment!", value)
+        },
+    })
+
+    observe(onIncrement, {
+        next(value) {
+            console.log("on increment!", value)
+        },
+    })
+
+    console.log("increment", increment)
+
+    return {
+        increment,
+    }
+}

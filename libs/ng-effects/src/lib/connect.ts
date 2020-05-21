@@ -8,19 +8,18 @@ import {
     IterableDiffer,
     IterableDiffers,
     KeyValueDiffer,
+    QueryList,
     SimpleChanges,
     Type,
     ViewContainerRef,
 } from "@angular/core"
 import {
-    Context,
     EffectHook,
-    EffectOptions,
+    CreateEffectOptions,
     LifecycleHook,
     OnInvalidate,
     Teardown,
 } from "./interfaces"
-import { CONNECTABLE } from "./constants"
 import { Subject } from "rxjs"
 import { getLifecycleHook, setLifecycleHook } from "./lifecycle"
 
@@ -28,11 +27,15 @@ type CleanupMap = Map<LifecycleHook, Set<Teardown>>
 
 const injectorMap = new WeakMap<Context, Injector>()
 const cleanupMap = new WeakMap<Context, CleanupMap>()
-const effects = new Map<EffectHook, EffectOptions>()
+const effects = new Map<EffectHook, CreateEffectOptions>()
 const hooksMap = new WeakMap<Context, Map<LifecycleHook, Set<EffectHook>>>()
 const schedulerMap = new WeakMap<Context, Subject<LifecycleHook | undefined>>()
 
 let activeContext: undefined | Context
+
+export const CONNECTABLE = new InjectionToken<ConnectableFunction[]>(
+    "CONNECTABLE",
+)
 
 export function throwMissingInjectorError(): never {
     throw new Error("[ngfx] Injector not found.")
@@ -100,30 +103,37 @@ export function getScheduler(
     )
 }
 
+export type Context = { [key: string]: any }
+
 export function setContext(context?: any) {
     activeContext = context
+}
+
+export interface FactoryType<T> extends Function {
+    (): T
 }
 
 export function inject<T>(
     token: Type<T> | AbstractType<T> | InjectionToken<T>,
     flags: InjectFlags,
 ): T | null
+export function inject<T>(token: FactoryType<T>): T
+export function inject<T>(token: FactoryType<T>, flags: InjectFlags,): T | null
 export function inject<T>(
     token: Type<T> | AbstractType<T> | InjectionToken<T>,
 ): T
-export function inject<T>(
-    token: Type<T> | AbstractType<T> | InjectionToken<T>,
-    flags?: InjectFlags,
-): T | null {
+export function inject(tokenOrDeps: any, flagsOrFn?: any): unknown {
     const injector = getInjector()
     const optional =
-        flags && Boolean(flags & InjectFlags.Optional) ? null : undefined
+        flagsOrFn && Boolean(flagsOrFn & InjectFlags.Optional)
+            ? null
+            : undefined
     // Workaround for https://github.com/angular/angular/issues/31776
-    if (flags) {
+    if (flagsOrFn) {
         let parent: Injector
         if (
-            Boolean(flags & InjectFlags.SkipSelf) ||
-            Boolean(flags & InjectFlags.Self)
+            Boolean(flagsOrFn & InjectFlags.SkipSelf) ||
+            Boolean(flagsOrFn & InjectFlags.Self)
         ) {
             try {
                 parent = injector.get(ViewContainerRef as Type<any>)
@@ -135,12 +145,14 @@ export function inject<T>(
                         " Related issue: https://github.com/angular/angular/issues/31776",
                 )
             }
-            if (Boolean(flags & InjectFlags.SkipSelf) && parent) {
-                return parent.get(token, optional)
+            if (Boolean(flagsOrFn & InjectFlags.SkipSelf) && parent) {
+                return parent.get(tokenOrDeps, optional)
             }
-            if (Boolean(flags & InjectFlags.Self)) {
-                const current: T = injector.get(token as any, null)
-                const parentExists = parent ? parent.get(token, null) : null
+            if (Boolean(flagsOrFn & InjectFlags.Self)) {
+                const current = injector.get(tokenOrDeps as any, null)
+                const parentExists = parent
+                    ? parent.get(tokenOrDeps, null)
+                    : null
                 if (optional === null && parentExists === current) {
                     return null
                 }
@@ -149,7 +161,9 @@ export function inject<T>(
                 } else {
                     throw new Error(
                         `EXCEPTION: No provider for ${
-                            "name" in token ? token.name : token.toString()
+                            "name" in tokenOrDeps
+                                ? tokenOrDeps.name
+                                : tokenOrDeps.toString()
                         }`,
                     )
                 }
@@ -157,7 +171,7 @@ export function inject<T>(
         }
     }
     try {
-        return injector.get(token, optional, flags)
+        return injector.get(tokenOrDeps, optional, flagsOrFn)
     } catch (e) {
         if (optional === null) {
             return optional
@@ -180,7 +194,7 @@ export function flush(cleanup: Set<Teardown>) {
 
 const invalidationsMap = new WeakMap<
     Context,
-    Map<Function, [Function, () => boolean, EffectOptions]>
+    Map<Function, [Function, () => boolean, CreateEffectOptions]>
 >()
 
 function getInvalidations(context: Context) {
@@ -229,7 +243,7 @@ export function stopEffect(context: Context, effect: Function) {
 export function runEffect(
     context: Context,
     effect: EffectHook,
-    config: EffectOptions,
+    config: CreateEffectOptions,
     cleanup: Set<Teardown>,
     differs: IterableDiffers,
 ) {
@@ -385,18 +399,20 @@ export function setup(context: Context) {
         CONNECTABLE,
         InjectFlags.Self | InjectFlags.Optional,
     )
-    const cleanup = cleanupMap.get(toRaw(context)) as Map<
-        LifecycleHook,
-        Set<Teardown>
-    >
+    const raw = toRaw(context)
+    const cleanup = cleanupMap.get(raw) as Map<LifecycleHook, Set<Teardown>>
+    const refs = toRefs(context)
 
     if (context.ngOnConnect) {
-        context.ngOnConnect()
+        const xtd = context.ngOnConnect(context, refs)
+        if (xtd) {
+            Object.assign(raw, xtd)
+        }
     }
 
     if (initializers) {
         for (const initializer of initializers) {
-            initializer(context)
+            initializer(context, refs)
         }
     }
 
@@ -512,7 +528,7 @@ export function createEffect(
     }
 }
 
-export function addEffect(fn: EffectHook, options: EffectOptions) {
+export function addEffect(fn: EffectHook, options: CreateEffectOptions) {
     if (getLifecycleHook()) {
         effects.set(fn, options)
     } else {
@@ -552,7 +568,7 @@ export function reactiveFactory<T extends object>(
     source: T,
     opts: { shallow?: boolean } = {},
 ): T {
-    return new Proxy<T>(source, {
+    return new Proxy<T>(toRaw(source), {
         get(target: T, p: PropertyKey, receiver: any): any {
             if (p === targetSymbol) {
                 return target
@@ -586,6 +602,9 @@ export function reactiveFactory<T extends object>(
             return value
         },
         set(target: T, p: PropertyKey, value: any, receiver: any): boolean {
+            if (value instanceof QueryList) {
+                value = reactiveFactory(context, value, { shallow: true })
+            }
             const success = Reflect.set(target, p, value, receiver)
             check(context)
             return success
@@ -646,4 +665,81 @@ export function destroy(context: any) {
     schedule(LifecycleHook.OnDestroy, context)
     setContext()
     setLifecycleHook()
+}
+
+const refSymbol = Symbol("Ref")
+
+function createRef<T>(value: T): Ref<T> {
+    function Ref(value?: T) {
+        if (arguments.length === 1) {
+            ref.value = value as T
+        }
+        return ref.value
+    }
+    Ref.value = unref(value as any)
+    Object.defineProperty(Ref, refSymbol, {})
+    const ref = reactiveFactory(getContext(), Ref)
+    return ref as Ref<T>
+}
+
+export type UnwrapRef<T> = T extends Ref<infer R> ? R : T
+
+export function Ref<T extends object>(
+    value: T,
+): T extends Ref<any> ? T : Ref<UnwrapRef<T>>
+export function Ref(value: boolean): Ref<boolean>
+export function Ref<T>(value: T): Ref<UnwrapRef<T>>
+export function Ref<T = any>(): Ref<T | undefined>
+export function Ref<T = any>(): Ref<T | undefined>
+export function Ref(value?: unknown): Ref<any> {
+    return createRef(value)
+}
+
+const refCache = new WeakMap<any, Map<PropertyKey, Ref<any>>>()
+
+export function toRefs<T extends object>(value: T): Refs<T> {
+    const cache =
+        refCache.get(value) || refCache.set(value, new Map()).get(value)!
+
+    return new Proxy(value, {
+        get(target: T, p: PropertyKey, receiver: any) {
+            if (cache.has(p)) {
+                return cache.get(p)
+            }
+            const ref = createRef(Reflect.get(target, p, receiver))
+            cache.set(p, ref)
+            return ref
+        },
+        set() {
+            return false
+        },
+    }) as Refs<T>
+}
+
+function isRef<T extends unknown>(value: T | Ref<any>): value is Ref<any> {
+    // noinspection SuspiciousTypeOfGuard
+    return value instanceof Object && Reflect.has(value, refSymbol)
+}
+
+export function unref<T>(value: T): T extends Ref<infer R> ? R : T {
+    return isRef(value) ? value.value : value
+}
+
+export interface OnConnect<T extends object = {}> {
+    ngOnConnect(props: T): Partial<T> | void
+}
+
+export type ConnectableFunction<T = any> = (props: T, refs: Refs<T>) => void
+
+export interface Ref<T extends any> {
+    <T extends object>(value: T): T extends Ref<any> ? T : Ref<UnwrapRef<T>>
+    (value: boolean): Ref<boolean>
+    <T>(value: T): Ref<UnwrapRef<T>>
+    <T = any>(): Ref<T | undefined>
+    (value: T): T
+    value: T
+}
+
+export type Refs<T> = {
+    readonly [key in keyof T]: Ref<T[key]>
 }

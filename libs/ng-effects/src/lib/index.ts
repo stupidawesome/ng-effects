@@ -7,8 +7,17 @@ export {
     afterViewInit,
     afterViewChecked,
     onDestroy,
+    toRefs,
+    toRaw,
+    Ref,
+    CONNECTABLE,
+    ConnectableFunction,
+    OnConnect,
+    Refs,
+    unref,
+    UnwrapRef,
 } from "./connect"
-export * from "./constants"
+export * from "./interfaces"
 export * from "./providers"
 export * from "./utils"
-export { Effect } from "./effect"
+export { Effect, Action, reject, ActionCreator } from "./effect"

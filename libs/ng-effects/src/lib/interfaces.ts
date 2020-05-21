@@ -1,14 +1,6 @@
 import { TeardownLogic } from "rxjs"
 
-export interface OnConnect {
-    ngOnConnect?(): void
-}
-
-export type ConnectableFunction<T = any> = (ctx: T) => void
-
 export type EffectHook = (...args: any[]) => Teardown
-
-export type Context = { [key: string]: any }
 
 export const enum LifecycleHook {
     OnConnect,
@@ -22,7 +14,15 @@ export const enum LifecycleHook {
     AfterViewChecked,
 }
 
-export interface EffectOptions {
+export interface ForEachObserver<T, U = T> {
+    closed?: boolean;
+    next?: (value: T) => void
+    error?: (err: any) => void
+    complete?: () => void
+    forEach: (value: U) => void
+}
+
+export interface CreateEffectOptions {
     watch?: boolean
     flush?: "pre" | "post" | "sync"
     invalidate: Function

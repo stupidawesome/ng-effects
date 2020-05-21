@@ -18,10 +18,10 @@ import {
     TestBed,
     tick,
 } from "@angular/core/testing"
-import { timer } from "rxjs"
+import { Observable, timer } from "rxjs"
 import { Component, InjectionToken } from "@angular/core"
 import { Connectable } from "../connectable.directive"
-import { watchEffect } from "../utils"
+import { accept, watchEffect } from "../utils"
 import { Effect } from "../effect"
 import { map } from "rxjs/operators"
 import fn = jest.fn
@@ -281,7 +281,7 @@ describe("Effect", () => {
         let subject, expected
 
         given: expected = fn()
-        given: subject = new Effect<string, number>()
+        given: subject = new Effect<[string, number]>()
 
         when: {
             subject.subscribe(expected)
@@ -295,8 +295,9 @@ describe("Effect", () => {
         let subject, expected
 
         given: expected = fn()
-        given: subject = new Effect<string, number>((source) =>
-            source.pipe(map((value) => +value)),
+        given: subject = new Effect(
+            accept<string>(),
+            map((value) => +value)
         )
 
         when: {

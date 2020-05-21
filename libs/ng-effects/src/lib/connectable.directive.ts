@@ -3,6 +3,7 @@ import {
     AfterContentInit,
     AfterViewChecked,
     AfterViewInit,
+    Directive,
     Inject,
     INJECTOR,
     Injector,
@@ -11,21 +12,10 @@ import {
     OnInit,
     SimpleChanges,
 } from "@angular/core"
-import { OnConnect } from "./interfaces"
-import {
-    changes,
-    connect,
-    contentChecked,
-    contentInit,
-    destroy,
-    init,
-    viewChecked,
-    viewInit,
-} from "./connect"
+import { changes, connect, contentChecked, contentInit, destroy, init, Refs, viewChecked, viewInit } from "./connect"
 
-export interface Connectable extends OnConnect {}
-
-export class Connectable
+@Directive()
+export abstract class Connectable
     implements
         OnChanges,
         OnInit,
@@ -38,7 +28,7 @@ export class Connectable
         return connect(this, injector)
     }
 
-    ngOnConnect?(): void
+    ngOnConnect?(props: this, refs: Refs<this>): void
 
     ngOnInit() {
         init(this)
