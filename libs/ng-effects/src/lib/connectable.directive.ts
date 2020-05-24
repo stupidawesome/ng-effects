@@ -12,7 +12,17 @@ import {
     OnInit,
     SimpleChanges,
 } from "@angular/core"
-import { changes, connect, contentChecked, contentInit, destroy, init, Refs, viewChecked, viewInit } from "./connect"
+import {
+    changes,
+    connect,
+    contentChecked,
+    contentInit,
+    destroy,
+    init,
+    Refs,
+    viewChecked,
+    viewInit,
+} from "./connect"
 
 @Directive()
 export abstract class Connectable

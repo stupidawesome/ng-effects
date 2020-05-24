@@ -5,6 +5,7 @@ import {
     AfterViewChecked,
     AfterViewInit,
     DoCheck,
+    EventEmitter,
     InjectFlags,
     InjectionToken,
     OnChanges,
@@ -15,13 +16,7 @@ import {
     ɵmarkDirty as markDirty,
     ɵɵdirectiveInject as directiveInject,
 } from "@angular/core"
-import {
-    asapScheduler,
-    isObservable,
-    Observable,
-    scheduled,
-    Subject,
-} from "rxjs"
+import { Observable, OperatorFunction } from "rxjs"
 
 interface Context {}
 export type CreateEffect = (onInvalidate: OnInvalidate) => void
@@ -119,10 +114,11 @@ function runInContext<T, U extends any[]>(
 }
 
 export class Ref<T> {
+    readonly __REF__ = true
     public value: T
     constructor(value?: T, shallow = false) {
         this.value = unref(value) as T
-        return reactiveFactory(this, { shallow })
+        return reactiveFactory(this, { shallow }) as any
     }
 }
 
@@ -150,7 +146,10 @@ export function unref<T>(ref: Ref<T> | T): T {
     return isRef(ref) ? ref.value : ref
 }
 
-function toRef<T extends object, U extends keyof T>(obj: T, key: U): Ref<T[U]> {
+export function toRef<T extends object, U extends keyof T>(
+    obj: T,
+    key: U,
+): Ref<T[U]> {
     return customRef((track, trigger) => {
         return {
             get() {
@@ -169,46 +168,30 @@ export type RefMap<T> = {
     [key in keyof T]: Ref<T>
 }
 
-function toRefs<T extends object>(obj: T): RefMap<T> {
+export function toRefs<T extends object>(obj: T): RefMap<T> {
     const map: any = {}
     for (const key of Object.keys(obj) as any[]) {
-        map[key] = toRef(obj, key)
+        map[key] = toRef(unref(obj), key)
     }
     return map
 }
 
-function bindRef(ctx: any, partial: any) {
-    watchEffect(
-        (onInvalidate) => {
-            for (const key in partial) {
-                if (partial.hasOwnProperty(key)) {
-                    ctx[key] = unref(partial[key])
-                }
-            }
-            onInvalidate(() => markDirty(ctx))
-        },
-        { flush: "sync" },
-    )
-
-    function checkRefs() {
-        for (const key in partial) {
-            if (partial.hasOwnProperty(key)) {
-                const value = ctx[key]
-                const ref = partial[key]
-                if (ref instanceof Ref) {
-                    if (ref.value !== value) {
-                        ref.value = value
-                    }
-                    continue
-                }
-                if (ref !== value) {
-                    partial[key] = value
-                }
-            }
+function bindRef(ctx: Context, key: PropertyKey, ref: any) {
+    let previousValue = ref.value
+    function checkRef() {
+        const refValue = ref.value
+        const viewValue = Reflect.get(ctx, key)
+        if (refValue !== previousValue) {
+            Reflect.set(ctx, key, refValue)
+            previousValue = refValue
+            markDirty(ctx)
+        } else if (viewValue !== previousValue) {
+            ref.value = viewValue
+            previousValue = viewValue
         }
     }
-
-    onCheck(checkRefs)
+    onCheck(checkRef)
+    Reflect.set(ctx, key, previousValue)
 }
 
 class WeakTriplet<T extends object, U, V> {
@@ -234,7 +217,7 @@ class WeakTriplet<T extends object, U, V> {
 
 type Flush = "pre" | "post" | "sync"
 
-export interface EffectOptions {
+export interface WatchEffectOptions {
     flush?: Flush
 }
 
@@ -306,12 +289,14 @@ function invalidate(phase: Lifecycle) {
 
 function createInvalidator(
     factory: CreateEffect,
-    options: EffectOptions,
+    options: WatchEffectOptions,
     context: Context,
     phase: Lifecycle,
 ): [(force?: boolean) => void, OnInvalidate] {
     const teardowns = new Set<() => void>()
     let running = true
+
+    onDestroy(() => stop(true))
 
     function restart() {
         if (running) {
@@ -343,6 +328,10 @@ function createInvalidator(
         } else {
             invalidated.set(context, options.flush ?? "post", restart)
         }
+        if (currentPhase === undefined && running) {
+            runInContext(context, Lifecycle.OnCheck, runHook)
+            markDirty(context)
+        }
     }
 
     invalidators.set(context, phase, stop)
@@ -365,7 +354,7 @@ type StopHandle = () => void
 
 export function createEffect(
     factory: CreateEffect,
-    options: EffectOptions = {},
+    options: WatchEffectOptions = {},
 ): StopHandle {
     const context = getContext()
     const phase = getPhase()
@@ -376,13 +365,15 @@ export function createEffect(
         phase,
     )
     runEffect(factory, onInvalidate, stop)
-    onDestroy(stop)
     return function stopHandler() {
         stop(true)
     }
 }
 
-export function watchEffect(factory: CreateEffect, options?: EffectOptions) {
+export function watchEffect(
+    factory: CreateEffect,
+    options?: WatchEffectOptions,
+) {
     return createEffect(factory, options)
 }
 
@@ -393,12 +384,12 @@ export function watch<T extends [Ref<any>, ...Ref<any>[]]>(
         previousValue: UnwrapRefs<T>,
         onInvalidate: OnInvalidate,
     ) => void,
-    options?: EffectOptions,
+    options?: WatchEffectOptions,
 ): StopHandle
 export function watch<T>(
     source: Ref<T>,
     observer: (value: T, previousValue: T, onInvalidate: OnInvalidate) => void,
-    options?: EffectOptions,
+    options?: WatchEffectOptions,
 ): StopHandle
 export function watch<T>(
     source: Ref<T> | Ref<T>[],
@@ -407,24 +398,24 @@ export function watch<T>(
         previousValue: T | T[],
         onInvalidate: OnInvalidate,
     ) => void,
-    options?: EffectOptions,
+    options?: WatchEffectOptions,
 ): StopHandle {
     let stopped = false
-    watchEffect((onInvalidate) => onInvalidate(() => (stopped = true)))
+    onDestroy(() => (stopped = true))
     if (Array.isArray(source)) {
         return watchEffect((onInvalidate) => {
-            if (stopped) return
             const previousValues = source.map((v) => v.value)
             onInvalidate(() => {
+                if (stopped) return
                 const values = source.map((v) => v.value)
                 observer(values, previousValues, onInvalidate)
             })
         }, options)
     } else {
         return watchEffect((onInvalidate) => {
-            if (stopped) return
             const previousValue = source.value
             onInvalidate(() => {
+                if (stopped) return
                 const value = source.value
                 observer(value, previousValue, onInvalidate)
             })
@@ -432,8 +423,24 @@ export function watch<T>(
     }
 }
 
+function assign(context: Context, partial: object | void): void {
+    if (!partial) {
+        return
+    }
+    if (isProxy(partial)) {
+        return assign(context, toRefs(partial))
+    }
+    for (const [key, ref] of Object.entries(partial)) {
+        if (ref instanceof Ref) {
+            bindRef(context, key, ref)
+        } else {
+            Reflect.set(context, key, ref)
+        }
+    }
+}
+
 function setup<T>(factory: () => Partial<T> | void) {
-    bindRef(getContext(), factory())
+    assign(getContext(), factory())
 }
 
 function runHook(changes?: SimpleChanges) {
@@ -486,25 +493,31 @@ function trigger(target: Context, key: PropertyKey) {
 function reactiveFactory<T extends object>(
     value: T,
     options: ReactiveOptions = {},
-): T {
+): UnwrapRefs<T> {
     if (proxyRefs.has(value)) {
         return proxyRefs.get(value)
     }
     const proxy = new Proxy(toRaw(value), {
-        get(target, property, receiver) {
-            const value = unref(Reflect.get(target, property, receiver))
+        get(target: any, property: any, receiver: any) {
+            if (property === PROXY) {
+                return target
+            }
             const descriptor = Reflect.getOwnPropertyDescriptor(
                 target,
                 property,
             )
-            if (!descriptor?.enumerable) {
-                return value
+            const value = unref(
+                descriptor
+                    ? Reflect.get(target, property, receiver)
+                    : target[property],
+            )
+            if (descriptor?.enumerable) {
+                track(target, property)
             }
-            if (property === PROXY) {
-                return target
+            if (proxyRefs.has(value)) {
+                return proxyRefs.get(value)
             }
-            track(target, property)
-            if (isObject(value)) {
+            if (isObject(value) || typeof value === "function") {
                 if (options.shallow) {
                     return value
                 }
@@ -526,9 +539,18 @@ function reactiveFactory<T extends object>(
             proxyRefs.delete(previous)
             return success
         },
+        apply(target: any, thisArg: any, argArray?: any): any {
+            return target.apply(toRaw(thisArg), argArray)
+        },
+        has(target: T, property: PropertyKey) {
+            if (property === PROXY) {
+                return true
+            }
+            return Reflect.has(target, property)
+        },
     })
     proxyRefs.set(value, proxy)
-    return proxy
+    return proxy as any
 }
 
 export function reactive<T extends object>(value: T) {
@@ -542,7 +564,7 @@ export function shallowReactive<T extends object>(value: T) {
 export function readonly<T extends { [key: string]: any }>(
     value: T,
 ): ImmutableObject<T> {
-    return reactiveFactory(value)
+    return reactiveFactory(value) as any
 }
 
 export function shallowReadonly<T extends { [key: string]: any }>(
@@ -556,7 +578,7 @@ export function computed<T>(options: {
     set: (val: T) => void
 }): Ref<T>
 export function computed<T>(getter: () => T): ReadonlyRef<T>
-export function computed(getterOrOptions: any): Ref<unknown> {
+export function computed(getterOrOptions: any): Ref<any> {
     let value: any
     const ref = customRef((track, trigger) => {
         return {
@@ -580,16 +602,19 @@ export function computed(getterOrOptions: any): Ref<unknown> {
         typeof getterOrOptions === "function" ? useGetter : useOptions,
         { flush: "sync" },
     )
+    Object.defineProperty(ref, "computed", {
+        value: true,
+    })
     return ref
 }
 
 const PROXY = Symbol()
 
-function toRaw<T extends object>(value: T): T {
+export function toRaw<T extends object>(value: T): T {
     return isProxy(value) ? Reflect.get(value, PROXY) : value
 }
 
-function isProxy<T extends object>(value: T): boolean {
+export function isProxy<T extends object>(value: T): boolean {
     return isObject(value) && Reflect.has(value, PROXY)
 }
 
@@ -602,7 +627,7 @@ type CustomRefFactory<T> = (
 }
 
 export function customRef<T>(factory: CustomRefFactory<T>): Ref<T> {
-    const ref = new Ref()
+    const ref = shallowRef()
     function trackRef() {
         track(ref, "value")
     }
@@ -610,35 +635,87 @@ export function customRef<T>(factory: CustomRefFactory<T>): Ref<T> {
         trigger(ref, "value")
     }
     Reflect.defineProperty(ref, "value", factory(trackRef, triggerRef))
-    return toRaw(ref) as Ref<T>
+    return ref as Ref<T>
 }
 
-export type UnwrapRef<T> = T extends Ref<infer R> ? R : T
+export type UnwrapRef<T> = T extends ActionCreator<infer A>
+    ? ActionCreator<A>
+    : T extends Ref<infer R>
+    ? R
+    : T
 
-export type UnwrapRefs<T> = {
+export type UnwrapRefs<T extends unknown> = {
     [key in keyof T]: UnwrapRef<T[key]>
 }
 
-export function action<T>(
-    fn: (...args: any[]) => any = (v) => v,
-): ((...args: any[]) => any) & Ref<any> {
-    let accepted = true
-    let trigger: any
-    let value: any
-    function reject(value: any) {
-        accepted = false
-        return value
-    }
-    function actionRef(...args: any[]) {
-        const result = fn(...args, reject)
-        if (accepted) {
-            value = result
-            trigger()
+export type ActionRef<T, U = T> = ActionCreator<T> & {
+    readonly __REF__: true
+    readonly value: U
+}
+
+export interface ActionBuilder<T, U = T, V = T>
+    extends Iterator<ActionRef<T, V>> {}
+
+export function action<T = void>(): ActionBuilder<T> {
+    return new ActionBuilder<T>()
+}
+
+function filter(fn: (value: any) => boolean) {
+    return function (value: any) {
+        if (fn(value)) {
+            return value
+        } else {
+            return REJECTED
         }
-        accepted = true
     }
-    const _ref = customRef((track, _trigger) => {
-        trigger = _trigger
+}
+
+const REJECTED = Symbol()
+
+interface ActionCreator<T> {
+    readonly __ACTION_REF__: true
+    (arg: T): void
+}
+
+export class ActionBuilder<T, U = T, V = T> {
+    *[Symbol.iterator](): Iterator<ActionRef<T, V>> {
+        const ops = this.ops
+        const ref = event()
+        function action(value?: any) {
+            for (const op of ops) {
+                value = op(value)
+                if (value === REJECTED) {
+                    return
+                }
+            }
+            ref.value = value
+        }
+
+        Object.defineProperty(action, "value", {
+            get(): any {
+                return ref.value
+            },
+        })
+
+        yield action as any
+    }
+
+    constructor(public ops: any[] = []) {}
+
+    map<W, X extends V>(fn: (arg: X) => W): ActionBuilder<T, U, W> {
+        return new ActionBuilder(this.ops.concat(fn))
+    }
+
+    filter<S extends V>(fn: (value: V) => value is S): ActionBuilder<T, U, S>
+    filter(fn: (value: V) => boolean): ActionBuilder<T, U, V>
+    filter(fn: (value: V) => boolean): ActionBuilder<T, U, V> {
+        return new ActionBuilder(this.ops.concat(filter(fn)))
+    }
+}
+
+function event() {
+    return customRef((track, trigger) => {
+        let value: any
         return {
             get() {
                 track()
@@ -646,74 +723,91 @@ export function action<T>(
             },
             set(val) {
                 value = val
+                trigger()
             },
         }
     })
-    Object.defineProperty(actionRef, "value", {
-        get() {
-            return _ref.value
-        },
-    })
-    return actionRef as any
 }
 
-class Effect<T> {
-    subject = new Subject()
-    constructor(action: Ref<T> | Observable<T>) {
-        if (isObservable(action)) {
-            scheduled(action, asapScheduler).subscribe(this.subject)
+class Effect<T> extends EventEmitter<T> {
+    private action: Ref<T> | Observable<T>
+
+    constructor(action: Ref<T> | Observable<T>, isAsync = true) {
+        super(isAsync)
+        this.action = action
+        onDestroy(() => this.complete())
+    }
+
+    // prettier-ignore
+    run(): [ActionRef<T>, ActionRef<any>, ActionRef<any>]
+    // prettier-ignore
+    run<A>(op1: OperatorFunction<T, A>): [ActionRef<A>, ActionRef<any>, ActionRef<void>]
+    // prettier-ignore
+    run<A, B>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>): [ActionRef<B>, ActionRef<any>, ActionRef<void>]
+    // prettier-ignore
+    run<A, B, C>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>): [ActionRef<C>, ActionRef<any>, ActionRef<void>]
+    // prettier-ignore
+    run<A, B, C, D>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>, op4: OperatorFunction<C, D>): [ActionRef<D>, ActionRef<any>, ActionRef<void>]
+    // prettier-ignore
+    run<A, B, C, D, E>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>, op4: OperatorFunction<C, D>, op5: OperatorFunction<D, E>): [ActionRef<E>, ActionRef<any>, ActionRef<void>]
+    // prettier-ignore
+    run<A, B, C, D, E, F>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>, op4: OperatorFunction<C, D>, op5: OperatorFunction<D, E>, op6: OperatorFunction<E, F>): [ActionRef<F>, ActionRef<any>, ActionRef<void>]
+    // prettier-ignore
+    run<A, B, C, D, E, F, G>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>, op4: OperatorFunction<C, D>, op5: OperatorFunction<D, E>, op6: OperatorFunction<E, F>, op7: OperatorFunction<F, G>): [ActionRef<G>, ActionRef<any>, ActionRef<void>]
+    // prettier-ignore
+    run<A, B, C, D, E, F, G, H>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>, op4: OperatorFunction<C, D>, op5: OperatorFunction<D, E>, op6: OperatorFunction<E, F>, op7: OperatorFunction<F, G>, op8: OperatorFunction<G, H>): [ActionRef<H>, ActionRef<any>, ActionRef<void>]
+    // prettier-ignore
+    run<A, B, C, D, E, F, G, H, I>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>, op4: OperatorFunction<C, D>, op5: OperatorFunction<D, E>, op6: OperatorFunction<E, F>, op7: OperatorFunction<F, G>, op8: OperatorFunction<G, H>, op9: OperatorFunction<H, I>): [ActionRef<I>, ActionRef<any>, ActionRef<void>]
+    // prettier-ignore
+    run<A, B, C, D, E, F, G, H, I>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>, op4: OperatorFunction<C, D>, op5: OperatorFunction<D, E>, op6: OperatorFunction<E, F>, op7: OperatorFunction<F, G>, op8: OperatorFunction<G, H>, op9: OperatorFunction<H, I>, ...operations: OperatorFunction<any, any>[]): [ActionRef<{}>, ActionRef<any>, ActionRef<void>]
+    run(...operators: any[]): any {
+        const subject = this
+        const source = (<any>subject.pipe)(...operators)
+        const [onNext] = action<any>()
+        const [onError] = action<any>()
+        const [onComplete] = action()
+
+        subscribe()
+
+        if ("subscribe" in this.action) {
+            this.action.subscribe(subject)
         } else {
-            watch(action, (value) => {
-                this.subject.next(value)
+            watch(this.action, (value) => {
+                subject.emit(value)
             })
         }
-        watchEffect((onInvalidate) =>
-            onInvalidate(() => this.subject.complete()),
-        )
-    }
 
-    complete() {
-        this.subject.complete()
-    }
-
-    run(...operators: any[]) {
-        let running = false
-        const subject = this.subject
-        const source = (<any>subject.pipe)(...operators)
         function next(value: any) {
             onNext(value)
         }
+
         function error(err: any) {
-            running = false
             onError(err)
-            trySubscribe()
+            if (!subject.isStopped) subscribe()
         }
+
         function complete() {
-            running = false
             onComplete()
-            trySubscribe()
+            if (!subject.isStopped) subscribe()
         }
-        const onNext = action()
-        const onError = action()
-        const onComplete = action()
-        function trySubscribe() {
-            if (running || subject.closed) {
-                return
-            }
-            running = true
+
+        function subscribe() {
             source.subscribe({
                 next,
                 error,
                 complete,
             })
         }
-        trySubscribe()
+
         return [onNext, onError, onComplete]
     }
 }
 
-export function effect<T>(ref: Ref<T> | Observable<T>): Effect<T> {
-    return new Effect(ref)
+export function effect<T>(
+    ref: Ref<T> | Observable<T>,
+    isAsync = true,
+): Effect<T> {
+    return new Effect(ref, isAsync)
 }
 
 export function Fx<T extends object>(factory: () => T): new () => UnwrapRefs<T>

@@ -297,7 +297,7 @@ describe("Effect", () => {
         given: expected = fn()
         given: subject = new Effect(
             accept<string>(),
-            map((value) => +value)
+            map((value) => +value),
         )
 
         when: {

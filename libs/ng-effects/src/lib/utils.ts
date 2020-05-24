@@ -1,4 +1,15 @@
-import { addDeps, createEffect, depsMap, getContext, getValues, inject, reactiveFactory, Ref, runWithDeps, targetSymbol } from "./connect"
+import {
+    addDeps,
+    createEffect,
+    depsMap,
+    getContext,
+    getValues,
+    inject,
+    reactiveFactory,
+    Ref,
+    runWithDeps,
+    targetSymbol,
+} from "./connect"
 import { LifecycleHook, OnInvalidate, StopHandle, Teardown } from "./interfaces"
 import { getLifecycleHook } from "./lifecycle"
 import { IterableDiffers } from "@angular/core"

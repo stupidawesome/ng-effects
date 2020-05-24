@@ -119,7 +119,8 @@ export type ActionArgs<T> = T extends ActionConstructor<infer R, any>
 export type ActionType<T> = T extends ActionConstructor<any, infer R>
     ? R
     : never
-export interface ActionCreator<U extends unknown, V extends any = object> extends Action {
+export interface ActionCreator<U extends unknown, V extends any = object>
+    extends Action {
     asObservable: () => Observable<V>
     (arg: U): V & Action
     (...args: U extends unknown[] ? U : never): V & Action
@@ -136,9 +137,12 @@ export function reject(): never {
     throw REJECT
 }
 
-export function Action<T extends ActionConstructor<any[], any> = ActionConstructor<unknown[], object>>(
-    create: T = noop,
-): ActionCreator<ActionArgs<T>, ActionType<T>> {
+export function Action<
+    T extends ActionConstructor<any[], any> = ActionConstructor<
+        unknown[],
+        object
+    >
+>(create: T = noop): ActionCreator<ActionArgs<T>, ActionType<T>> {
     const subject = new Subject()
     const symbol = Symbol()
     function Action(...args: any[]) {
@@ -149,7 +153,7 @@ export function Action<T extends ActionConstructor<any[], any> = ActionConstruct
             })
             subject.next(action)
             return action
-        } catch(e) {
+        } catch (e) {
             if (e !== REJECT) {
                 throw e
             }
@@ -167,9 +171,11 @@ export class EffectFactory<T extends any> extends Observable<T> {
     source: Observable<T>
 
     constructor(...actions: (Observable<T> | ActionCreator<any, T>)[]) {
-        actions = actions.map(action => "asObservable" in action ? action.asObservable() : action);
-        super((subscriber) => this.source.subscribe(subscriber));
-        const source = actions.length ? merge(...actions) : NEVER;
+        actions = actions.map((action) =>
+            "asObservable" in action ? action.asObservable() : action,
+        )
+        super((subscriber) => this.source.subscribe(subscriber))
+        const source = actions.length ? merge(...actions) : NEVER
         this.source = source.pipe<any>(share())
     }
 

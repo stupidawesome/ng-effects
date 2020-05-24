@@ -1,26 +1,38 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, QueryList, ViewChildren } from "@angular/core"
-import { action, computed, effect, Fx, reactive, ref, watch, watchEffect } from "./ngfx"
+import {
+    ChangeDetectionStrategy,
+    Component,
+    EventEmitter,
+    QueryList,
+    ViewChild,
+    ViewChildren,
+} from "@angular/core"
+import {
+    action,
+    computed,
+    effect,
+    Fx,
+    reactive,
+    ref,
+    watch,
+    watchEffect,
+} from "@ng9/ng-effects"
 import { delay, map } from "rxjs/operators"
 
 @Component({
     selector: "ngfx-test",
-    template: `
-        <div>
-            Num: {{ num }}
-        </div>
-    `,
+    template: ` <div>Num: {{ num }}</div> `,
     inputs: ["num"],
-    outputs: ["test"]
+    outputs: ["test"],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Test extends Fx(T) {
-}
+export class Test extends Fx(T) {}
 
 function T() {
     const num = ref(3)
     const test = new EventEmitter()
 
     watch(num, (val) => {
-        console.log('value!', num.value)
+        console.log("value!", num.value)
     })
 
     setInterval(() => {
@@ -29,7 +41,7 @@ function T() {
 
     return {
         num,
-        test
+        test,
     }
 }
 
@@ -38,39 +50,44 @@ function T() {
     template: `
         <p>Count: {{ count }}</p>
         <p>Offset: {{ offset }}</p>
-        <button (click)="increment(1)" #list>Increment</button>
-        <ngfx-test [num]="count * 5" (test)="count = 0"></ngfx-test>
+        <button (click)="increment(2)" #list>Increment</button>
+        <ngfx-test [num]="count * 5" (test)="count = 0" #test></ngfx-test>
     `,
     changeDetection: ChangeDetectionStrategy.OnPush,
     queries: {
-        list: new ViewChildren("list")
-    }
+        list: new ViewChildren("list"),
+        button: new ViewChild("list", { static: true }),
+        test: new ViewChild("test", { static: true }),
+    },
 })
 export class AppComponent extends Fx(App) {}
 
 function App() {
     const count = ref(10)
-    const offset = computed({
-        get: () => count.value * 2,
-        set: (val) => {
-            count.value = val - 1
-        },
-    })
+    const offset = computed(() => count.value * 2)
     const list = ref(new QueryList<any>())
-
-    const increment = action<number>()
+    const button = ref<HTMLElement>()
+    const test = ref<Test>()
+    const [increment] = action<number>().map(() => 3)
+    const map1 = new Map()
 
     const state = reactive({
         count,
-        list,
         offset,
-        increment
+        increment,
+        list,
+        button,
+        test,
+        map1,
     })
+
+    state.increment(2)
 
     const [onIncrement] = effect(increment).run(
         delay(1000),
         map((num) => num * 5),
     )
+
     watch(increment, (value) => {
         count.value += value
     })
@@ -81,14 +98,17 @@ function App() {
 
     watchEffect(() => {
         for (const div of list.value.toArray()) {
-            console.log('div', div)
+            console.log("div", div)
         }
     })
 
-    return {
-        count,
-        offset,
-        increment,
-        list
-    }
+    watch(button, (value) => {
+        console.log("button", value)
+    })
+
+    watch(test, (value) => {
+        console.log("test", value)
+    })
+
+    return state
 }

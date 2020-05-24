@@ -118,7 +118,7 @@ export function inject<T>(
     flags: InjectFlags,
 ): T | null
 export function inject<T>(token: FactoryType<T>): T
-export function inject<T>(token: FactoryType<T>, flags: InjectFlags,): T | null
+export function inject<T>(token: FactoryType<T>, flags: InjectFlags): T | null
 export function inject<T>(
     token: Type<T> | AbstractType<T> | InjectionToken<T>,
 ): T

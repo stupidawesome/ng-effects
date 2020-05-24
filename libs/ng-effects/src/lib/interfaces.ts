@@ -15,7 +15,7 @@ export const enum LifecycleHook {
 }
 
 export interface ForEachObserver<T, U = T> {
-    closed?: boolean;
+    closed?: boolean
     next?: (value: T) => void
     error?: (err: any) => void
     complete?: () => void
