@@ -5,7 +5,7 @@ import { Type } from "@angular/core"
 import { fakeAsync, tick } from "@angular/core/testing"
 import { State } from "../decorators"
 import { Connect } from "../connect"
-import { Effect } from "../../lib/effect"
+import { Effect } from "../effect"
 import objectContaining = jasmine.objectContaining
 
 describe("How to use effect bindCount using decorators", () => {

@@ -2731,7 +2731,7 @@
      *
      * @returns {lunr.Index}
      */
-    lunr.Builder.prototype.build = function () {
+    lunr.Builder.prototype.create = function () {
         this.calculateAverageFieldLengths()
         this.createFieldVectors()
         this.createTokenSet()

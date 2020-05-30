@@ -1,61 +1,22 @@
-import {
-    Component,
-    Inject,
-    InjectionToken,
-    INJECTOR,
-    Injector,
-    Input,
-    Optional,
-    Provider,
-    StaticProvider,
-    ViewContainerRef,
-} from "@angular/core"
-import { Connectable } from "../connectable.directive"
+import { Component, NgModule, Type } from "@angular/core"
 import { TestBed } from "@angular/core/testing"
 
-export const FAKE_INJECTOR = new InjectionToken<Injector>("FAKE_INJECTOR")
-
-// noinspection AngularMissingOrInvalidDeclarationInModule
-@Component({
-    selector: "app-wut",
-    template: ``,
-})
-export class ConnectedComponent extends Connectable {
-    @Input()
-    inputValue: any;
-
-    [key: string]: any
-
-    ngOnConnect(): void {}
-
-    constructor(
-        @Inject(INJECTOR) injector: Injector,
-        @Optional() @Inject(FAKE_INJECTOR) fakeInjector: Injector,
-        viewContainerRef: ViewContainerRef,
-    ) {
-        super(fakeInjector || injector)
-    }
-}
-
-export async function declare(...declarations: any[]) {
-    TestBed.configureTestingModule({
-        declarations,
+export function createFxComponent<T>(mockComponent: new () => T): Type<T> {
+    @Component({
+        selector: "fx",
+        template: ``,
     })
-}
-export async function provide(...providers: Provider[]) {
-    TestBed.configureTestingModule({
-        providers,
+    class MockComponent extends (mockComponent as any) {}
+
+    @NgModule({
+        declarations: [MockComponent],
+        exports: [MockComponent],
     })
-}
+    class MockModule {}
 
-export function createConnectedComponent(providers: Provider[] = []) {
-    return TestBed.overrideComponent(ConnectedComponent, {
-        set: {
-            providers,
-        },
-    }).createComponent(ConnectedComponent)
-}
+    TestBed.configureTestingModule({
+        imports: [MockModule],
+    })
 
-export function createInjector(providers: StaticProvider[] = []) {
-    return Injector.create({ parent: TestBed, providers })
+    return MockComponent as Type<T>
 }

@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core"
 import { getMetadata } from "../internals/metadata"
-import { Effect } from "../../lib/effect"
+import { Effect } from "../effect"
 
 describe("How to create effects", () => {
     it("should create an effects using the effect decorator", () => {

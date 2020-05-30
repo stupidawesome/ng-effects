@@ -6,7 +6,7 @@ import { of } from "rxjs"
 import { createDirective } from "./test-utils"
 import { Connect } from "../connect"
 import { Effects } from "../providers"
-import { Effect } from "../../lib/effect"
+import { Effect } from "../effect"
 
 describe("How to use Adapters to hook into effects", () => {
     it("should observe values emitted by effects", () => {

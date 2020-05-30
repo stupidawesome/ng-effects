@@ -7,7 +7,7 @@ import { DETECT_CHANGES, MARK_DIRTY } from "../internals/providers"
 import { Connect } from "../connect"
 import { State } from "../decorators"
 import { Effects, USE_EXPERIMENTAL_RENDER_API } from "../providers"
-import { Effect } from "../../lib/effect"
+import { Effect } from "../effect"
 import Mock = jest.Mock
 import fn = jest.fn
 

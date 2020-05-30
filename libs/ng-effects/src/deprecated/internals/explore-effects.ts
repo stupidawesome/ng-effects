@@ -6,7 +6,7 @@ import {
 import { Type } from "@angular/core"
 import { Context, Observe, State } from "../decorators"
 import { getMetadata } from "./metadata"
-import { Effect } from "../../lib/effect"
+import { Effect } from "../effect"
 
 export const effectMetadata = new Map<Type<any>, Set<EffectMetadata>>()
 

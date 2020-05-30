@@ -2,7 +2,7 @@ import { createSimpleComponent } from "./test-utils"
 import { ElementRef, Injectable, Provider, Renderer2 } from "@angular/core"
 import { Effects } from "../providers"
 import { HostRef } from "../host-ref"
-import { Effect } from "../../lib/effect"
+import { Effect } from "../effect"
 
 @Injectable()
 class EffectsWithSpecialTokens {

@@ -1,24 +1,16 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    Input,
-    NgModule,
-} from "@angular/core"
+import { ChangeDetectionStrategy, Component, NgModule } from "@angular/core"
 import { CommonModule } from "@angular/common"
-import {
-    $, Computed,
-    Connectable,
-    effect,
-    inject,
-    isOnDestroy,
-    onDestroy,
-    watchEffect,
-} from "@ng9/ng-effects"
 import { RouterModule } from "@angular/router"
 import { TodosService } from "./todos.service"
 import { Todo } from "./interfaces"
-import { HttpClient } from "@angular/common/http"
 import { subscribe } from "./utils"
+import { watchEffect } from "@ng9/ng-effects"
+import {
+    computed,
+    defineComponent,
+    inject,
+    ref,
+} from "../../../../libs/ng-effects/src/lib/ngfx"
 
 @Component({
     selector: "ngfx-todolist",
@@ -84,8 +76,8 @@ import { subscribe } from "./utils"
             <footer class="footer" *ngIf="todos.length">
                 <!-- This should be \`0 items left\` by default -->
                 <span class="todo-count"
-                    ><strong>{{ remaining() }}</strong> item{{
-                        remaining() === 1 ? "" : "s"
+                    ><strong>{{ remaining }}</strong> item{{
+                        remaining === 1 ? "" : "s"
                     }}
                     left</span
                 >
@@ -104,109 +96,113 @@ import { subscribe } from "./utils"
     `,
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TodolistComponent extends Connectable {
-    private Todos = inject(TodosService)
+export class TodolistComponent extends defineComponent(todolist) {}
 
-    todos: Todo[] = []
-    activeTodo: Todo | undefined
+function todolist() {
+    const Todos = inject(TodosService)
+    const todos = ref<Todo[]>([])
+    const activeTodo = ref<Todo>()
+    const remaining = computed(
+        () => todos.value.filter((todo) => !todo.completed).length,
+    )
 
-    @Input()
-    count = 0
-
-    remaining = Computed(() => this.todos.filter((todo) => !todo.completed).length)
-
-    createTodo(input: HTMLInputElement) {
-        this.Todos.create(input.value).subscribe((todo) => {
-            this.todos.unshift({
+    function createTodo(input: HTMLInputElement) {
+        Todos.create(input.value).subscribe((todo) => {
+            todos.value.unshift({
                 ...todo,
                 completed: false,
             })
-            this.todos = this.todos.slice()
         })
     }
 
-    deleteTodo(todo: Todo) {
-        subscribe(this.Todos.delete(todo), () => {
-            this.todos = this.todos.filter((item) => item.id !== todo.id)
+    function deleteTodo(todo: Todo) {
+        subscribe(Todos.delete(todo), () => {
+            todos.value = todos.value.filter((item) => item.id !== todo.id)
         })
     }
 
-    editTodo(todo: Todo) {
-        this.activeTodo = todo
+    function editTodo(todo: Todo) {
+        activeTodo.value = todo
     }
 
-    resetTodo(label: HTMLLabelElement, todo: Todo) {
+    function resetTodo(label: HTMLLabelElement, todo: Todo) {
         label.textContent = todo.title
     }
 
-    toggleTodo(todo: Todo) {
+    function toggleTodo(todo: Todo) {
         subscribe(
-            this.Todos.update({
+            Todos.update({
                 ...todo,
                 completed: !todo.completed,
             }),
             (updated) => {
                 // mutating array doesn't trigger change detection
-                this.todos.splice(this.todos.indexOf(todo), 1, updated)
+                todos.value.splice(todos.value.indexOf(todo), 1, updated)
                 // Create new array
-                this.todos = this.todos.slice()
+                todos.value = todos.value.slice()
                 // OR manually run change detection to update view
                 // markDirty(this)
             },
         )
     }
 
-    clearCompleted() {
-        const completed = this.todos.filter((todo) => todo.completed)
-        subscribe(this.Todos.delete(...completed), () => {
-            this.todos = this.todos.filter((todo) => !completed.includes(todo))
+    function clearCompleted() {
+        const completed = todos.value.filter((todo) => todo.completed)
+        subscribe(Todos.delete(...completed), () => {
+            todos.value = todos.value.filter(
+                (todo) => !completed.includes(todo),
+            )
         })
     }
 
-    updateTodo(title: string, todo: Todo) {
+    function updateTodo(title: string, todo: Todo) {
         todo.title = title
-        this.activeTodo = undefined
-        return this.Todos.update({
+        activeTodo.value = undefined
+        return Todos.update({
             ...todo,
             title,
         }).subscribe()
     }
 
-    toggleAll() {
-        if (this.todos.every((todo) => todo.completed)) {
-            for (const todo of this.todos) {
-                this.toggleTodo(todo)
+    function toggleAll() {
+        if (todos.value.every((todo) => todo.completed)) {
+            for (const todo of todos.value) {
+                toggleTodo(todo)
             }
         } else {
-            for (const todo of this.todos.filter((todo) => !todo.completed)) {
-                this.toggleTodo(todo)
+            for (const todo of todos.value.filter((todo) => !todo.completed)) {
+                toggleTodo(todo)
             }
         }
     }
 
-    ngOnConnect() {
-        const todos = inject(TodosService)
-
-        loadTodos: effect(() =>
-            todos.list().subscribe((todos) => {
-                this.todos = todos.slice(0, 10)
-            }),
-        )
-
-        // watchEffect is called once immediately after ngOnConnect and
-        // each time the dependencies change, _after_ the component has updated
-        logChanges: watchEffect((onInvalidate) => {
-            // emits whenever the todos ref changes
-            // NOTE: by default only shallow props are watched on `this`
-            console.log("todos changed", this.todos)
-
-            // this.todos = [] // this will cause expression change after check error
-
-            onInvalidate(() => {
-                // called when `this.todos` changes
-                console.log("invalidate!", isOnDestroy())
-            })
+    watchEffect((onInvalidate) => {
+        const sub = Todos.list().subscribe((values) => {
+            todos.value = values.slice(0, 10)
         })
+        onInvalidate(() => sub.unsubscribe())
+    })
+
+    watchEffect((onInvalidate) => {
+        console.log("todos changed", todos.value)
+
+        onInvalidate(() => {
+            console.log("invalidate!")
+        })
+    })
+
+    return {
+        todos,
+        activeTodo,
+        remaining,
+        createTodo,
+        deleteTodo,
+        editTodo,
+        resetTodo,
+        toggleTodo,
+        clearCompleted,
+        updateTodo,
+        toggleAll,
     }
 }
 

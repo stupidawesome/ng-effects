@@ -14,7 +14,7 @@ import {
 import { ComponentFixture, TestBed } from "@angular/core/testing"
 import { EffectOptions } from "../interfaces"
 import { Connect } from "../connect"
-import { Effect } from "../../lib/effect"
+import { Effect } from "../effect"
 import fn = jest.fn
 
 export function createDirective(
