@@ -1,122 +1,115 @@
-import { ConnectedComponent, createConnectedComponent, declare } from "./utils"
-import { $, Computed, reactive } from "../utils"
-import { ComponentFixture } from "@angular/core/testing"
-import fn = jest.fn
+import { computed, reactive, Ref, ref } from "../ngfx"
 import Mock = jest.Mock
+import fn = jest.fn
 
-describe("lifecycle hooks", () => {
-    beforeEach(() => declare(ConnectedComponent))
+describe("computed", () => {
+    it("should create a computed value", () => {
+        let subject, expected
 
-    it("should get compute values", () => {
-        let subject: ComponentFixture<ConnectedComponent>, expected, values
+        subject = computed(() => 1 + 2)
+        expected = 3
 
-        given: values = [0, 10, 15]
-        given: subject = createConnectedComponent()
-        given: subject.componentInstance.inputValue = 10
-        given: subject.componentInstance.computed = $(
-            () => subject.componentInstance.inputValue * 2,
-        )
-
-        for (const value of values) {
-            when: {
-                subject.componentInstance.inputValue = value
-                expected = subject.componentInstance.computed()
-            }
-
-            then: expect(expected).toBe(value * 2)
-        }
+        expect(subject.value).toBe(expected)
     })
 
-    it("should set computed values", () => {
-        let subject: ComponentFixture<ConnectedComponent>,
+    it("should be readonly", () => {
+        let subject: Ref<number>
+
+        subject = computed(() => 1 + 2)
+
+        expect(() => {
+            // @ts-ignore
+            subject.value = 10
+        }).toThrow()
+    })
+
+    it("should track reactive dependencies", () => {
+        let subject,
             expected,
-            computed,
-            values
+            ref1: Ref<number>,
+            ref2: { count: { value: number } }
 
-        given: values = [0, 10, 15]
-        given: subject = createConnectedComponent()
-        given: subject.componentInstance.inputValue = 10
-        given: computed = new Computed(
-            (value = 0) => subject.componentInstance.inputValue * 2 + value,
-        )
-        given: subject.componentInstance.computed = computed
+        ref1 = ref(2)
+        ref2 = reactive({ count: { value: 10 } })
+        subject = computed(() => ref1.value * ref2.count.value)
+        expected = 20
 
-        for (const value of values) {
-            when: {
-                subject.componentInstance.inputValue = value
-                expected = computed(value)
-            }
+        expect(subject.value).toBe(expected)
 
-            then: expect(expected).toBe(value * 2 + value)
-        }
+        ref1.value = 10
+        ref2.count.value = 5
+
+        expected = 50
+
+        expect(subject.value).toBe(expected)
     })
 
-    it("shouldn't recompute values", () => {
-        let subject: ComponentFixture<ConnectedComponent>,
-            expected: Mock,
-            computed
+    it("should only recalculate values that have changed", () => {
+        let subject1: Ref<any>,
+            subject2: Ref<any>,
+            subject3: Ref<any>,
+            value1: Ref<number>,
+            value2: any,
+            value3: any,
+            spy1: Mock,
+            spy2: Mock,
+            spy3: Mock
 
-        given: expected = fn()
-        given: subject = createConnectedComponent()
-        given: subject.componentInstance.inputValue = 10
-        given: computed = Computed((multiplier = 1) => {
-            expected()
-            return subject.componentInstance.inputValue * multiplier
+        spy1 = fn()
+        spy2 = fn()
+        spy3 = fn()
+        value1 = ref(5)
+        value2 = reactive({ count: { value: 10 } })
+        value3 = reactive({ text: "bogus" })
+        subject1 = computed(() => {
+            spy1()
+            return value1.value * 10
         })
-        given: subject.componentInstance.computed = computed
+        subject2 = computed(() => {
+            spy2()
+            return subject1.value + value2.count.value
+        })
+        subject3 = computed(() => {
+            spy3()
+            return value3.text + (subject1.value + subject2.value)
+        })
 
-        when: {
-            const inst = subject.componentInstance
-            computed() // x1
-            computed() // no change
-            computed(2) // x1
-            computed(2) // no change
-            inst.inputValue = 20
-            computed(2) // x1
-            computed(2) // no change
-            computed() // x1
-        }
+        // reading value should not compute property
+        void subject1.value
+        void subject2.value
+        void subject3.value
 
-        then: expect(expected).toHaveBeenCalledTimes(4)
+        expect(subject1.value).toBe(50)
+        expect(subject2.value).toBe(60)
+        expect(subject3.value).toBe("bogus110")
+        expect(spy1).toHaveBeenCalledTimes(1)
+        expect(spy2).toHaveBeenCalledTimes(1)
+        expect(spy3).toHaveBeenCalledTimes(1)
+
+        value1.value = 10
+
+        expect(subject1.value).toBe(100)
+        expect(subject2.value).toBe(110)
+        expect(subject3.value).toBe("bogus210")
+        expect(spy1).toHaveBeenCalledTimes(2)
+        expect(spy2).toHaveBeenCalledTimes(2)
+        expect(spy3).toHaveBeenCalledTimes(3)
     })
 
-    it("should chain compute values and recalculate when any dependency changes", () => {
-        let subject: any, expected, a: any, b: any, c: any, spy: Mock
+    it("should create a writable ref", () => {
+        let subject, expected: number
 
-        given: spy = fn()
-        given: createConnectedComponent()
-        given: subject = reactive({ value: 10, bogus: "BOGUS" })
-        given: a = $(() => {
-            spy()
-            return subject.value * 2
-        })
-        given: b = $(() => {
-            spy()
-            subject.bogus
-            return 20
-        })
-        given: c = $(() => {
-            spy()
-            return a() * 2 + b()
+        expected = 3
+        subject = computed({
+            get: () => expected,
+            set: (val) => (expected = val - 1),
         })
 
-        when: {
-            c() // ax1 bx1 cx1
-            c()
-            expected = c()
-            then: expect(expected).toBe(60)
-            then: expect(spy).toHaveBeenCalledTimes(3)
+        expect(subject.value).toBe(expected)
 
-            subject.value = 20
-            c() // ax1 bx0 cx1
-            c()
-            subject.bogus = "bogus"
-            c() // ax0 bx1 cx1
-            c()
-            expected = c()
-        }
+        subject.value = 10
 
-        then: expect(spy).toHaveBeenCalledTimes(7)
-        then: expect(expected).toBe(100)
+        expect(expected).toBe(10 - 1)
+        expect(subject.value).toBe(expected)
     })
 })

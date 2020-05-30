@@ -6,7 +6,7 @@ import { Connect } from "../connect"
 import { State } from "../decorators"
 import { Effects } from "../providers"
 import { Directive } from "@angular/core"
-import { Effect } from "../../lib/effect"
+import { Effect } from "../effect"
 import fn = jest.fn
 import Mock = jest.Mock
 

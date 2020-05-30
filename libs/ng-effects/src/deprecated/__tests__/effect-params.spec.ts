@@ -4,7 +4,7 @@ import { Connect } from "../connect"
 import { createDirective } from "./test-utils"
 import { Effects } from "../providers"
 import { Observable } from "rxjs"
-import { Effect } from "../../lib/effect"
+import { Effect } from "../effect"
 import Mock = jest.Mock
 import fn = jest.fn
 

@@ -11,7 +11,7 @@ import { EMPTY } from "rxjs"
 import { Connect } from "../connect"
 import { Directive } from "@angular/core"
 import { effectMetadata } from "../internals/explore-effects"
-import { Effect } from "../../lib/effect"
+import { Effect } from "../effect"
 
 describe("How to init effects", () => {
     it("should instantiate one effect on directives", () => {
