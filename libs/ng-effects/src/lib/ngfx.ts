@@ -5,6 +5,7 @@ import {
     AfterViewChecked,
     AfterViewInit,
     DoCheck,
+    inject as rootInject,
     InjectFlags,
     InjectionToken,
     Injector,
@@ -16,7 +17,6 @@ import {
     ɵmarkDirty as markDirty,
     ɵsetCurrentInjector as setCurrentInjector,
     ɵɵdirectiveInject as directiveInject,
-    inject as rootInject,
 } from "@angular/core"
 
 interface Context {}
@@ -699,12 +699,12 @@ export interface LifecycleHooks {
     ngOnDestroy(): void
 }
 
-export function fx<T extends object>(
+export function defineComponent<T extends object>(
     factory: () => T,
 ): new () => LifecycleHooks & UnwrapRefs<T>
-export function fx(factory: () => void): new () => LifecycleHooks
-export function fx<T extends object>(
-    factory: () => T | void,
+export function defineComponent(factory?: () => void): new () => LifecycleHooks
+export function defineComponent<T extends object>(
+    factory: () => T | void = () => {},
 ): new () => unknown {
     return class
         implements
@@ -745,3 +745,6 @@ export function fx<T extends object>(
         }
     }
 }
+
+export const defineDirective = defineComponent
+export const defineInjectable = defineComponent

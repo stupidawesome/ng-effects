@@ -1,26 +1,37 @@
 <img src="https://i.imgur.com/A1924dn.png" alt="" />
 
-Reactive hooks for Angular.
+Reactive hooks for Angular. Inspired by [Vue Composition API](https://composition-api.vuejs.org/).
 
+```html
+<div>Count: {{ count }}</div>
+<button (click)="increment()">Increment</button>
+```
 ```ts
+const App = defineComponent(() => {
+    const count = ref(0)
+    const countChange = new EventEmitter<number>()
+
+    function increment() {
+        count.value += 1
+    }
+
+    watchEffect(() => {
+        countChange.emit(count.value)
+    })
+
+    return {
+        count,
+        countChange,
+        increment,
+    }
+})
+
 @Component({
     selector: "app-root",
-    template: `
-        <div>Count: {{ count }}</div>
-    `,
+    inputs: ["count"],
+    outputs: ["countChange"]
 })
-export class AppComponent extends Connectable {
-    @Input()
-    count = 0
-
-    ngOnConnect() {
-        effect(() =>
-            interval(1000).subscribe(() =>
-                this.count += 1
-            )
-        )
-    }
-}
+export class AppComponent extends App {}
 ```
 
 ## Installation

@@ -3,33 +3,45 @@
 [.text-center]
 image::https://i.imgur.com/A1924dn.png[alt=Angular Effects, width=67%]
 
-== NgFx
+== Angular Effects
 
-Reactive hooks for Angular.
-
-[source,typescript]
-----
-@Component({
-    selector: "app-root",
-    template: `
-        <div>Count: {{ count }}</div>
-    `,
-})
-export class AppComponent extends Connectable {
-    @Input()
-    count = 0
-
-    ngOnConnect() {
-        effect(() =>
-            interval(1000).subscribe(() =>
-                this.count += 1
-            )
-        )
-    }
-}
-----
+Reactive hooks for Angular. Based on https://composition-api.vuejs.org/[Vue Composition API].
 
 NOTE: Looking for the previous (9.0.x) docs? https://github.com/stupidawesome/ng-effects/tree/master/docs[Click here].
+
+[source, html]
+----
+<div>Count: {{ count }}</div>
+<button (click)="increment()">Increment</button>
+----
+[source, typescript]
+----
+const App = defineComponent(() => {
+    const count = ref(0)
+    const countChange = new EventEmitter<number>()
+
+    function increment() {
+        count.value += 1
+    }
+
+    watchEffect(() => {
+        countChange.emit(count.value)
+    })
+
+    return {
+        count,
+        countChange,
+        increment,
+    }
+})
+
+@Component({
+    selector: "app-root",
+    inputs: ["count"],
+    outputs: ["countChange"]
+})
+export class AppComponent extends App {}
+----
 
 ## Installation
 

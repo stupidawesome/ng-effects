@@ -1,5 +1,29 @@
 = Changelog
 
+== 9.1.0-rc.7
+
+This release features a core rewrite that reduces the code footprint, fixes bugs and aligns more closely with the behaviour of Vue Composition API. Component classes now extend a base class produced by `defineComponent`, which takes a factory function analagous to the `setup` function from Vue. Directives and services receive similar treatment with `defineDirective` and `defineInjectable`. Refs are introduced, bringing the API coverage close to parity.
+
+=== Features
+
+- add `ref`, `shallowRef` and `customRef`
+- remove `effect` and `EffectFactory`
+- rename `Computed` to `computed`, remove `$` alias, rework with refs
+- add `readonly` and `shallowReadonly`
+- add `toRef`, `toRefs`, `isRef`, `unref` utils
+- remove `connectable` and `Connectable`
+- add `defineComponent`, `defineDirective` and `defineInjectable`
+- rework `inject` using `ɵsetCurrentInjector` and `ɵɵdirectiveInject`
+
+=== Misc
+
+- reduce bundle size
+- add more tests
+
+=== Bug fixes
+
+- ensure correct injector is used when injecting values in components and services
+
 == 9.1.0-rc.6
 
 === Features

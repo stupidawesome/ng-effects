@@ -1,25 +1,13 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    Input,
-    NgModule,
-    ViewChild,
-} from "@angular/core"
+import { ChangeDetectionStrategy, Component, NgModule } from "@angular/core"
 import { CommonModule } from "@angular/common"
 import { RouterModule } from "@angular/router"
 import { TodosService } from "./todos.service"
 import { Todo } from "./interfaces"
 import { subscribe } from "./utils"
-import {
-    Computed,
-    observe,
-} from "../../../../libs/ng-effects/src/lib/bak/utils"
-import { delay, pluck } from "rxjs/operators"
-import { Action } from "../../../../libs/ng-effects/src/deprecated/effect"
 import { watchEffect } from "@ng9/ng-effects"
 import {
     computed,
-    fx,
+    defineComponent,
     inject,
     ref,
 } from "../../../../libs/ng-effects/src/lib/ngfx"
@@ -108,7 +96,7 @@ import {
     `,
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TodolistComponent extends fx(todolist) {}
+export class TodolistComponent extends defineComponent(todolist) {}
 
 function todolist() {
     const Todos = inject(TodosService)

@@ -1,4 +1,4 @@
-import { fx, inject, reactive, Ref, ref, watch } from "../ngfx"
+import { defineComponent, inject, reactive, Ref, ref, watch } from "../ngfx"
 import {
     ChangeDetectionStrategy,
     Component,
@@ -35,7 +35,7 @@ describe("integration", () => {
             ></child>`,
             changeDetection: ChangeDetectionStrategy.OnPush,
         })
-        class Parent extends fx(parent) {
+        class Parent extends defineComponent(parent) {
             // can't use queries metadata because of Ivy bug
             // see: https://github.com/bennadel/Component-Queries-Ivy-Bug-Angular9
             // works in actual app though
@@ -53,7 +53,7 @@ describe("integration", () => {
             outputs: ["countChange"],
             changeDetection: ChangeDetectionStrategy.OnPush,
         })
-        class Child extends fx(child) {}
+        class Child extends defineComponent(child) {}
 
         @NgModule({
             declarations: [Parent, Child],

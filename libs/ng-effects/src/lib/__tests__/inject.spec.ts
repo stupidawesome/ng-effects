@@ -1,5 +1,5 @@
 import { createFxComponent } from "./utils"
-import { fx, inject } from "../ngfx"
+import { defineComponent, inject } from "../ngfx"
 import { TestBed } from "@angular/core/testing"
 import { ElementRef, InjectFlags, Type } from "@angular/core"
 import { BrowserModule } from "@angular/platform-browser"
@@ -21,7 +21,7 @@ describe("inject", () => {
         expected = ElementRef
         spy = fn()
         subject = createFxComponent(
-            fx(() => {
+            defineComponent(() => {
                 spy(inject(expected))
             }),
         )
@@ -34,14 +34,14 @@ describe("inject", () => {
     it("should use the R3Injector when used in module provided services", () => {
         let spy: Mock, subject, expected, provider: Type<any>
 
-        provider = fx(() => {
+        provider = defineComponent(() => {
             spy(inject(ElementRef, InjectFlags.Optional))
         })
 
         expected = null
         spy = fn()
         subject = createFxComponent(
-            fx(() => {
+            defineComponent(() => {
                 inject(provider)
             }),
         )
@@ -58,14 +58,14 @@ describe("inject", () => {
     it("should use the NodeInjector when used in component provided services", () => {
         let spy: Mock, subject, expected, provider: Type<any>
 
-        provider = fx(() => {
+        provider = defineComponent(() => {
             spy(inject(ElementRef, InjectFlags.Optional))
         })
 
         expected = any(ElementRef)
         spy = fn()
         subject = createFxComponent(
-            fx(() => {
+            defineComponent(() => {
                 inject(provider)
             }),
         )
@@ -88,18 +88,18 @@ describe("inject", () => {
             provider: Type<any>,
             provider2: Type<any>
 
-        provider2 = fx(() => {
+        provider2 = defineComponent(() => {
             spy(inject(ElementRef, InjectFlags.Optional))
         })
 
-        provider = fx(() => {
+        provider = defineComponent(() => {
             inject(provider2)
         })
 
         expected = null
         spy = fn()
         subject = createFxComponent(
-            fx(() => {
+            defineComponent(() => {
                 inject(provider)
             }),
         )

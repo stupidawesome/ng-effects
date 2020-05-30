@@ -7,8 +7,8 @@ import {
     QueryList,
 } from "@angular/core"
 import {
-    afterViewInit,
     $,
+    afterViewInit,
     Connectable,
     connectable,
     effect,
@@ -44,12 +44,15 @@ export const MyConnectable = connectable<ConnectableComponent>((ctx) => {
         // console.log(ctx.children)
     })
 
-    watchEffect(() => {
-        ctx.countChange(ctx.count)
-        return timer(1000).subscribe(() => {
-            ctx.incrementCount()
-        })
-    }, { flush: "sync" })
+    watchEffect(
+        () => {
+            ctx.countChange(ctx.count)
+            return timer(1000).subscribe(() => {
+                ctx.incrementCount()
+            })
+        },
+        { flush: "sync" },
+    )
 })
 
 export const TEST = new InjectionToken<number>("TEST")

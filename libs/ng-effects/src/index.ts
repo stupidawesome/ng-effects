@@ -27,7 +27,7 @@ export {
     toRef,
     ref,
     OnInvalidate,
-    fx,
+    defineComponent,
     Immutable,
     ImmutableArray,
     ImmutableMap,

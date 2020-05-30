@@ -14,9 +14,8 @@ import {
     CustomEffectDecorator,
     DefaultEffectDecorator,
 } from "./internals/interfaces"
-import { from, merge, NEVER, Observable, OperatorFunction, Subject } from "rxjs"
+import { Observable } from "rxjs"
 import { defineMetadata } from "./internals/metadata"
-import { share } from "rxjs/operators"
 
 /**
  * @deprecated Will be replaced by composition API in 10.0.0

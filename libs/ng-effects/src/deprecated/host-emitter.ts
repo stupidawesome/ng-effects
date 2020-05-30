@@ -4,7 +4,7 @@ import { Callable } from "./internals/callable"
 import { apply } from "./internals/apply"
 
 /**
- * @deprecated Will be replaced by `new Effect()` in 10.0.0
+ * @deprecated Will be removed in 10.0.0
  */
 export interface HostEmitter<T> extends Subject<T> {
     (): void
@@ -13,7 +13,7 @@ export interface HostEmitter<T> extends Subject<T> {
 }
 
 /**
- * @deprecated Will be replaced by `new Effect()` in 10.0.0
+ * @deprecated Will be removed in 10.0.0
  */
 export class HostEmitter<T> extends Callable<(next: T) => void> {
     // noinspection JSUnusedLocalSymbols

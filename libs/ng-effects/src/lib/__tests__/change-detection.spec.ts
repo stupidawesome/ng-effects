@@ -1,5 +1,4 @@
-import { createEffect, fx, reactive } from "../ngfx"
-import { Subject } from "rxjs"
+import { createEffect, defineComponent, reactive } from "../ngfx"
 import { createFxComponent } from "./utils"
 import {
     ComponentFixture,
@@ -20,7 +19,7 @@ describe("change detection", () => {
             count: 0,
         })
         component = createFxComponent(
-            fx(() => {
+            defineComponent(() => {
                 createEffect(() => {
                     void state.count
                 })
@@ -55,7 +54,7 @@ describe("change detection", () => {
             count: 0,
         })
         component = createFxComponent(
-            fx(() => {
+            defineComponent(() => {
                 return state
             }),
         )

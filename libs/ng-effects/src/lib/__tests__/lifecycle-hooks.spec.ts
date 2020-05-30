@@ -1,6 +1,6 @@
 import {
     createEffect,
-    fx,
+    defineComponent,
     LifecycleHooks,
     onChanges,
     onCheck,
@@ -42,7 +42,7 @@ describe("lifecycle hooks", () => {
             subject = fn()
             expected = 3
 
-            component = fx(() => {
+            component = defineComponent(() => {
                 hook(subject.bind(null))
                 hook(subject.bind(null))
                 hook(subject.bind(null))
@@ -61,7 +61,7 @@ describe("lifecycle hooks", () => {
             invalidate = fn()
             expected = 9
 
-            component = new (fx(() => {
+            component = new (defineComponent(() => {
                 for (let i = 3; i > 0; i--) {
                     hook(() =>
                         createEffect(
