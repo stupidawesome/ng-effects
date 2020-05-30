@@ -4,11 +4,11 @@
 :idseparator: -
 :example-caption!:
 
-NOTE: For brevity, this document only refers to components. Most of these APIs can be applied to directives as well.
+NOTE: For brevity, this document only refers to components. Most of these APIs can be applied to directives and services as well.
 
 == `defineComponent`
 
-_aliases:_ `defineDirective`, `defineInjectable`.
+_alias:_ `defineDirective`.
 
 The `defineComponent` function is the main entry point for using the Composition API inside components.
 
@@ -906,3 +906,6 @@ const reactiveFoo = reactive(foo)
 console.log(toRaw(reactiveFoo) === foo) // true
 ----
 
+== Prior Arts
+
+This library and its documentation were inspired by https://composition-api.vuejs.org/api.html[Vue Composition API]

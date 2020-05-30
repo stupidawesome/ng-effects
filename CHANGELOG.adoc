@@ -14,6 +14,7 @@ This release features a core rewrite that reduces the code footprint, fixes bugs
 - remove `connectable` and `Connectable`
 - add `defineComponent`, `defineDirective` and `defineInjectable`
 - rework `inject` using `ɵsetCurrentInjector` and `ɵɵdirectiveInject`
+- rename and add missing lifecycle methods
 
 === Misc
 
