@@ -1,7 +1,7 @@
 :toc:
 :toc-placement!:
 [.text-center]
-image::https://i.imgur.com/A1924dn.png[alt=Angular Effects, width=67%]
+image::https://i.imgur.com/ty4iIj3.png[alt=Angular Effects]
 
 == Angular Effects
 
@@ -9,14 +9,16 @@ Reactive hooks for Angular. Based on https://composition-api.vuejs.org/[Vue Comp
 
 NOTE: Looking for the previous (9.0.x) docs? https://github.com/stupidawesome/ng-effects/tree/master/docs[Click here].
 
-[source, html]
-----
-<div>Count: {{ count }}</div>
-<button (click)="increment()">Increment</button>
-----
 [source, typescript]
 ----
-const App = defineComponent(() => {
+@Component({
+    selector: "app-root",
+    inputs: ["count"],
+    outputs: ["countChange"]
+})
+export class AppComponent extends defineComponent(setup) {}
+
+function setup() {
     const count = ref(0)
     const countChange = new EventEmitter<number>()
 
@@ -33,14 +35,7 @@ const App = defineComponent(() => {
         countChange,
         increment,
     }
-})
-
-@Component({
-    selector: "app-root",
-    inputs: ["count"],
-    outputs: ["countChange"]
-})
-export class AppComponent extends App {}
+}
 ----
 
 ## Installation

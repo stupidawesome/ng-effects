@@ -1,13 +1,16 @@
-<img src="https://i.imgur.com/A1924dn.png" alt="" />
+<img src="https://i.imgur.com/ty4iIj3.png" alt="Reactive hooks for Angular." />
 
 Reactive hooks for Angular. Inspired by [Vue Composition API](https://composition-api.vuejs.org/).
 
-```html
-<div>Count: {{ count }}</div>
-<button (click)="increment()">Increment</button>
-```
 ```ts
-const App = defineComponent(() => {
+@Component({
+    selector: "app-root",
+    inputs: ["count"],
+    outputs: ["countChange"]
+})
+export class AppComponent extends defineComponent(setup) {}
+
+function setup() {
     const count = ref(0)
     const countChange = new EventEmitter<number>()
 
@@ -24,14 +27,7 @@ const App = defineComponent(() => {
         countChange,
         increment,
     }
-})
-
-@Component({
-    selector: "app-root",
-    inputs: ["count"],
-    outputs: ["countChange"]
-})
-export class AppComponent extends App {}
+}
 ```
 
 ## Installation

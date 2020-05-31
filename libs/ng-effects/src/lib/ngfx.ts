@@ -235,7 +235,7 @@ class LinkedList<T extends object, U, V> {
     }
 }
 
-type Flush = "pre" | "post" | "sync"
+export type Flush = "pre" | "post" | "sync"
 
 export interface WatchEffectOptions {
     flush?: Flush
@@ -403,21 +403,21 @@ export function watchEffect(
     return createEffect(factory, options)
 }
 
-function readValues(source: (Ref<any> | (() => any))[]) {
+export function readValues(source: (Ref<any> | (() => any))[]) {
     return source.map(readValue)
 }
 
-function readValue(ref: any) {
+export function readValue(ref: any) {
     return typeof ref === "function" ? ref() : ref.value
 }
 
-type WatchValues<T> = {
+export type WatchSource<T> = Ref<T> | (() => T)
+
+export type WatchValues<T> = {
     [key in keyof T]: T[key] extends () => infer R ? R : UnwrapRef<T[key]>
 }
 
-export function watch<
-    T extends [Ref<any> | (() => any), ...(Ref<any> | (() => any))[]]
->(
+export function watch<T extends [WatchSource<any>, ...WatchSource<any>[]]>(
     source: T,
     observer: (
         value: WatchValues<T>,
@@ -427,12 +427,12 @@ export function watch<
     options?: WatchEffectOptions,
 ): StopHandle
 export function watch<T>(
-    source: Ref<T> | (() => T),
+    source: WatchSource<T>,
     observer: (value: T, previousValue: T, onInvalidate: OnInvalidate) => void,
     options?: WatchEffectOptions,
 ): StopHandle
 export function watch<T>(
-    source: Ref<T> | (() => T) | (Ref<T> | (() => T))[],
+    source: WatchSource<T> | WatchSource<T>[],
     observer: (
         value: T | T[],
         previousValue: T | T[],
@@ -508,7 +508,7 @@ function runHook(changes?: SimpleChanges) {
 
 const proxyRefs = new WeakMap()
 
-function isObject(value: any): value is object {
+export function isObject(value: any): value is object {
     return typeof value === "object" && value !== null
 }
 

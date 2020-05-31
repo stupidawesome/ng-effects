@@ -36,7 +36,7 @@ function setup() {
 
 ----
 
-Note that refs returned from setup are automatically unwrapped when accessed in the template so there's no need for .value in templates.
+Note that refs returned from setup are automatically unwrapped when accessed in the template so there's no need for `.value` in templates.
 
 - *Arguments*
 
@@ -149,7 +149,7 @@ NOTE: `readonly` is only enforced at compile time using deep readonly types. It 
 
 === `ref`
 
-Takes an inner value and returns a reactive and mutable ref object. The ref object has a single property .value that points to the inner value.
+Takes an inner value and returns a reactive and mutable ref object. The ref object has a single property `.value` that points to the inner value.
 
 [source, typescript]
 ----
@@ -273,7 +273,7 @@ plusOne.value = 1
 console.log(count.value) // 0
 ----
 
-- *Typings*
+- *Typing*
 
 [source, typescript]
 ----
@@ -416,7 +416,7 @@ watchEffect(
 )
 ----
 
-- Typing
+- *Typing*
 
 [source, typescript]
 ----
@@ -572,7 +572,7 @@ function setup() {
 
 `inject` accepts optional `InjectFlags` as a second argument. These are used to control dependency resolution or allow providers to be optional. When used with `InjectFlags.Optional`, default values can be passed using the https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html#nullish-coalescing[nullish coalescing operator].
 
-Injection Reactivity
+- *Injection Reactivity*
 
 To retain reactivity between provided and injected values, a ref can be used:
 
@@ -587,7 +587,7 @@ To retain reactivity between provided and injected values, a ref can be used:
 export class Ancestor {}
 ----
 
-- Typing
+- *Typing*
 
 [source, typescript]
 ----
