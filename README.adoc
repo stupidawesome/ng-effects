@@ -4,7 +4,7 @@
 image::https://i.imgur.com/ty4iIj3.png[alt=Angular Effects]
 
 ++++
-<p align="center">Reactivity system for Angular based on Vue Composition API.</p>
+<p align="center">Reactivity system for Angular. Based on Vue Composition API.</p>
 <hr>
 <p align="center"><b>📝  <a href="https://ngfx.io" target="_blank">API Reference</a> &nbsp;&nbsp; ⚡ <a href="https://stackblitz.com/edit/ng-effects" target="_blank">StackBlitz</a> &nbsp;&nbsp; ⭐ <a href="https://github.com/stupidawesome/ng-effects/blob/master/CHANGELOG.adoc" target="_blank">Changelog</a></b></center></p>
 <hr>
