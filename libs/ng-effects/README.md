@@ -2,10 +2,9 @@
 
 <img src="https://i.imgur.com/ty4iIj3.png" alt="Reactive hooks for Angular." />
 
-
-<p><center>Reactivity system for Angular based on Vue Composition API.</center></p>
+<p align="center">Reactivity system for Angular. Based on Vue Composition API.</p>
 <hr>
-<p><center><b>⭐ <a href="https://ngfx.io" target="_blank">Github</a> &nbsp;&nbsp;  📝  <a href="https://ngfx.io" target="_blank">API Reference</a> &nbsp;&nbsp; ⚡ <a href="https://stackblitz.com/edit/ng-effects" target="_blank">StackBlitz</a></b></center></p>
+<p align="center">⭐ <a href="https://github.com/stupidawesome/ng-effects" target="_blank">Github</a> &nbsp;&nbsp; <b>📝  <a href="https://ngfx.io" target="_blank">API Reference</a> &nbsp;&nbsp; ⚡ <a href="https://stackblitz.com/edit/ng-effects" target="_blank">StackBlitz</a></b></center></p>
 <hr>
 
 ```ts

@@ -44,5 +44,5 @@ export class AppComponent extends defineComponent(() => {
 link:https://www.npmjs.com/package/ng-effects[Install via NPM]
 
 ```bash
-npm install ng-effects@next
+npm install ng-effects
 ```
