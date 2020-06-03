@@ -9,9 +9,9 @@ import {
     reactive,
     toRefs,
     watchEffect,
+    inject
 } from "@ng9/ng-effects"
 import { mergeMap } from "rxjs/operators"
-import { inject } from "../../../../libs/ng-effects/src/lib/ngfx"
 import { of, throwError } from "rxjs"
 
 export class AppService extends defineInjectable(() => {

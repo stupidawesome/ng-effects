@@ -18,11 +18,11 @@ import {
     ɵsetCurrentInjector as setCurrentInjector,
     ɵɵdirectiveInject as directiveInject,
 } from "@angular/core"
-import { Ref, toRefs, UnwrapRefs } from "./ref"
-import { watch } from "./effect"
 import { Context, Lifecycle, LifecycleHooks } from "./interfaces"
 import { isProxy } from "./utils"
 import { onCheck, runHook } from "./lifecycle"
+import { Ref, toRefs, UnwrapRefs } from "./ref"
+import { watch } from "./effect"
 
 const rootContext = {}
 let activeContext: Context = rootContext
