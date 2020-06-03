@@ -1,6 +1,7 @@
-import { Ref, ref, watch } from "../ngfx"
 import Mock = jest.Mock
 import fn = jest.fn
+import { ref, Ref } from "../ref"
+import { watch } from "../effect"
 
 describe("watch", () => {
     it("should watch a single ref", () => {

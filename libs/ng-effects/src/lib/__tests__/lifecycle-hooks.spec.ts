@@ -1,7 +1,4 @@
 import {
-    createEffect,
-    defineComponent,
-    LifecycleHooks,
     onChanges,
     onCheck,
     onContentChecked,
@@ -10,7 +7,10 @@ import {
     onInit,
     onViewChecked,
     onViewInit,
-} from "../ngfx"
+} from "../lifecycle"
+import { LifecycleHooks } from "../interfaces"
+import { defineComponent } from "../ngfx"
+import { createEffect } from "../effect"
 import fn = jest.fn
 import Mock = jest.Mock
 

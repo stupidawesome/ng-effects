@@ -1,17 +1,9 @@
-import {
-    from,
-    interval,
-    Notification,
-    Observable,
-    of,
-    throwError,
-    timer,
-} from "rxjs"
+import { from, interval, Notification, of, throwError, timer } from "rxjs"
 import { observe, observeError } from "../rx"
-import fn = jest.fn
-import Mock = jest.Mock
 import { fakeAsync, flush, tick } from "@angular/core/testing"
 import { repeat } from "rxjs/operators"
+import fn = jest.fn
+import Mock = jest.Mock
 
 describe("observe", () => {
     it("should subscribe to the source to an observer", fakeAsync(() => {

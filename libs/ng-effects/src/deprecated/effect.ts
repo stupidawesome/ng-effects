@@ -16,6 +16,7 @@ import {
 } from "./internals/interfaces"
 import { Observable } from "rxjs"
 import { defineMetadata } from "./internals/metadata"
+import { Effect as EffectSubject } from "../lib/rx"
 
 /**
  * @deprecated Will be replaced by composition API in 10.0.0
@@ -93,6 +94,6 @@ function EffectDecorator(...args: any[]): any {
     }
 }
 
-type InteropEffect = typeof EffectDecorator
+export type Effect<T, U = T> = EffectSubject<T, U>
 
-export const Effect: InteropEffect = EffectDecorator as InteropEffect
+export const Effect = EffectDecorator

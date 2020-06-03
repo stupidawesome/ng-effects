@@ -1,4 +1,3 @@
-import { createEffect, defineComponent, reactive } from "../ngfx"
 import { createFxComponent } from "./utils"
 import {
     ComponentFixture,
@@ -6,6 +5,9 @@ import {
     TestBed,
     tick,
 } from "@angular/core/testing"
+import { reactive } from "../reactive"
+import { defineComponent } from "../ngfx"
+import { createEffect } from "../effect"
 
 describe("change detection", () => {
     it("should mark the view dirty when effects are invalidated", fakeAsync(() => {

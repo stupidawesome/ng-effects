@@ -1,8 +1,8 @@
 import { Effect, effect, observe, observeError } from "../rx"
 import { fakeAsync, flush, tick } from "@angular/core/testing"
-import { delay, map, mergeMap, switchMap } from "rxjs/operators"
-import fn = jest.fn
+import { delay, map, mergeMap } from "rxjs/operators"
 import { of, throwError } from "rxjs"
+import fn = jest.fn
 
 describe("effect", () => {
     it("should create an effect", () => {

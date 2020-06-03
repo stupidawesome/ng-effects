@@ -1,5 +1,93 @@
 = Changelog
 
+== 9.1.0
+
+****
+I have decided to release this version as it is so that future work can be directed towards the upcoming release of Angular 10. The upstream library this is based on (`@vue/reactivity`) is still in BETA and a number of changes have been made to make it compatible with Angular, some of which depend on undocumented private APIs. *If you spot a mistake or get stuck, please open an issue*.
+****
+
+This minor release introduces a Composition API similar to `@vue/reactivity`, with special considerations for Angular and RxJS interop in particular. Key features like effect invalidation, lifecycle hooks and reactivity have been replicated in terms of the API, with some minor changes to make it fit with how Angular's component lifecycle and change detection process works.
+
+This is still a work in progress!
+
+NOTE: The 9.0.x decorator API has been deprecated and will be removed in 10.0.0.
+
+Example illustrating some core APIs:
+
+[source, typescript]
+--
+import { computed, defineComponent, defineInjectable, inject, observe, ref } from "ng-effects"
+
+@Injectable({ providedIn: "root" })
+export class ApiService extends defineInjectable(() => {
+    const http = inject(HttpClient)
+
+    function loadData(id: number) {
+        return http.get<{ name: string }[]>(`http://www.example.com/api/entity/${id}`)
+    }
+
+    return {
+        loadData
+    }
+}) {}
+
+@Component({
+    selector: "app-root",
+    inputs: ["count"]
+})
+export class AppRoot extends defineComponent(() => {
+    const count = ref(0)
+    const countChange = new EventEmitter<number>()
+    const double = computed(() => count.value * 2)
+    const { loadData } = inject(ApiService)
+
+    const onLoadData = effect<number>().pipe(
+        exhaustMap(loadData)
+    )
+
+    function increment() {
+        count.value += 1
+        onLoadData.next(count.value)
+    }
+
+    watchEffect((onInvalidate) => {
+        console.log(count.value)
+        // effect invalidation callback
+        onInvalidate(() => countChange.next(count.value))
+    })
+
+    observe(onLoadData, (list) => {
+        for (item of list) {
+            console.log(item.name)
+        }
+    })
+
+    return {
+        count,
+        double,
+        increment
+    }
+}) {}
+--
+
+=== Features
+
+- use same `reactive` and `readonly` implementation as `@vue/reactivity`
+- add `effect` factory
+- add `observe` hook
+- add `observeError` hook
+- add `fromRef` util
+
+=== Bug fixes
+
+- fix some incorrect types when unwrapping refs
+- don't unwrap refs returned from services
+- ensure effects run synchronously when used outside of a view context
+
+=== Misc
+
+- copy `@vue/reactivity` specs for `reactive`, `ref` and `computed`
+
 == 9.1.0-rc.7
 
 This release features a core rewrite that reduces the code footprint, fixes bugs and aligns more closely with the behaviour of Vue Composition API. Component classes now extend a base class produced by `defineComponent`, which takes a factory function analagous to the `setup` function from Vue. Directives and services receive similar treatment with `defineDirective` and `defineInjectable`. Refs are introduced, bringing the API coverage close to parity.

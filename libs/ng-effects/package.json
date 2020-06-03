@@ -1,6 +1,7 @@
 {
     "name": "ng-effects",
-    "version": "9.1.0-rc.7",
+    "description": "Reactivity system for Angular. Based on Vue Composition API.",
+    "version": "9.1.0-rc.8",
     "peerDependencies": {
         "@angular/common": "^9.0.0",
         "@angular/core": "^9.0.0",
@@ -12,6 +13,7 @@
         "state management",
         "rxjs",
         "effects",
+        "reactive",
         "hooks"
     ],
     "homepage": "https://ngfx.io",

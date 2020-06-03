@@ -1,8 +1,9 @@
-import { defineComponent, Ref, ref } from "../ngfx"
 import { Observable } from "rxjs"
 import { fromRef } from "../rx"
 import { fakeAsync, TestBed, tick } from "@angular/core/testing"
 import { createFxComponent } from "./utils"
+import { Ref, ref } from "../ref"
+import { defineComponent } from "../ngfx"
 import fn = jest.fn
 import Mock = jest.Mock
 

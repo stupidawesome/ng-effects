@@ -1,6 +1,7 @@
-import { createEffect, customRef, Ref, ref, shallowRef } from "../ngfx"
 import fn = jest.fn
 import Mock = jest.Mock
+import { customRef, ref, Ref, shallowRef } from "../ref"
+import { createEffect } from "../effect"
 
 describe("ref", () => {
     it("should create a ref", () => {

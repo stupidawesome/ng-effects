@@ -3,9 +3,12 @@
 [.text-center]
 image::https://i.imgur.com/ty4iIj3.png[alt=Angular Effects]
 
-== Angular Effects
-
-Reactive hooks for Angular. Based on https://composition-api.vuejs.org/[Vue Composition API].
+++++
+<p><center>Reactivity system for Angular based on Vue Composition API.</center></p>
+<hr>
+<p><center><b>📝  <a href="https://ngfx.io" target="_blank">API Reference</a> &nbsp;&nbsp; ⚡ <a href="https://stackblitz.com/edit/ng-effects" target="_blank">StackBlitz</a> &nbsp;&nbsp; ⭐ <a href="https://github.com/stupidawesome/ng-effects/blob/master/CHANGELOG.adoc" target="_blank">Changelog</a></b></center></p>
+<hr>
+++++
 
 NOTE: Looking for the previous (9.0.x) docs? https://github.com/stupidawesome/ng-effects/tree/master/docs[Click here].
 
@@ -45,7 +48,3 @@ link:https://www.npmjs.com/package/ng-effects[Install via NPM]
 ```bash
 npm install ng-effects@next
 ```
-
-## Usage
-
-https://ngfx.io[Read the docs]

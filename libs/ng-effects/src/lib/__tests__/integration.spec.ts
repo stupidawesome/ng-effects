@@ -1,4 +1,4 @@
-import { defineComponent, inject, reactive, Ref, ref, watch } from "../ngfx"
+import { defineComponent, inject } from "../ngfx"
 import {
     ChangeDetectionStrategy,
     Component,
@@ -17,6 +17,9 @@ import {
 } from "@angular/core/testing"
 import { interval } from "rxjs"
 import { take } from "rxjs/operators"
+import { ref, Ref } from "../ref"
+import { reactive } from "../reactive"
+import { watch } from "../effect"
 import fn = jest.fn
 import Mock = jest.Mock
 

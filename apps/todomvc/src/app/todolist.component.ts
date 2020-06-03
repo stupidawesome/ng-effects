@@ -4,13 +4,13 @@ import { RouterModule } from "@angular/router"
 import { TodosService } from "./todos.service"
 import { Todo } from "./interfaces"
 import { subscribe } from "./utils"
-import { watchEffect } from "@ng9/ng-effects"
 import {
     computed,
     defineComponent,
     inject,
     ref,
-} from "../../../../libs/ng-effects/src/lib/ngfx"
+    watchEffect,
+} from "@ng9/ng-effects"
 
 @Component({
     selector: "ngfx-todolist",

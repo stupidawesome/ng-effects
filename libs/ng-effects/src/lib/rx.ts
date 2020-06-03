@@ -1,13 +1,4 @@
 import {
-    createEffect,
-    StopHandle,
-    UnwrapRef,
-    watch,
-    WatchEffectOptions,
-    WatchSource,
-    WatchValues,
-} from "./ngfx"
-import {
     Notification,
     Observable,
     OperatorFunction,
@@ -17,6 +8,15 @@ import {
 } from "rxjs"
 import { materialize, repeat } from "rxjs/operators"
 import { EventEmitter } from "@angular/core"
+import {
+    createEffect,
+    StopHandle,
+    watch,
+    WatchSource,
+    WatchValues,
+} from "./effect"
+import { WatchEffectOptions } from "./interfaces"
+import { UnwrapRef } from "./ref"
 
 export function fromRef<T extends [WatchSource<any>, ...WatchSource<any>[]]>(
     ref: T,

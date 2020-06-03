@@ -1,50 +1,62 @@
 export * from "./deprecated/index"
 export {
-    toRaw,
-    watchEffect,
-    Ref,
-    UnwrapRef,
-    reactive,
-    customRef,
-    onViewInit,
-    computed,
-    onDestroy,
-    onViewChecked,
-    onContentChecked,
-    onContentInit,
-    onCheck,
-    onChanges,
-    onInit,
-    shallowReactive,
-    isProxy,
-    shallowRef,
     inject,
-    watch,
-    unref,
-    toRefs,
-    ImmutableObject,
-    UnwrapRefs,
-    toRef,
-    ref,
-    OnInvalidate,
     defineComponent,
-    Immutable,
-    ImmutableArray,
-    ImmutableMap,
-    ImmutablePrimitive,
-    ImmutableSet,
-    isRef,
-    ReactiveOptions,
-    shallowReadonly,
-    WatchEffectOptions,
-    readonly,
     defineInjectable,
     defineDirective,
-    WatchValues,
-    WatchSource,
-    Flush,
-    StopHandle,
-    RefMap,
 } from "./lib/ngfx"
 
-export { fromRef, observe, effect, observeError, Effect } from "./lib/rx"
+export {
+    ref,
+    Ref,
+    UnwrapRefs,
+    toRefs,
+    toRef,
+    isRef,
+    unref,
+    shallowRef,
+    computed,
+    customRef,
+    UnwrapRef,
+    RefMap,
+} from "./lib/ref"
+
+export {
+    onViewInit,
+    onDestroy,
+    onInit,
+    onChanges,
+    onCheck,
+    onContentInit,
+    onContentChecked,
+    onViewChecked,
+} from "./lib/lifecycle"
+
+export {
+    WatchEffectOptions,
+    Flush,
+    OnInvalidate,
+    ReactiveOptions,
+    UnwrapNestedRefs,
+} from "./lib/interfaces"
+
+export { toRaw, isReactive, isReadonly, markRaw, isProxy } from "./lib/utils"
+
+export {
+    watch,
+    StopHandle,
+    WatchSource,
+    WatchValues,
+    watchEffect,
+} from "./lib/effect"
+
+export {
+    shallowReactive,
+    reactive,
+    readonly,
+    shallowReadonly,
+} from "./lib/reactive"
+
+export { fromRef, observe, effect, observeError } from "./lib/rx"
+
+export * from "./deprecated/index"
