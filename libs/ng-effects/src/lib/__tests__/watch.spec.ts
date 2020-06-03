@@ -48,4 +48,21 @@ describe("watch", () => {
         expect(spy.mock.calls).toEqual([[[0, ""]], [[10, ""]]])
         expect.assertions(5)
     })
+
+    it("should trigger watch immediately", () => {
+        let subject: Ref<number>, initial: number
+        initial = 0
+        subject = ref(initial)
+
+        watch(
+            subject,
+            (value, prev) => {
+                expect(prev).toBe(initial)
+                expect(subject.value).toBe(value)
+            },
+            { immediate: true },
+        )
+
+        expect.assertions(2)
+    })
 })

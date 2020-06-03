@@ -38,4 +38,13 @@ export {
     shallowReadonly,
     WatchEffectOptions,
     readonly,
+    defineInjectable,
+    defineDirective,
+    WatchValues,
+    WatchSource,
+    Flush,
+    StopHandle,
+    RefMap,
 } from "./lib/ngfx"
+
+export { fromRef, observe, effect, observeError, Effect } from "./lib/rx"

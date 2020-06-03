@@ -64,10 +64,11 @@ const enum Lifecycle {
     OnDestroy,
 }
 
-let activeContext: Context = {}
+const rootContext = {}
+let activeContext: Context = rootContext
 let activePhase: Lifecycle | undefined
 
-function getContext() {
+export function getContext() {
     return activeContext
 }
 
@@ -107,7 +108,7 @@ export function inject<T>(
     return value
 }
 
-function runInContext<T, U extends any[]>(
+export function runInContext<T, U extends any[]>(
     context: Context,
     phase: Lifecycle | undefined,
     run: (...args: U) => T,
@@ -176,7 +177,7 @@ export function toRef<T extends object, U extends keyof T>(
 }
 
 export type RefMap<T> = {
-    [key in keyof T]: Ref<T>
+    [key in keyof T]: Ref<T[key]>
 }
 
 export function toRefs<T extends object>(obj: T): RefMap<T> {
@@ -193,9 +194,6 @@ function bindRef(ctx: Context, key: PropertyKey, ref: any) {
     watch(
         ref,
         (value) => {
-            if (key === "activeTodo") {
-                console.log("value", value)
-            }
             previousValue = value
             Reflect.set(ctx, key, value)
             markDirty(ctx)
@@ -239,6 +237,7 @@ export type Flush = "pre" | "post" | "sync"
 
 export interface WatchEffectOptions {
     flush?: Flush
+    immediate?: boolean
 }
 
 const hooks = new LinkedList<Context, Lifecycle | undefined, Function>()
@@ -322,7 +321,9 @@ function createInvalidator(
     let running = true
     const teardowns = new Set<() => void>()
     const flush =
-        previousInjector || injectorDepth ? "sync" : options.flush ?? "post"
+        previousInjector || injectorDepth || context === rootContext
+            ? "sync"
+            : options.flush ?? "post"
 
     onDestroy(() => stop(true))
 
@@ -376,7 +377,7 @@ function runEffect(
     activeEffect = previous
 }
 
-type StopHandle = () => void
+export type StopHandle = () => void
 
 export function createEffect(
     factory: CreateEffect,
@@ -403,8 +404,10 @@ export function watchEffect(
     return createEffect(factory, options)
 }
 
-export function readValues(source: (Ref<any> | (() => any))[]) {
-    return source.map(readValue)
+export function readValues(
+    source: (Ref<any> | (() => any)) | (Ref<any> | (() => any))[],
+) {
+    return Array.isArray(source) ? source.map(readValue) : readValue(source)
 }
 
 export function readValue(ref: any) {
@@ -440,28 +443,18 @@ export function watch<T>(
     ) => void,
     options?: WatchEffectOptions,
 ): StopHandle {
-    let stopped = true
+    let running = options?.immediate ?? false
     let stop
-    let previousValue: any
-    onDestroy(() => (stopped = true))
-    if (Array.isArray(source)) {
-        previousValue = readValues(source)
-        stop = watchEffect((onInvalidate) => {
-            const values = readValues(source)
-            if (stopped) return
-            observer(values, previousValue, onInvalidate)
-            previousValue = values
-        }, options)
-    } else {
-        previousValue = readValue(source)
-        stop = watchEffect((onInvalidate) => {
-            const value = readValue(source)
-            if (stopped) return
-            observer(value, previousValue, onInvalidate)
-            previousValue = value
-        }, options)
-    }
-    stopped = false
+    let previousValue = readValues(source)
+    onDestroy(() => (running = false))
+    stop = watchEffect((onInvalidate) => {
+        const value = readValues(source)
+        if (!running) return
+        observer(value, previousValue, onInvalidate)
+        previousValue = value
+    }, options)
+
+    running = true
     return stop
 }
 
@@ -481,7 +474,7 @@ function assign(context: Context, partial: object | void): void {
     }
 }
 
-function setup<T>(factory: () => Partial<T> | void) {
+function setup<T>(factory: () => Partial<T> | void, unwrap = true) {
     assign(getContext(), factory())
 }
 
@@ -684,9 +677,11 @@ export function customRef<T>(factory: CustomRefFactory<T>): Ref<T> {
 
 export type UnwrapRef<T> = T extends Ref<infer R> ? R : T
 
-export type UnwrapRefs<T extends unknown> = {
-    [key in keyof T]: UnwrapRef<T[key]>
-}
+export type UnwrapRefs<T extends unknown> = T extends Function
+    ? T
+    : {
+          [key in keyof T]: UnwrapRef<T[key]>
+      }
 
 export interface LifecycleHooks {
     ngOnChanges(changes: SimpleChanges): void
@@ -699,14 +694,14 @@ export interface LifecycleHooks {
     ngOnDestroy(): void
 }
 
-export function defineComponent<T extends object>(
+export function defineDirective<T extends object>(
     factory: () => T,
-): new () => LifecycleHooks & UnwrapRefs<T>
-export function defineComponent(factory?: () => void): new () => LifecycleHooks
-export function defineComponent<T extends object>(
+): Type<LifecycleHooks & UnwrapRefs<T>>
+export function defineDirective(factory?: () => void): Type<LifecycleHooks>
+export function defineDirective<T>(
     factory: () => T | void = () => {},
 ): new () => unknown {
-    return class
+    return class Directive
         implements
             OnChanges,
             OnInit,
@@ -746,5 +741,31 @@ export function defineComponent<T extends object>(
     }
 }
 
-export const defineDirective = defineComponent
-export const defineInjectable = defineComponent
+export function defineInjectable<T extends object>(
+    factory: () => T,
+): Type<{ ngOnDestroy(): void } & T>
+export function defineInjectable(
+    factory?: () => void,
+): Type<{ ngOnDestroy(): void }>
+export function defineInjectable<T>(factory: () => T | void = () => {}) {
+    return class Injectable implements OnDestroy {
+        constructor() {
+            runInContext(this, Lifecycle.OnConnect, () =>
+                Object.assign(this, factory()),
+            )
+        }
+        ngOnDestroy() {
+            runInContext(this, Lifecycle.OnDestroy, runHook)
+        }
+    }
+}
+
+export function defineComponent<T extends object>(
+    factory: () => T,
+): Type<LifecycleHooks & UnwrapRefs<T>>
+export function defineComponent(factory?: () => void): Type<LifecycleHooks>
+export function defineComponent<T>(
+    factory: () => T | void = () => {},
+): new () => unknown {
+    return defineDirective(factory)
+}
