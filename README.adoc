@@ -4,9 +4,9 @@
 image::https://i.imgur.com/ty4iIj3.png[alt=Angular Effects]
 
 ++++
-<p><center>Reactivity system for Angular based on Vue Composition API.</center></p>
+<p align="center">Reactivity system for Angular based on Vue Composition API.</p>
 <hr>
-<p><center><b>📝  <a href="https://ngfx.io" target="_blank">API Reference</a> &nbsp;&nbsp; ⚡ <a href="https://stackblitz.com/edit/ng-effects" target="_blank">StackBlitz</a> &nbsp;&nbsp; ⭐ <a href="https://github.com/stupidawesome/ng-effects/blob/master/CHANGELOG.adoc" target="_blank">Changelog</a></b></center></p>
+<p align="center"><b>📝  <a href="https://ngfx.io" target="_blank">API Reference</a> &nbsp;&nbsp; ⚡ <a href="https://stackblitz.com/edit/ng-effects" target="_blank">StackBlitz</a> &nbsp;&nbsp; ⭐ <a href="https://github.com/stupidawesome/ng-effects/blob/master/CHANGELOG.adoc" target="_blank">Changelog</a></b></center></p>
 <hr>
 ++++
 
@@ -19,9 +19,7 @@ NOTE: Looking for the previous (9.0.x) docs? https://github.com/stupidawesome/ng
     inputs: ["count"],
     outputs: ["countChange"]
 })
-export class AppComponent extends defineComponent(setup) {}
-
-function setup() {
+export class AppComponent extends defineComponent(() => {
     const count = ref(0)
     const countChange = new EventEmitter<number>()
 
@@ -38,7 +36,7 @@ function setup() {
         countChange,
         increment,
     }
-}
+}) {}
 ----
 
 ## Installation
