@@ -19,7 +19,7 @@ export class AppRoot extends defineComponent(() => {
 
     function increment() {
         count.value += 1
-  }
+    }
 
     watchEffect((onInvalidate) => {
         console.log(count.value)

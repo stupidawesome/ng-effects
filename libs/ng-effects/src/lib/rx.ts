@@ -138,14 +138,6 @@ function subscribe(source: Observable<any>, observer: PartialObserver<any>) {
 export function observe<T>(
     source: Observable<T | Notification<T>>,
     observer: PartialObserver<T> | ((value: T) => void),
-): StopHandle
-export function observe<T>(
-    source: Observable<T | Notification<T>>,
-    observer: PartialObserver<T> | ((value: T) => void),
-): StopHandle
-export function observe<T>(
-    source: Observable<T | Notification<T>>,
-    observer: PartialObserver<T> | ((value: T) => void),
 ): StopHandle {
     const obs = typeof observer === "function" ? { next: observer } : observer
 
