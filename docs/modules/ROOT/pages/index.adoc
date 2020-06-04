@@ -3,6 +3,8 @@
 :idprefix:
 :idseparator: -
 :example-caption!:
+:description: Reactivity system for Angular. Create reactive applications using a set of function-based APIs that allow for flexible composition of logic.
+:keywords: angular, components, composition api, state management, rxjs, effects, reactive, hooks, ivy
 
 NOTE: For brevity, this document only refers to components. Most of these APIs can be applied to directives and services as well.
 

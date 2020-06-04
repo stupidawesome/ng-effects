@@ -1,6 +1,6 @@
 name: api
 title: Angular Effects
-version: 9.1.0-next
+version: 9.1.0
 start_page: ROOT:index.adoc
 nav:
     - modules/ROOT/nav.adoc
