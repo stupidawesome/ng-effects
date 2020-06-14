@@ -1,5 +1,17 @@
 = Changelog
 
+== 9.1.1
+
+=== Features
+
+- make computed lazy
+- check refs during afterContentChecked and afterViewChecked
+
+=== Bug Fixes
+
+- fix onChanges hook
+- trigger change detection when effect is invalidated
+
 == 9.1.0
 
 ****

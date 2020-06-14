@@ -1,7 +1,7 @@
 {
     "name": "ng-effects",
     "description": "Reactivity system for Angular. Based on Vue Composition API.",
-    "version": "9.1.0",
+    "version": "9.1.1",
     "peerDependencies": {
         "@angular/common": "^9.0.0",
         "@angular/core": "^9.0.0",

@@ -5,7 +5,13 @@ import {
     OnInvalidate,
     WatchEffectOptions,
 } from "./interfaces"
-import { getContext, getPhase, isRootContext, runInContext } from "./ngfx"
+import {
+    changeDectorRefs,
+    getContext,
+    getPhase,
+    isRootContext,
+    runInContext,
+} from "./ngfx"
 import { getInvalidated, getInvalidators } from "./invalidate"
 import { onDestroy, runHook } from "./lifecycle"
 
@@ -38,6 +44,7 @@ function createInvalidator(
     const teardowns = new Set<() => void>()
     const invalidators = getInvalidators()
     const flush = isRootContext(context) ? "sync" : options.flush ?? "post"
+    const cdr = changeDectorRefs.get(context)
 
     onDestroy(() => stop(true))
 
@@ -55,15 +62,19 @@ function createInvalidator(
     function stop(done = false) {
         const currentPhase = getPhase()
         const invalidated = getInvalidated()
-        for (const teardown of teardowns) {
+        const list = new Set(teardowns)
+        teardowns.clear()
+        for (const teardown of list) {
             teardown()
         }
-        teardowns.clear()
         if (running) {
             if (done) {
                 running = false
                 invalidated.delete(context, flush)
                 return
+            }
+            if (cdr) {
+                cdr.markForCheck()
             }
             if (flush === "sync") {
                 restart()
@@ -117,14 +128,19 @@ export function watchEffect(
     return createEffect(factory, options)
 }
 
-export function readValues(
-    source: (Ref<any> | (() => any)) | (Ref<any> | (() => any))[],
-) {
-    return Array.isArray(source) ? source.map(readValue) : readValue(source)
+export function readValues(source: any, isArray: boolean) {
+    return isArray ? source.map(readValue) : readValue(source)
 }
 
 export function readValue(ref: any) {
     return typeof ref === "function" ? ref() : ref.value
+}
+
+export function compareValues(curr: any, prev: any, checkArray: boolean) {
+    if (checkArray) {
+        return curr.every((item: any, i: number) => item === prev[i])
+    }
+    return curr === prev
 }
 
 export type WatchSource<T> = Ref<T> | (() => T)
@@ -156,13 +172,14 @@ export function watch<T>(
     ) => void,
     options?: WatchEffectOptions,
 ): StopHandle {
+    const isArray = Array.isArray(source)
     let running = options?.immediate ?? false
     let stop
-    let previousValue = readValues(source)
+    let previousValue = readValues(source, isArray)
     onDestroy(() => (running = false))
     stop = watchEffect((onInvalidate) => {
-        const value = readValues(source)
-        if (!running) return
+        const value = readValues(source, isArray)
+        if (!running || compareValues(value, previousValue, isArray)) return
         observer(value, previousValue, onInvalidate)
         previousValue = value
     }, options)

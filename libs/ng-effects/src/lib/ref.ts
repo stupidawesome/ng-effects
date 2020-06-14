@@ -105,11 +105,37 @@ export function computed<T>(options: {
 export function computed<T>(getter: () => T): ReadonlyRef<T>
 export function computed(getterOrOptions: any): Ref<any> {
     let value: any
-    let trigger: any
-    const ref = customRef((track, _trigger) => {
-        trigger = _trigger
+    let stopped = true
+    const watchFn =
+        typeof getterOrOptions === "function" ? useGetter : useOptions
+
+    function useGetter() {
+        value = getterOrOptions()
+    }
+
+    function useOptions() {
+        value = getterOrOptions.get()
+    }
+
+    return customRef((track, trigger) => {
         return {
             get() {
+                if (stopped) {
+                    stopped = false
+                    const stop = watchEffect(
+                        (onInvalidate) => {
+                            if (!stopped) {
+                                stopped = true
+                                watchFn()
+                                onInvalidate(() => {
+                                    stop()
+                                    trigger()
+                                })
+                            }
+                        },
+                        { flush: "sync" },
+                    )
+                }
                 track()
                 return value
             },
@@ -119,19 +145,6 @@ export function computed(getterOrOptions: any): Ref<any> {
             },
         }
     })
-    function useGetter() {
-        value = getterOrOptions()
-        trigger()
-    }
-    function useOptions() {
-        value = getterOrOptions.get()
-        trigger()
-    }
-    watchEffect(
-        typeof getterOrOptions === "function" ? useGetter : useOptions,
-        { flush: "sync" },
-    )
-    return ref
 }
 
 type CustomRefFactory<T> = (

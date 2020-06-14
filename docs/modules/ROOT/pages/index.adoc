@@ -602,192 +602,192 @@ declare function watch<T extends WatcherSource<unknown>[]>(
     options?: WatchOptions
 ): StopHandle
 ----
-
-== Observable APIs
-
-=== `effect`
-
-Creates an asynchronous `Effect<T, U>` that can be used with pipable operators to transform each new value of `T` into one or more multicasted values of `Notification<U>`. If the intermediate stream between `T` and `Notification<U>` completes or throws an error, the stream is kept alive and restarts on the next value of `T`.
-
-[source, typescript]
---
-import { effect, observe } from "ng-effects"
-
-const onIncrement = effect<number>().pipe(
-    delay(1000),
-    map(num => num * num)
-)
-
-onIncrement.next(2)
-
-observe(onIncrement, (value) => console.log(value)) // logs 4 after 1000ms
---
-
-Calling `pipe` on this object returns a new `Effect`. Unlike `Observable`, values are not passed down from one effect to another. Each effect created by `effect` or `effect().pipe()` has its own event emitter. Each subsequent call to `pipe` will copy the operators from the previous effect and combine them together.
-
-[source, typescript]
---
-import { effect, observe } from "ng-effects"
-
-const increment = effect<number>()
-
-const incrementAfterDelay = increment.pipe(
-    delay(1000)
-)
-
-// inherits `delay(1000)`
-const squareAfterDelay = incrementAfterDelay.pipe(
-    map(num => num * num)
-)
-
-// only triggers `increment`
-increment.next(1)
-// only triggers `incrementAfterDelay`
-incrementAfterDelay.next(1)
-// only triggers `squareAfterDelay`
-squareAfterDelay.next(1)
---
-
-- *Effects Chains*
-
-Since effects implement the `Subject` interface, they can be chained together.
-
-[source, typescript]
---
-const increment = effect<number>().pipe(
-    delay(1000)
-)
-
-const square = effect<number>().pipe(
-    map(num => num * num)
-)
-
-observe(increment, square)
-observe(square, (value) => console.log(value))
-
-increment.next(2) // logs 4 after 1000ms
---
-
-- *Typing*
-
-[source, typescript]
---
-export interface Effect<T, U = T> extends Observable<Notification<U>> {
-    next(value: T): void
-    error(err: any): void
-    complete(): void
-    pipe<V>(...operators: OperatorFunction<any, any>[]): Effect<U, V>
-}
---
-
-=== `observe`
-
-`observe` is a non-reactive hook that complements `effect` and other `Observable` objects. It connects a source observable to a target observer, returning a stop handler that unsubscribes from the subscription. When used in an active context such as `defineComponent`, the subscription is bound to the lifecycle of the component. If used inside a lifecycle hook, the source observable is restarted each time that hook is called.
-
-[source, typescript]
---
-import { defineComponent, observe, onChanges } from "ng-effects"
-
-@Component()
-export class NgComponent extends defineComponent(setup) {}
-
-function setup() {
-    // subscription automatically cleaned up on destroy
-    observe(interval(1000), {
-        next(count) {
-            console.log(count)
-        }
-    })
-
-    onChanges(() => {
-        // restarts each time an input changes until the component is destroyed
-        observe(interval(1000), {
-            next(count) {
-                console.log(count)
-            }
-        })
-    })
-}
---
-
-If the source observable is a stream of `Notification` emissions, the notifications are unwrapped and delivered to the appropriate observer method.
-
-[source, typescript]
---
-@Component()
-export class NgComponent extends defineComponent(setup) {}
-
-function setup() {
-    const materialized = interval(1000).pipe(
-        materialize()
-    )
-
-    // unwraps `Notification<number>` to `number`
-    observe(materialized, {
-        next(count) {
-            console.log(count) // 0, 1, 2
-        }
-    })
-}
---
-
-- *Typing*
-
-[source, typescript]
---
-declare function observe<T>(
-    source: Observable<T | Notification<T>>,
-    observer: PartialObserver<T> | ((value: T) => void),
-): StopHandle
---
-
-=== `fromRef`
-
-Wraps a `ref` or an array of refs inside an `Observable`. Interally it uses `watch` to emit each value, and has shared behaviour for flush timing.
-
-[source, typescript]
---
-import { fromRef, ref } from "ng-effects"
-
-const count = ref(0)
-
-observe(fromRef(count), {
-    next(value) {
-        console.log(value)
-    }
-})
-
-count.value = 1 // logs 1
---
-
-`fromRef` also accepts a getter function for reactive objects.
-
-[source, typescript]
---
-const object = reactive({ count: 0 })
-
-observe(fromRef(() => object.count), {
-    next(value) {
-        console.log(value)
-    }
-})
-
-object.count = 1 // logs 1
---
-
-- *Typing*
-
-[source, typescript]
---
-declare function fromRef<T extends [WatchSource<any>, ...WatchSource<any>[]]>(
-    ref: T,
-    options?: WatchEffectOptions,
-): Observable<WatchValues<T>>
-declare function fromRef<T>(
-    ref: WatchSource<T>,
-    options?: WatchEffectOptions,
-): Observable<UnwrapRef<T>>
---
+//
+//== Observable APIs
+//
+//=== `effect`
+//
+//Creates an asynchronous `Effect<T, U>` that can be used with pipable operators to transform each new value of `T` into one or more multicasted values of `Notification<U>`. If the intermediate stream between `T` and `Notification<U>` completes or throws an error, the stream is kept alive and restarts on the next value of `T`.
+//
+//[source, typescript]
+//--
+//import { effect, observe } from "ng-effects"
+//
+//const onIncrement = effect<number>().pipe(
+//    delay(1000),
+//    map(num => num * num)
+//)
+//
+//onIncrement.next(2)
+//
+//observe(onIncrement, (value) => console.log(value)) // logs 4 after 1000ms
+//--
+//
+//Calling `pipe` on this object returns a new `Effect`. Unlike `Observable`, values are not passed down from one effect to another. Each effect created by `effect` or `effect().pipe()` has its own event emitter. Each subsequent call to `pipe` will copy the operators from the previous effect and combine them together.
+//
+//[source, typescript]
+//--
+//import { effect, observe } from "ng-effects"
+//
+//const increment = effect<number>()
+//
+//const incrementAfterDelay = increment.pipe(
+//    delay(1000)
+//)
+//
+//// inherits `delay(1000)`
+//const squareAfterDelay = incrementAfterDelay.pipe(
+//    map(num => num * num)
+//)
+//
+//// only triggers `increment`
+//increment.next(1)
+//// only triggers `incrementAfterDelay`
+//incrementAfterDelay.next(1)
+//// only triggers `squareAfterDelay`
+//squareAfterDelay.next(1)
+//--
+//
+//- *Effects Chains*
+//
+//Since effects implement the `Subject` interface, they can be chained together.
+//
+//[source, typescript]
+//--
+//const increment = effect<number>().pipe(
+//    delay(1000)
+//)
+//
+//const square = effect<number>().pipe(
+//    map(num => num * num)
+//)
+//
+//observe(increment, square)
+//observe(square, (value) => console.log(value))
+//
+//increment.next(2) // logs 4 after 1000ms
+//--
+//
+//- *Typing*
+//
+//[source, typescript]
+//--
+//export interface Effect<T, U = T> extends Observable<Notification<U>> {
+//    next(value: T): void
+//    error(err: any): void
+//    complete(): void
+//    pipe<V>(...operators: OperatorFunction<any, any>[]): Effect<U, V>
+//}
+//--
+//
+//=== `observe`
+//
+//`observe` is a non-reactive hook that complements `effect` and other `Observable` objects. It connects a source observable to a target observer, returning a stop handler that unsubscribes from the subscription. When used in an active context such as `defineComponent`, the subscription is bound to the lifecycle of the component. If used inside a lifecycle hook, the source observable is restarted each time that hook is called.
+//
+//[source, typescript]
+//--
+//import { defineComponent, observe, onChanges } from "ng-effects"
+//
+//@Component()
+//export class NgComponent extends defineComponent(setup) {}
+//
+//function setup() {
+//    // subscription automatically cleaned up on destroy
+//    observe(interval(1000), {
+//        next(count) {
+//            console.log(count)
+//        }
+//    })
+//
+//    onChanges(() => {
+//        // restarts each time an input changes until the component is destroyed
+//        observe(interval(1000), {
+//            next(count) {
+//                console.log(count)
+//            }
+//        })
+//    })
+//}
+//--
+//
+//If the source observable is a stream of `Notification` emissions, the notifications are unwrapped and delivered to the appropriate observer method.
+//
+//[source, typescript]
+//--
+//@Component()
+//export class NgComponent extends defineComponent(setup) {}
+//
+//function setup() {
+//    const materialized = interval(1000).pipe(
+//        materialize()
+//    )
+//
+//    // unwraps `Notification<number>` to `number`
+//    observe(materialized, {
+//        next(count) {
+//            console.log(count) // 0, 1, 2
+//        }
+//    })
+//}
+//--
+//
+//- *Typing*
+//
+//[source, typescript]
+//--
+//declare function observe<T>(
+//    source: Observable<T | Notification<T>>,
+//    observer: PartialObserver<T> | ((value: T) => void),
+//): StopHandle
+//--
+//
+//=== `fromRef`
+//
+//Wraps a `ref` or an array of refs inside an `Observable`. Interally it uses `watch` to emit each value, and has shared behaviour for flush timing.
+//
+//[source, typescript]
+//--
+//import { fromRef, ref } from "ng-effects"
+//
+//const count = ref(0)
+//
+//observe(fromRef(count), {
+//    next(value) {
+//        console.log(value)
+//    }
+//})
+//
+//count.value = 1 // logs 1
+//--
+//
+//`fromRef` also accepts a getter function for reactive objects.
+//
+//[source, typescript]
+//--
+//const object = reactive({ count: 0 })
+//
+//observe(fromRef(() => object.count), {
+//    next(value) {
+//        console.log(value)
+//    }
+//})
+//
+//object.count = 1 // logs 1
+//--
+//
+//- *Typing*
+//
+//[source, typescript]
+//--
+//declare function fromRef<T extends [WatchSource<any>, ...WatchSource<any>[]]>(
+//    ref: T,
+//    options?: WatchEffectOptions,
+//): Observable<WatchValues<T>>
+//declare function fromRef<T>(
+//    ref: WatchSource<T>,
+//    options?: WatchEffectOptions,
+//): Observable<UnwrapRef<T>>
+//--
 
 == Lifecycle Hooks
 

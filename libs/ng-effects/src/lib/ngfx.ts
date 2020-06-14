@@ -4,8 +4,11 @@ import {
     AfterContentInit,
     AfterViewChecked,
     AfterViewInit,
+    ChangeDetectorRef,
+    Directive,
     DoCheck,
     inject as rootInject,
+    Injectable,
     InjectFlags,
     InjectionToken,
     Injector,
@@ -14,13 +17,15 @@ import {
     OnInit,
     SimpleChanges,
     Type,
-    ɵmarkDirty as markDirty,
+    ɵNG_COMP_DEF,
+    ɵNG_DIR_DEF,
     ɵsetCurrentInjector as setCurrentInjector,
     ɵɵdirectiveInject as directiveInject,
+    ɵɵNgOnChangesFeature,
 } from "@angular/core"
 import { Context, Lifecycle, LifecycleHooks } from "./interfaces"
 import { isProxy } from "./utils"
-import { onCheck, runHook } from "./lifecycle"
+import { onCheck, onContentChecked, onViewChecked, runHook } from "./lifecycle"
 import { Ref, toRefs, UnwrapRefs } from "./ref"
 import { watch } from "./effect"
 
@@ -85,15 +90,27 @@ export function runInContext<T, U extends any[]>(
     return result
 }
 
+const waiter = Promise.resolve()
+
 function bindRef(ctx: Context, key: PropertyKey, ref: any) {
     let previousValue = ref.value
+    const cdr = changeDectorRefs.get(ctx)
 
     watch(
         ref,
-        (value) => {
+        async (value) => {
+            const phase = getPhase()
             previousValue = value
             Reflect.set(ctx, key, value)
-            markDirty(ctx)
+            if (
+                phase === Lifecycle.OnContentChecked ||
+                phase === Lifecycle.OnContentInit
+            ) {
+                await waiter
+            }
+            if (phase !== Lifecycle.OnDestroy) {
+                cdr.markForCheck()
+            }
         },
         { flush: "sync" },
     )
@@ -105,7 +122,11 @@ function bindRef(ctx: Context, key: PropertyKey, ref: any) {
             ref.value = viewValue
         }
     }
+
     onCheck(checkRef)
+    onContentChecked(checkRef)
+    onViewChecked(checkRef)
+
     Reflect.set(ctx, key, previousValue)
 }
 
@@ -129,8 +150,27 @@ function assign(context: Context, partial: object | void): void {
     }
 }
 
-function setup<T>(factory: () => Partial<T> | void, unwrap = true) {
+function setup<T>(factory: () => Partial<T> | void) {
+    changeDectorRefs.set(
+        getContext(),
+        inject(ChangeDetectorRef, InjectFlags.Optional),
+    )
     assign(getContext(), factory())
+}
+
+export const changeDectorRefs = new WeakMap()
+
+function fixNgOnChanges(instance: any) {
+    const type = Object.getPrototypeOf(instance).constructor
+    const def = type[ɵNG_COMP_DEF] || type[ɵNG_DIR_DEF]
+
+    if (def === undefined) {
+        throw new Error("Ivy is not enabled.")
+    }
+
+    if (def.onChanges === null && instance.ngOnChanges) {
+        ;(<any>ɵɵNgOnChangesFeature)()(def)
+    }
 }
 
 export function defineDirective<T extends object>(
@@ -140,7 +180,8 @@ export function defineDirective(factory?: () => void): Type<LifecycleHooks>
 export function defineDirective<T>(
     factory: () => T | void = () => {},
 ): new () => unknown {
-    return class Directive
+    @Directive()
+    class BaseDirective
         implements
             OnChanges,
             OnInit,
@@ -151,6 +192,7 @@ export function defineDirective<T>(
             AfterViewChecked,
             OnDestroy {
         constructor() {
+            fixNgOnChanges(this)
             runInContext(this, Lifecycle.OnConnect, setup, factory)
         }
         ngOnChanges(changes: SimpleChanges) {
@@ -178,6 +220,7 @@ export function defineDirective<T>(
             runInContext(this, Lifecycle.OnDestroy, runHook)
         }
     }
+    return BaseDirective
 }
 
 export function defineInjectable<T extends object>(
@@ -187,7 +230,8 @@ export function defineInjectable(
     factory?: () => void,
 ): Type<{ ngOnDestroy(): void }>
 export function defineInjectable<T>(factory: () => T | void = () => {}) {
-    return class Injectable implements OnDestroy {
+    @Injectable()
+    class BaseInjectable implements OnDestroy {
         constructor() {
             runInContext(this, Lifecycle.OnConnect, () =>
                 Object.assign(this, factory()),
@@ -197,6 +241,7 @@ export function defineInjectable<T>(factory: () => T | void = () => {}) {
             runInContext(this, Lifecycle.OnDestroy, runHook)
         }
     }
+    return BaseInjectable
 }
 
 export function defineComponent<T extends object>(
