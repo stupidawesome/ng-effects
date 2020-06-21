@@ -105,46 +105,57 @@ export function computed<T>(options: {
 export function computed<T>(getter: () => T): ReadonlyRef<T>
 export function computed(getterOrOptions: any): Ref<any> {
     let value: any
-    let stopped = true
-    const watchFn =
-        typeof getterOrOptions === "function" ? useGetter : useOptions
+    let dirty = true
 
-    function useGetter() {
-        value = getterOrOptions()
-    }
+    const ref = customRef((track, trigger) => {
+        const watchFn =
+            typeof getterOrOptions === "function" ? useGetter : useOptions
 
-    function useOptions() {
-        value = getterOrOptions.get()
-    }
+        function readValue() {
+            dirty = false
+            const stop = watchEffect(
+                (onInvalidate) => {
+                    watchFn()
+                    onInvalidate(() => {
+                        dirty = true
+                        stop()
+                        trigger()
+                    })
+                },
+                { flush: "sync" },
+            )
+        }
 
-    return customRef((track, trigger) => {
+        function useGetter() {
+            value = getterOrOptions()
+            trigger()
+        }
+
+        function useOptions() {
+            value = getterOrOptions.get()
+            trigger()
+        }
+
         return {
-            get() {
-                if (stopped) {
-                    stopped = false
-                    const stop = watchEffect(
-                        (onInvalidate) => {
-                            if (!stopped) {
-                                stopped = true
-                                watchFn()
-                                onInvalidate(() => {
-                                    stop()
-                                    trigger()
-                                })
-                            }
-                        },
-                        { flush: "sync" },
-                    )
+            get: () => {
+                if (dirty) {
+                    readValue()
                 }
                 track()
                 return value
             },
-            set(val) {
-                value = getterOrOptions.set(val)
+            set: (val) => {
+                if (typeof getterOrOptions !== "function") {
+                    getterOrOptions.set(val)
+                } else {
+                    throw new Error("Cannot set readonly value")
+                }
                 trigger()
             },
         }
     })
+
+    return ref
 }
 
 type CustomRefFactory<T> = (

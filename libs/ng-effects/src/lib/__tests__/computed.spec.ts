@@ -99,20 +99,20 @@ describe("computed", () => {
     })
 
     it("should create a writable ref", () => {
-        let subject, expected: number
+        let subject, expected: Ref<number>
 
-        expected = 3
+        expected = ref(3)
         subject = computed({
-            get: () => expected,
-            set: (val) => (expected = val - 1),
+            get: () => expected.value,
+            set: (val) => (expected.value = val - 1),
         })
 
-        expect(subject.value).toBe(expected)
+        expect(subject.value).toBe(expected.value)
 
         subject.value = 10
 
-        expect(expected).toBe(10 - 1)
-        expect(subject.value).toBe(expected)
+        expect(expected.value).toBe(10 - 1)
+        expect(subject.value).toBe(expected.value)
     })
 })
 

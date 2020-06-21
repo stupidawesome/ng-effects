@@ -38,7 +38,9 @@ describe("change detection", () => {
         subject = TestBed.createComponent(component)
 
         state.count = expected
-        tick(16) // wait 1 frame for markDirty to trigger change detection run
+        // something has to trigger detect changes, because markForCheck does not
+        // schedule a tick
+        subject.detectChanges()
 
         expect(subject.debugElement.nativeNode.textContent).toBe(
             expected.toString(),

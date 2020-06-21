@@ -173,17 +173,21 @@ export function watch<T>(
     options?: WatchEffectOptions,
 ): StopHandle {
     const isArray = Array.isArray(source)
-    let running = options?.immediate ?? false
+    let first = options?.immediate ?? false
+    let stopped = false
     let stop
     let previousValue = readValues(source, isArray)
-    onDestroy(() => (running = false))
+    onDestroy(() => (stopped = true))
+
     stop = watchEffect((onInvalidate) => {
         const value = readValues(source, isArray)
-        if (!running || compareValues(value, previousValue, isArray)) return
+        if (stopped || (compareValues(value, previousValue, isArray) && !first))
+            return
         observer(value, previousValue, onInvalidate)
         previousValue = value
     }, options)
 
-    running = true
+    first = false
+
     return stop
 }

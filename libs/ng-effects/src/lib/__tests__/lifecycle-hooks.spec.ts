@@ -13,6 +13,8 @@ import { defineComponent } from "../ngfx"
 import { createEffect } from "../effect"
 import fn = jest.fn
 import Mock = jest.Mock
+import { createFxComponent } from "./utils"
+import { TestBed } from "@angular/core/testing"
 
 const hooks = new Map([
     [(component: LifecycleHooks) => component.ngOnInit(), onInit],
@@ -42,13 +44,15 @@ describe("lifecycle hooks", () => {
             subject = fn()
             expected = 3
 
-            component = defineComponent(() => {
-                hook(subject.bind(null))
-                hook(subject.bind(null))
-                hook(subject.bind(null))
-            })
+            component = createFxComponent(
+                defineComponent(() => {
+                    hook(subject.bind(null))
+                    hook(subject.bind(null))
+                    hook(subject.bind(null))
+                }),
+            )
 
-            action(new component())
+            action(TestBed.createComponent(component).componentInstance)
 
             expect(subject).toHaveBeenCalledTimes(expected)
         })
@@ -61,19 +65,23 @@ describe("lifecycle hooks", () => {
             invalidate = fn()
             expected = 9
 
-            component = new (defineComponent(() => {
-                for (let i = 3; i > 0; i--) {
-                    hook(() =>
-                        createEffect(
-                            (onInvalidate) => {
-                                effect()
-                                onInvalidate(invalidate)
-                            },
-                            { flush: "sync" },
-                        ),
-                    )
-                }
-            }))()
+            component = createFxComponent(
+                defineComponent(() => {
+                    for (let i = 3; i > 0; i--) {
+                        hook(() =>
+                            createEffect(
+                                (onInvalidate) => {
+                                    effect()
+                                    onInvalidate(invalidate)
+                                },
+                                { flush: "sync" },
+                            ),
+                        )
+                    }
+                }),
+            )
+
+            component = TestBed.createComponent(component).componentInstance
 
             action(component) // create effect
             action(component) // invalidate and restart

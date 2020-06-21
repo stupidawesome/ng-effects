@@ -18,6 +18,8 @@ import {
 import { WatchEffectOptions } from "./interfaces"
 import { UnwrapRef } from "./ref"
 
+// todo: Remove these APIs.
+
 export function fromRef<T extends [WatchSource<any>, ...WatchSource<any>[]]>(
     ref: T,
     options?: WatchEffectOptions,
