@@ -1,28 +1,29 @@
+/*
+  This is a "Solution Style" tsconfig.json file, and is used by editors and TypeScript’s language server to improve development experience.
+  It is not intended to be used to perform a compilation.
+
+  To learn more about this file see: https://angular.io/config/solution-tsconfig.
+*/
 {
-    "compileOnSave": false,
-    "compilerOptions": {
-        "baseUrl": ".",
-        "outDir": "./dist/out-tsc",
-        "sourceMap": true,
-        "declaration": false,
-        "downlevelIteration": true,
-        "experimentalDecorators": true,
-        "module": "esnext",
-        "moduleResolution": "node",
-        "importHelpers": true,
-        "target": "es2015",
-        "typeRoots": ["node_modules/@types"],
-        "lib": ["es2018", "dom"],
-        "strict": true,
-        "paths": {
-            "@ng9/ng-effects": ["libs/ng-effects/src/index.ts"],
-            "@ng9/ng-effects/patch-hooks": ["libs/ng-effects/src/lib/patch-hooks.ts"],
-            "@ng9/test": ["libs/test/src/index.ts"]
+    "files": [],
+    "references": [
+        {
+            "path": "./apps\\ng9\\tsconfig.app.json"
         },
-        "rootDir": "."
-    },
-    "angularCompilerOptions": {
-        "strictTemplates": true,
-        "strictInjectionParameters": true
-    }
+        {
+            "path": "./apps/ng9/tsconfig.spec.json"
+        },
+        {
+            "path": "./libs/ng-effects/tsconfig.lib.json"
+        },
+        {
+            "path": "./libs/ng-effects/tsconfig.spec.json"
+        },
+        {
+            "path": "./apps/todomvc/tsconfig.app.json"
+        },
+        {
+            "path": "./apps/todomvc/tsconfig.spec.json"
+        }
+    ]
 }
