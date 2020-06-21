@@ -1,5 +1,5 @@
 {
-    "npmScope": "ng9",
+    "npmScope": "ng-effects",
     "implicitDependencies": {
         "angular.json": "*",
         "package.json": "*",
@@ -8,9 +8,6 @@
         "nx.json": "*"
     },
     "projects": {
-        "ng9": {
-            "tags": []
-        },
         "ng-effects": {
             "tags": []
         },

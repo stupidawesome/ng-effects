@@ -1,4 +1,3 @@
-export * from "./deprecated/index"
 export {
     inject,
     defineComponent,
@@ -57,6 +56,4 @@ export {
     shallowReadonly,
 } from "./lib/reactive"
 
-export { fromRef, observe, effect, observeError } from "./lib/rx"
-
-export * from "./deprecated/index"
+export { fromRef, observe, effect, observeError, Effect } from "./lib/rx"
