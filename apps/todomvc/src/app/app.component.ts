@@ -1,19 +1,22 @@
-import { ChangeDetectionStrategy, Component } from "@angular/core"
+import { ChangeDetectionStrategy, Component, Injectable } from "@angular/core"
 import {
     defineComponent,
     defineInjectable,
     effect,
     Effect,
+    inject,
     observe,
     observeError,
     reactive,
     toRefs,
     watchEffect,
-    inject
-} from "@ng9/ng-effects"
+} from "@ng-effects/ng-effects"
 import { mergeMap } from "rxjs/operators"
 import { of, throwError } from "rxjs"
 
+// TODO: update this file to use current API so it can be used as a real example
+
+@Injectable()
 export class AppService extends defineInjectable(() => {
     const state = reactive({
         count: 0,

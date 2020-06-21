@@ -2,7 +2,7 @@ import { Injectable } from "@angular/core"
 import { HttpClient } from "@angular/common/http"
 import { Todo } from "./interfaces"
 import { forkJoin } from "rxjs"
-import { inject } from "@ng9/ng-effects"
+import { inject } from "@ng-effects/ng-effects"
 
 const endpoint = "https://jsonplaceholder.typicode.com"
 

@@ -10,7 +10,9 @@ import {
     inject,
     ref,
     watchEffect,
-} from "@ng9/ng-effects"
+} from "@ng-effects/ng-effects"
+
+// TODO: update this file to use current API so it can be used as a real example
 
 @Component({
     selector: "ngfx-todolist",
