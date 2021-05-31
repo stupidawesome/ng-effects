@@ -1,5 +1,8 @@
 :toc:
 :toc-placement!:
+
+NOTE: This repository is no longer maintained. The story continues at link:https://github.com/mmuscat/angular-composition-api[Angular Composition API].
+
 [.text-center]
 image::https://i.imgur.com/ty4iIj3.png[alt=Angular Effects]
 
